@@ -55,6 +55,18 @@ foreach ( $items as $item ) {
 	}
 }
 
+$tooltip_position = isset( $settings['tooltip_position'] ) ? $settings['tooltip_position'] : 'top';
+if ( ! in_array( $tooltip_position, array( 'top', 'bottom', 'auto' ), true ) ) {
+	$tooltip_position = 'top';
+}
+
+$cta_icon          = isset( $settings['cta_icon'] ) ? $settings['cta_icon'] : null;
+$cta_icon_position = isset( $settings['cta_icon_position'] ) ? $settings['cta_icon_position'] : 'after';
+$cta_has_icon      = ( ! empty( $cta_icon ) && ( ! empty( $cta_icon['value'] ) || ! empty( $cta_icon['library'] ) ) );
+if ( ! in_array( $cta_icon_position, array( 'before', 'after' ), true ) ) {
+	$cta_icon_position = 'after';
+}
+
 $table_classes = array( 'kdna-comparison' );
 if ( $has_highlight ) {
 	$table_classes[] = 'kdna-comparison--has-highlight';
@@ -137,7 +149,7 @@ if ( $has_highlight ) {
 					<?php endif; ?>
 
 					<?php if ( '' !== $tooltip ) : ?>
-						<span class="kdna-comparison__tooltip-wrap">
+						<span class="kdna-comparison__tooltip-wrap" data-tooltip-position="<?php echo esc_attr( $tooltip_position ); ?>">
 							<button
 								type="button"
 								class="kdna-comparison__tooltip-trigger"
@@ -148,6 +160,7 @@ if ( $has_highlight ) {
 							</button>
 							<span id="<?php echo esc_attr( $tooltip_id ); ?>" role="tooltip" class="kdna-comparison__tooltip">
 								<?php echo wp_kses_post( $tooltip ); ?>
+								<span class="kdna-comparison__tooltip-arrow" aria-hidden="true"></span>
 							</span>
 						</span>
 					<?php endif; ?>
@@ -208,8 +221,14 @@ if ( $has_highlight ) {
 					?>
 					<td class="<?php echo esc_attr( implode( ' ', $cell_classes ) ); ?>">
 						<?php if ( $cta_enabled && '' !== $cta_url && '' !== $cta_text ) : ?>
-							<a href="<?php echo esc_url( $cta_url ); ?>" class="kdna-comparison__cta"<?php echo $target_attr . $rel_attr; ?>>
-								<?php echo esc_html( $cta_text ); ?>
+							<a href="<?php echo esc_url( $cta_url ); ?>" class="kdna-comparison__cta kdna-comparison__cta--icon-<?php echo esc_attr( $cta_icon_position ); ?>"<?php echo $target_attr . $rel_attr; ?>>
+								<?php if ( $cta_has_icon && 'before' === $cta_icon_position ) : ?>
+									<span class="kdna-comparison__cta-icon" aria-hidden="true"><?php \Elementor\Icons_Manager::render_icon( $cta_icon, array( 'aria-hidden' => 'true' ) ); ?></span>
+								<?php endif; ?>
+								<span class="kdna-comparison__cta-text"><?php echo esc_html( $cta_text ); ?></span>
+								<?php if ( $cta_has_icon && 'after' === $cta_icon_position ) : ?>
+									<span class="kdna-comparison__cta-icon" aria-hidden="true"><?php \Elementor\Icons_Manager::render_icon( $cta_icon, array( 'aria-hidden' => 'true' ) ); ?></span>
+								<?php endif; ?>
 							</a>
 						<?php endif; ?>
 					</td>
