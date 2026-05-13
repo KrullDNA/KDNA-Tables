@@ -65,6 +65,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 	protected function register_controls() {
 		$this->register_type_chooser_controls();
 		$this->register_general_content_controls();
+		$this->register_general_style_controls();
 		$this->register_change_type_controls();
 	}
 
@@ -568,6 +569,749 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 							),
 						),
 					),
+				),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	protected function register_general_style_controls() {
+		$general_condition = array( 'table_type' => 'general' );
+
+		// ─── Section: Table Wrapper ───────────────────────────────────────
+		$this->start_controls_section(
+			'section_general_style_wrapper',
+			array(
+				'label'     => esc_html__( 'Table Wrapper', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => $general_condition,
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			array(
+				'name'     => 'wrapper_background',
+				'label'    => esc_html__( 'Background', 'kdna-tables' ),
+				'types'    => array( 'classic', 'gradient' ),
+				'selector' => '{{WRAPPER}} .kdna-table__wrapper--general',
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			array(
+				'name'     => 'wrapper_border',
+				'selector' => '{{WRAPPER}} .kdna-table__wrapper--general',
+			)
+		);
+
+		$this->add_responsive_control(
+			'wrapper_border_radius',
+			array(
+				'label'      => esc_html__( 'Border Radius', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%', 'em' ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-table-border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Box_Shadow::get_type(),
+			array(
+				'name'     => 'wrapper_box_shadow',
+				'selector' => '{{WRAPPER}} .kdna-table__wrapper--general',
+			)
+		);
+
+		$this->add_responsive_control(
+			'wrapper_max_width',
+			array(
+				'label'      => esc_html__( 'Max Width', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%' ),
+				'range'      => array(
+					'px' => array( 'min' => 100, 'max' => 1600, 'step' => 1 ),
+					'%'  => array( 'min' => 1, 'max' => 100, 'step' => 1 ),
+				),
+				'selectors'  => array(
+					'{{WRAPPER}} .kdna-table__wrapper--general' => 'max-width: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'wrapper_alignment',
+			array(
+				'label'                => esc_html__( 'Alignment', 'kdna-tables' ),
+				'type'                 => \Elementor\Controls_Manager::CHOOSE,
+				'options'              => array(
+					'left'   => array(
+						'title' => esc_html__( 'Left', 'kdna-tables' ),
+						'icon'  => 'eicon-h-align-left',
+					),
+					'center' => array(
+						'title' => esc_html__( 'Centre', 'kdna-tables' ),
+						'icon'  => 'eicon-h-align-center',
+					),
+					'right'  => array(
+						'title' => esc_html__( 'Right', 'kdna-tables' ),
+						'icon'  => 'eicon-h-align-right',
+					),
+				),
+				'default'              => 'center',
+				'selectors_dictionary' => array(
+					'left'   => 'margin-right: auto; margin-left: 0;',
+					'center' => 'margin-left: auto; margin-right: auto;',
+					'right'  => 'margin-left: auto; margin-right: 0;',
+				),
+				'selectors'            => array(
+					'{{WRAPPER}} .kdna-table__wrapper--general' => '{{VALUE}}',
+				),
+				'condition'            => array(
+					'wrapper_max_width[size]!' => '',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'wrapper_padding',
+			array(
+				'label'      => esc_html__( 'Padding', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%', 'em' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .kdna-table__wrapper--general' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'caption_heading',
+			array(
+				'label'     => esc_html__( 'Caption', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'caption_typography',
+				'selector' => '{{WRAPPER}} .kdna-table--general .kdna-table__caption',
+			)
+		);
+
+		$this->add_control(
+			'caption_color',
+			array(
+				'label'     => esc_html__( 'Caption Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .kdna-table--general .kdna-table__caption' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'caption_alignment',
+			array(
+				'label'     => esc_html__( 'Caption Alignment', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::CHOOSE,
+				'options'   => array(
+					'left'   => array(
+						'title' => esc_html__( 'Left', 'kdna-tables' ),
+						'icon'  => 'eicon-text-align-left',
+					),
+					'center' => array(
+						'title' => esc_html__( 'Centre', 'kdna-tables' ),
+						'icon'  => 'eicon-text-align-center',
+					),
+					'right'  => array(
+						'title' => esc_html__( 'Right', 'kdna-tables' ),
+						'icon'  => 'eicon-text-align-right',
+					),
+				),
+				'default'   => 'left',
+				'selectors' => array(
+					'{{WRAPPER}} .kdna-table--general .kdna-table__caption' => 'text-align: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'caption_spacing',
+			array(
+				'label'      => esc_html__( 'Caption Spacing', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array(
+					'px' => array( 'min' => 0, 'max' => 100, 'step' => 1 ),
+				),
+				'selectors'  => array(
+					'{{WRAPPER}} .kdna-table--general .kdna-table__caption' => 'margin-bottom: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+
+		// ─── Section: Header Row ──────────────────────────────────────────
+		$this->start_controls_section(
+			'section_general_style_header',
+			array(
+				'label'     => esc_html__( 'Header Row', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => $general_condition,
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			array(
+				'name'     => 'header_bg',
+				'label'    => esc_html__( 'Background', 'kdna-tables' ),
+				'types'    => array( 'classic', 'gradient' ),
+				'selector' => '{{WRAPPER}} .kdna-table--general thead .kdna-table__cell',
+			)
+		);
+
+		$this->add_control(
+			'header_text_color',
+			array(
+				'label'     => esc_html__( 'Text Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}}' => '--kdna-table-header-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'header_typography',
+				'selector' => '{{WRAPPER}} .kdna-table--general thead .kdna-table__cell',
+			)
+		);
+
+		$this->add_responsive_control(
+			'header_padding',
+			array(
+				'label'      => esc_html__( 'Padding', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-table-header-padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'header_text_align',
+			array(
+				'label'                => esc_html__( 'Text Alignment', 'kdna-tables' ),
+				'type'                 => \Elementor\Controls_Manager::CHOOSE,
+				'options'              => array(
+					'inherit' => array(
+						'title' => esc_html__( 'Inherit', 'kdna-tables' ),
+						'icon'  => 'eicon-undo',
+					),
+					'left'    => array(
+						'title' => esc_html__( 'Left', 'kdna-tables' ),
+						'icon'  => 'eicon-text-align-left',
+					),
+					'center'  => array(
+						'title' => esc_html__( 'Centre', 'kdna-tables' ),
+						'icon'  => 'eicon-text-align-center',
+					),
+					'right'   => array(
+						'title' => esc_html__( 'Right', 'kdna-tables' ),
+						'icon'  => 'eicon-text-align-right',
+					),
+				),
+				'default'              => 'inherit',
+				'selectors_dictionary' => array(
+					'inherit' => '',
+				),
+				'selectors'            => array(
+					'{{WRAPPER}} .kdna-table--general thead .kdna-table__cell' => 'text-align: {{VALUE}};',
+				),
+				'description'          => esc_html__( 'Inherit keeps per-column and per-cell alignment.', 'kdna-tables' ),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			array(
+				'name'           => 'header_border',
+				'label'          => esc_html__( 'Bottom Edge Border', 'kdna-tables' ),
+				'selector'       => '{{WRAPPER}} .kdna-table--general thead .kdna-table__cell',
+				'fields_options' => array(
+					'border' => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-bottom-style: {{VALUE}};',
+						),
+					),
+					'width'  => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-bottom-width: {{TOP}}{{UNIT}};',
+						),
+					),
+					'color'  => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-bottom-color: {{VALUE}};',
+						),
+					),
+				),
+			)
+		);
+
+		$this->end_controls_section();
+
+		// ─── Section: First Column ────────────────────────────────────────
+		$this->start_controls_section(
+			'section_general_style_first_col',
+			array(
+				'label'     => esc_html__( 'First Column', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array(
+					'table_type'             => 'general',
+					'first_column_is_header' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'first_col_bg',
+			array(
+				'label'     => esc_html__( 'Background Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}}' => '--kdna-table-first-col-bg: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'first_col_text_color',
+			array(
+				'label'     => esc_html__( 'Text Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}}' => '--kdna-table-first-col-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'first_col_typography',
+				'selector' => '{{WRAPPER}} .kdna-table--general .kdna-table__cell--row-header',
+			)
+		);
+
+		$this->add_responsive_control(
+			'first_col_padding',
+			array(
+				'label'      => esc_html__( 'Padding', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .kdna-table--general .kdna-table__cell--row-header' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			array(
+				'name'           => 'first_col_separator_border',
+				'label'          => esc_html__( 'Right Edge Border', 'kdna-tables' ),
+				'selector'       => '{{WRAPPER}} .kdna-table--general .kdna-table__cell--row-header',
+				'fields_options' => array(
+					'border' => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-right-style: {{VALUE}};',
+						),
+					),
+					'width'  => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-right-width: {{TOP}}{{UNIT}};',
+						),
+					),
+					'color'  => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-right-color: {{VALUE}};',
+						),
+					),
+				),
+			)
+		);
+
+		$this->end_controls_section();
+
+		// ─── Section: Body Cells ──────────────────────────────────────────
+		$this->start_controls_section(
+			'section_general_style_body',
+			array(
+				'label'     => esc_html__( 'Body Cells', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => $general_condition,
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			array(
+				'name'     => 'body_bg_odd',
+				'label'    => esc_html__( 'Odd Row Background', 'kdna-tables' ),
+				'types'    => array( 'classic', 'gradient' ),
+				'selector' => '{{WRAPPER}} .kdna-table--general tbody .kdna-table__row--odd > .kdna-table__cell',
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			array(
+				'name'     => 'body_bg_even',
+				'label'    => esc_html__( 'Even Row Background', 'kdna-tables' ),
+				'types'    => array( 'classic', 'gradient' ),
+				'selector' => '{{WRAPPER}} .kdna-table--general tbody .kdna-table__row--even > .kdna-table__cell',
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'body_typography',
+				'selector' => '{{WRAPPER}} .kdna-table--general tbody .kdna-table__cell',
+			)
+		);
+
+		$this->add_control(
+			'body_text_color',
+			array(
+				'label'     => esc_html__( 'Text Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}}' => '--kdna-table-body-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'body_padding',
+			array(
+				'label'      => esc_html__( 'Padding', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em' ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-table-body-padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'body_text_align',
+			array(
+				'label'                => esc_html__( 'Text Alignment', 'kdna-tables' ),
+				'type'                 => \Elementor\Controls_Manager::CHOOSE,
+				'options'              => array(
+					'inherit' => array(
+						'title' => esc_html__( 'Inherit', 'kdna-tables' ),
+						'icon'  => 'eicon-undo',
+					),
+					'left'    => array(
+						'title' => esc_html__( 'Left', 'kdna-tables' ),
+						'icon'  => 'eicon-text-align-left',
+					),
+					'center'  => array(
+						'title' => esc_html__( 'Centre', 'kdna-tables' ),
+						'icon'  => 'eicon-text-align-center',
+					),
+					'right'   => array(
+						'title' => esc_html__( 'Right', 'kdna-tables' ),
+						'icon'  => 'eicon-text-align-right',
+					),
+				),
+				'default'              => 'inherit',
+				'selectors_dictionary' => array(
+					'inherit' => '',
+				),
+				'selectors'            => array(
+					'{{WRAPPER}} .kdna-table--general tbody .kdna-table__cell' => 'text-align: {{VALUE}};',
+				),
+				'description'          => esc_html__( 'Inherit keeps per-column and per-cell alignment.', 'kdna-tables' ),
+			)
+		);
+
+		$this->add_control(
+			'cell_border_per_side',
+			array(
+				'label'        => esc_html__( 'Border Per Side', 'kdna-tables' ),
+				'type'         => \Elementor\Controls_Manager::SWITCHER,
+				'label_on'     => esc_html__( 'On', 'kdna-tables' ),
+				'label_off'    => esc_html__( 'Off', 'kdna-tables' ),
+				'return_value' => 'yes',
+				'default'      => '',
+				'separator'    => 'before',
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			array(
+				'name'      => 'cell_border',
+				'selector'  => '{{WRAPPER}} .kdna-table--general .kdna-table__cell',
+				'condition' => array(
+					'cell_border_per_side!' => 'yes',
+				),
+			)
+		);
+
+		foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+			$this->add_group_control(
+				\Elementor\Group_Control_Border::get_type(),
+				array(
+					'name'           => 'cell_border_' . $side,
+					/* translators: %s: side of the cell border (top, right, bottom, left). */
+					'label'          => sprintf( esc_html__( '%s Border', 'kdna-tables' ), ucfirst( $side ) ),
+					'selector'       => '{{WRAPPER}} .kdna-table--general .kdna-table__cell',
+					'fields_options' => array(
+						'border' => array(
+							'selectors' => array(
+								'{{SELECTOR}}' => 'border-' . $side . '-style: {{VALUE}};',
+							),
+						),
+						'width'  => array(
+							'selectors' => array(
+								'{{SELECTOR}}' => 'border-' . $side . '-width: {{TOP}}{{UNIT}};',
+							),
+						),
+						'color'  => array(
+							'selectors' => array(
+								'{{SELECTOR}}' => 'border-' . $side . '-color: {{VALUE}};',
+							),
+						),
+					),
+					'condition'      => array(
+						'cell_border_per_side' => 'yes',
+					),
+				)
+			);
+		}
+
+		$this->add_control(
+			'row_hover_bg',
+			array(
+				'label'     => esc_html__( 'Row Hover Background', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'separator' => 'before',
+				'selectors' => array(
+					'{{WRAPPER}} .kdna-table--general tbody .kdna-table__row:hover > .kdna-table__cell' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'row_hover_transition_duration',
+			array(
+				'label'       => esc_html__( 'Hover Transition (ms)', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::NUMBER,
+				'min'         => 0,
+				'max'         => 2000,
+				'step'        => 10,
+				'default'     => 200,
+				'selectors'   => array(
+					'{{WRAPPER}}' => '--kdna-table-row-hover-transition: {{VALUE}}ms;',
+				),
+				'description' => esc_html__( 'Duration applied to row hover background transitions.', 'kdna-tables' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		// ─── Section: Cell Content ────────────────────────────────────────
+		$this->start_controls_section(
+			'section_general_style_content',
+			array(
+				'label'     => esc_html__( 'Cell Content', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => $general_condition,
+			)
+		);
+
+		$this->add_responsive_control(
+			'icon_size',
+			array(
+				'label'      => esc_html__( 'Icon Size', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', 'em' ),
+				'range'      => array(
+					'px' => array( 'min' => 8, 'max' => 200, 'step' => 1 ),
+					'em' => array( 'min' => 0.5, 'max' => 10, 'step' => 0.1 ),
+				),
+				'default'    => array(
+					'unit' => 'px',
+					'size' => 24,
+				),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-table-icon-size: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'icon_color',
+			array(
+				'label'     => esc_html__( 'Icon Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}}' => '--kdna-table-icon-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'icon_color_hover',
+			array(
+				'label'     => esc_html__( 'Icon Hover Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .kdna-table--general .kdna-table__cell:hover .kdna-table__cell-icon' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'icon_spacing',
+			array(
+				'label'      => esc_html__( 'Icon Spacing', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array(
+					'px' => array( 'min' => 0, 'max' => 60, 'step' => 1 ),
+				),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-table-cell-gap: {{SIZE}}{{UNIT}};',
+				),
+				'description' => esc_html__( 'Gap between an icon and adjacent text or image in a mixed cell.', 'kdna-tables' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'image_width',
+			array(
+				'label'      => esc_html__( 'Image Width', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%' ),
+				'range'      => array(
+					'px' => array( 'min' => 10, 'max' => 600, 'step' => 1 ),
+					'%'  => array( 'min' => 1, 'max' => 100, 'step' => 1 ),
+				),
+				'selectors'  => array(
+					'{{WRAPPER}} .kdna-table--general .kdna-table__cell-image img' => 'width: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'image_height',
+			array(
+				'label'      => esc_html__( 'Image Height', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%' ),
+				'range'      => array(
+					'px' => array( 'min' => 10, 'max' => 600, 'step' => 1 ),
+					'%'  => array( 'min' => 1, 'max' => 100, 'step' => 1 ),
+				),
+				'selectors'  => array(
+					'{{WRAPPER}} .kdna-table--general .kdna-table__cell-image img' => 'height: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'image_border_radius',
+			array(
+				'label'      => esc_html__( 'Image Border Radius', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .kdna-table--general .kdna-table__cell-image img' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'image_object_fit',
+			array(
+				'label'     => esc_html__( 'Image Fit', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::SELECT,
+				'options'   => array(
+					'cover'   => esc_html__( 'Cover', 'kdna-tables' ),
+					'contain' => esc_html__( 'Contain', 'kdna-tables' ),
+					'fill'    => esc_html__( 'Fill', 'kdna-tables' ),
+					'none'    => esc_html__( 'None', 'kdna-tables' ),
+				),
+				'default'   => 'cover',
+				'selectors' => array(
+					'{{WRAPPER}} .kdna-table--general .kdna-table__cell-image img' => 'object-fit: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+
+		// ─── Section: Table Layout ────────────────────────────────────────
+		$this->start_controls_section(
+			'section_general_style_layout',
+			array(
+				'label'     => esc_html__( 'Table Layout', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => $general_condition,
+			)
+		);
+
+		$this->add_control(
+			'border_collapse',
+			array(
+				'label'                => esc_html__( 'Border Collapse', 'kdna-tables' ),
+				'type'                 => \Elementor\Controls_Manager::SWITCHER,
+				'label_on'             => esc_html__( 'On', 'kdna-tables' ),
+				'label_off'            => esc_html__( 'Off', 'kdna-tables' ),
+				'return_value'         => 'yes',
+				'default'              => 'yes',
+				'selectors_dictionary' => array(
+					'yes' => 'collapse',
+					''    => 'separate',
+				),
+				'selectors'            => array(
+					'{{WRAPPER}} .kdna-table--general' => 'border-collapse: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'border_spacing',
+			array(
+				'label'      => esc_html__( 'Border Spacing', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array(
+					'px' => array( 'min' => 0, 'max' => 30, 'step' => 1 ),
+				),
+				'condition'  => array(
+					'border_collapse' => '',
+				),
+				'selectors'  => array(
+					'{{WRAPPER}} .kdna-table--general' => 'border-spacing: {{SIZE}}{{UNIT}};',
 				),
 			)
 		);
