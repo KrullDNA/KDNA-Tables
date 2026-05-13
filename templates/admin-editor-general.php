@@ -4,6 +4,10 @@
  * window.kdnaTablesInitialState (emitted by KDNA_Tables_Editor) and
  * serialises edits into a single hidden input on the post form.
  *
+ * Session 4 adds rich cell content: per-cell icon picker, image picker
+ * (wp.media), and arrangement controls. Column widths get a unit
+ * selector (% or px).
+ *
  * @package KDNA_Tables
  */
 
@@ -82,18 +86,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 							:aria-label="`<?php echo esc_js( __( 'Align column right', 'kdna-tables' ) ); ?>`"
 						>R</button>
 
-						<span class="kdna-editor__width" :title="`<?php echo esc_js( __( 'Width in %, 0 = auto', 'kdna-tables' ) ); ?>`">
+						<span
+							class="kdna-editor__width"
+							:title="`<?php echo esc_js( __( 'Column width, 0 = auto', 'kdna-tables' ) ); ?>`"
+						>
 							<input
 								class="kdna-editor__width-input"
 								type="number"
 								min="0"
-								max="100"
 								step="1"
 								:value="col.width"
 								@input="setColumnWidth(colIdx, $event.target.value)"
-								:aria-label="`<?php echo esc_js( __( 'Column width percent', 'kdna-tables' ) ); ?>`"
+								:aria-label="`<?php echo esc_js( __( 'Column width number', 'kdna-tables' ) ); ?>`"
 							/>
-							<span>%</span>
+							<select
+								class="kdna-editor__width-unit"
+								:value="col.width_unit"
+								@change="setColumnWidthUnit(colIdx, $event.target.value)"
+								:aria-label="`<?php echo esc_js( __( 'Column width unit', 'kdna-tables' ) ); ?>`"
+							>
+								<option value="%">%</option>
+								<option value="px">px</option>
+							</select>
 						</span>
 
 						<button
@@ -169,17 +183,65 @@ if ( ! defined( 'ABSPATH' ) ) {
 								isCellFocused(rowIdx, colIdx) ? 'is-focused' : ''
 							]"
 						>
-							<div
-								class="kdna-editor__cell-text"
-								contenteditable="plaintext-only"
-								role="textbox"
-								spellcheck="true"
-								x-init="$el.innerText = cell.text"
-								@input="setCellText(rowIdx, colIdx, $event.target.innerText)"
-								@focus="focusedCell = `${ rowIdx }-${ colIdx }`"
-								@blur="onCellBlur($event)"
-								@keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); $event.target.blur(); }"
-							></div>
+							<!-- Cell preview, multi-piece. Pieces stay in DOM order;
+							     visibility and order are controlled per piece so the
+							     contenteditable does not unmount on arrangement
+							     change (would lose cursor). -->
+							<div class="kdna-editor__cell-preview">
+								<!-- Icon piece -->
+								<span
+									class="kdna-editor__cell-piece kdna-editor__cell-piece--icon"
+									x-show="hasPiece(cell, 'icon')"
+									:style="`order: ${ pieceOrder(cell, 'icon') };`"
+								>
+									<i :class="iconClassesFor(cell)" aria-hidden="true"></i>
+									<button
+										type="button"
+										class="kdna-editor__icon-button kdna-editor__icon-button--danger kdna-editor__piece-remove"
+										@click="removeIcon(rowIdx, colIdx)"
+										:aria-label="`<?php echo esc_js( __( 'Remove icon', 'kdna-tables' ) ); ?>`"
+										title="<?php echo esc_attr__( 'Remove icon', 'kdna-tables' ); ?>"
+									>&times;</button>
+								</span>
+								<!-- Text piece. Always present in DOM so contenteditable
+								     keeps focus across content_types toggles. -->
+								<div
+									class="kdna-editor__cell-piece kdna-editor__cell-piece--text"
+									:style="`order: ${ pieceOrder(cell, 'text') };`"
+								>
+									<div
+										class="kdna-editor__cell-text"
+										contenteditable="plaintext-only"
+										role="textbox"
+										spellcheck="true"
+										x-init="$el.innerText = cell.text"
+										@input="setCellText(rowIdx, colIdx, $event.target.innerText)"
+										@focus="focusedCell = `${ rowIdx }-${ colIdx }`"
+										@blur="onCellBlur($event)"
+										@keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); $event.target.blur(); }"
+									></div>
+								</div>
+								<!-- Image piece -->
+								<span
+									class="kdna-editor__cell-piece kdna-editor__cell-piece--image"
+									x-show="hasPiece(cell, 'image')"
+									:style="`order: ${ pieceOrder(cell, 'image') };`"
+								>
+									<img
+										class="kdna-editor__cell-image-thumb"
+										:src="cell.image.url"
+										:alt="cell.image.alt || ''"
+									/>
+									<button
+										type="button"
+										class="kdna-editor__icon-button kdna-editor__icon-button--danger kdna-editor__piece-remove"
+										@click="removeImage(rowIdx, colIdx)"
+										:aria-label="`<?php echo esc_js( __( 'Remove image', 'kdna-tables' ) ); ?>`"
+										title="<?php echo esc_attr__( 'Remove image', 'kdna-tables' ); ?>"
+									>&times;</button>
+								</span>
+							</div>
+
 							<div class="kdna-editor__cell-toolbar" role="toolbar">
 								<button
 									type="button"
@@ -205,6 +267,42 @@ if ( ! defined( 'ABSPATH' ) ) {
 									@click="setAlignment(rowIdx, colIdx, cell.alignment === 'right' ? '' : 'right')"
 									:aria-label="`<?php echo esc_js( __( 'Override cell alignment to right', 'kdna-tables' ) ); ?>`"
 								>R</button>
+
+								<button
+									type="button"
+									class="kdna-editor__icon-button"
+									:class="hasPiece(cell, 'icon') ? 'is-active' : ''"
+									@mousedown.prevent
+									@click="openIconPicker(rowIdx, colIdx)"
+									:aria-label="`<?php echo esc_js( __( 'Add or change icon', 'kdna-tables' ) ); ?>`"
+									:title="hasPiece(cell, 'icon') ? `<?php echo esc_js( __( 'Change icon', 'kdna-tables' ) ); ?>` : `<?php echo esc_js( __( 'Add icon', 'kdna-tables' ) ); ?>`"
+								>
+									<span aria-hidden="true">&#9734;</span>
+								</button>
+								<button
+									type="button"
+									class="kdna-editor__icon-button"
+									:class="hasPiece(cell, 'image') ? 'is-active' : ''"
+									@mousedown.prevent
+									@click="openImagePicker(rowIdx, colIdx)"
+									:aria-label="`<?php echo esc_js( __( 'Add or change image', 'kdna-tables' ) ); ?>`"
+									:title="hasPiece(cell, 'image') ? `<?php echo esc_js( __( 'Change image', 'kdna-tables' ) ); ?>` : `<?php echo esc_js( __( 'Add image', 'kdna-tables' ) ); ?>`"
+								>
+									<span aria-hidden="true">&#9636;</span>
+								</button>
+
+								<select
+									class="kdna-editor__arrangement-select"
+									x-show="cell.content_types.length > 1"
+									:value="cell.arrangement"
+									@change="setArrangement(rowIdx, colIdx, $event.target.value)"
+									:aria-label="`<?php echo esc_js( __( 'Arrangement', 'kdna-tables' ) ); ?>`"
+									@mousedown.stop
+								>
+									<template x-for="opt in arrangementOptions(cell)" :key="opt">
+										<option :value="opt" x-text="formatArrangement(opt)"></option>
+									</template>
+								</select>
 							</div>
 						</div>
 					</template>
@@ -217,6 +315,64 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<?php esc_html_e( '+ Row', 'kdna-tables' ); ?>
 				</button>
 			</div>
+		</div>
+	</div>
+
+	<!-- Icon picker modal -->
+	<div
+		class="kdna-icon-picker__overlay"
+		x-show="iconPicker.open"
+		x-transition.opacity
+		@click.self="closeIconPicker()"
+		@keydown.escape.window="closeIconPicker()"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="kdna-icon-picker-title"
+	>
+		<div class="kdna-icon-picker">
+			<header class="kdna-icon-picker__header">
+				<h2 id="kdna-icon-picker-title" class="kdna-icon-picker__title">
+					<?php esc_html_e( 'Pick an icon', 'kdna-tables' ); ?>
+				</h2>
+				<button
+					type="button"
+					class="kdna-editor__icon-button"
+					@click="closeIconPicker()"
+					:aria-label="`<?php echo esc_js( __( 'Close icon picker', 'kdna-tables' ) ); ?>`"
+				>&times;</button>
+			</header>
+			<div class="kdna-icon-picker__controls">
+				<input
+					type="search"
+					class="kdna-icon-picker__search"
+					x-model.debounce.150ms="iconPicker.query"
+					x-ref="iconSearchInput"
+					placeholder="<?php esc_attr_e( 'Search icons by name or keyword', 'kdna-tables' ); ?>"
+				/>
+				<select x-model="iconPicker.library" class="kdna-icon-picker__library">
+					<option value=""><?php esc_html_e( 'All libraries', 'kdna-tables' ); ?></option>
+					<template x-for="lib in iconLibraries" :key="lib.key">
+						<option :value="lib.key" x-text="lib.label"></option>
+					</template>
+				</select>
+			</div>
+			<div class="kdna-icon-picker__grid" x-show="filteredIcons.length">
+				<template x-for="icon in filteredIcons" :key="icon.class">
+					<button
+						type="button"
+						class="kdna-icon-picker__item"
+						@click="selectIcon(icon)"
+						:aria-label="icon.name"
+						:title="icon.class"
+					>
+						<i :class="icon.class" aria-hidden="true"></i>
+						<span class="kdna-icon-picker__item-label" x-text="icon.name"></span>
+					</button>
+				</template>
+			</div>
+			<p class="kdna-icon-picker__empty" x-show="!filteredIcons.length">
+				<?php esc_html_e( 'No icons match. Try a different keyword.', 'kdna-tables' ); ?>
+			</p>
 		</div>
 	</div>
 </div>

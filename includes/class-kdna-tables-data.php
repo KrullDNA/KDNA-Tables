@@ -82,13 +82,20 @@ class KDNA_Tables_Data {
 				if ( ! is_array( $col ) ) {
 					continue;
 				}
+				$width      = isset( $col['width'] ) ? (float) $col['width'] : 0.0;
+				$width_unit = ( isset( $col['width_unit'] ) && 'px' === $col['width_unit'] ) ? 'px' : '%';
+				// render-general.php hardcodes '%' as the CSS unit. Until that
+				// template is updated to honour { unit }, emit size=0 for px
+				// so px-width columns gracefully fall back to auto-sized
+				// rather than being misrendered as percent.
+				$emit_size = ( '%' === $width_unit ) ? $width : 0.0;
 				$columns[] = array(
 					'_id'              => isset( $col['id'] ) ? (string) $col['id'] : '',
 					'column_label'     => isset( $col['label'] ) ? (string) $col['label'] : '',
 					'column_alignment' => self::legacy_alignment( $col['alignment'] ?? 'left', 'left' ),
 					'column_width'     => array(
-						'size' => isset( $col['width'] ) ? (float) $col['width'] : 0,
-						'unit' => ( isset( $col['width_unit'] ) && 'px' === $col['width_unit'] ) ? 'px' : '%',
+						'size' => $emit_size,
+						'unit' => $width_unit,
 					),
 				);
 			}
@@ -332,34 +339,53 @@ class KDNA_Tables_Data {
 	/**
 	 * Normalise the arrangement value into one of the four arrangements
 	 * the legacy renderer recognises (icon-text, text-icon, icon-text-image,
-	 * image-text-icon). The renderer falls back to icon-text otherwise.
+	 * image-text-icon).
+	 *
+	 * For new two-piece combos that legacy does not natively express
+	 * (text+image, icon+image), we map to a three-piece arrangement and
+	 * rely on the legacy piece-renderers returning empty strings for the
+	 * absent piece. That way the visible pieces stay in the order the
+	 * user picked without touching the locked render template.
 	 */
 	private static function resolve_legacy_arrangement( $arrangement, array $content_types ) {
-		$valid_two   = array( 'icon-text', 'text-icon' );
-		$valid_three = array( 'icon-text-image', 'image-text-icon' );
-
 		$has_text  = in_array( 'text', $content_types, true );
 		$has_icon  = in_array( 'icon', $content_types, true );
 		$has_image = in_array( 'image', $content_types, true );
 		$count     = (int) $has_text + (int) $has_icon + (int) $has_image;
 
+		// Three pieces.
 		if ( $count >= 3 ) {
-			return in_array( $arrangement, $valid_three, true ) ? $arrangement : 'icon-text-image';
+			// Legacy supports icon-text-image and image-text-icon. Map the
+			// six modern three-piece arrangements onto these two by checking
+			// the first piece (image-first => image-text-icon, else icon-text-image).
+			$first = is_string( $arrangement ) && false !== strpos( $arrangement, '-' )
+				? substr( $arrangement, 0, strpos( $arrangement, '-' ) )
+				: '';
+			return 'image' === $first ? 'image-text-icon' : 'icon-text-image';
 		}
-		// Two-piece. Map the new arrangement names onto the legacy set.
-		if ( in_array( $arrangement, $valid_two, true ) ) {
-			return $arrangement;
+
+		// Two pieces.
+		if ( $count === 2 ) {
+			$parts = is_string( $arrangement ) ? explode( '-', $arrangement ) : array();
+			$first = isset( $parts[0] ) ? $parts[0] : '';
+
+			// text + icon, legacy expresses this natively.
+			if ( $has_text && $has_icon && ! $has_image ) {
+				return 'text' === $first ? 'text-icon' : 'icon-text';
+			}
+			// text + image, map onto a three-piece, icon piece will render empty.
+			if ( $has_text && $has_image && ! $has_icon ) {
+				return 'image' === $first ? 'image-text-icon' : 'icon-text-image';
+			}
+			// icon + image, same trick.
+			if ( $has_icon && $has_image && ! $has_text ) {
+				return 'image' === $first ? 'image-text-icon' : 'icon-text-image';
+			}
 		}
-		switch ( $arrangement ) {
-			case 'image-text':
-			case 'image-icon':
-				return 'icon-text';
-			case 'text-image':
-			case 'text-icon':
-				return 'text-icon';
-			default:
-				return 'icon-text';
-		}
+
+		// Single piece or unknown. The icon-text default is harmless because
+		// only the present piece will render.
+		return 'icon-text';
 	}
 
 	private static function legacy_alignment( $value, $default ) {

@@ -433,3 +433,192 @@
 	border-radius: 4px;
 	font-size: 12px;
 }
+
+/*
+ * Session 4: rich cell content. The cell preview is a flex container
+ * whose pieces are CSS-order-controlled, so arrangement changes do not
+ * unmount the contenteditable text piece (keeps the cursor in place).
+ */
+
+.kdna-editor__cell-preview {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	min-height: 36px;
+}
+
+.kdna-editor__cell-piece {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.kdna-editor__cell-piece--text {
+	flex: 1 1 auto;
+	min-width: 80px;
+}
+
+.kdna-editor__cell-piece--icon i {
+	font-size: 18px;
+	line-height: 1;
+	color: var( --kdna-admin-text );
+}
+
+.kdna-editor__cell-piece--image .kdna-editor__cell-image-thumb {
+	display: block;
+	max-width: 48px;
+	max-height: 48px;
+	border-radius: 4px;
+	object-fit: cover;
+	background: var( --kdna-admin-surface );
+	border: 1px solid var( --kdna-admin-border );
+}
+
+.kdna-editor__piece-remove {
+	position: absolute;
+	top: -6px;
+	right: -6px;
+	width: 18px;
+	height: 18px;
+	min-width: 0;
+	padding: 0;
+	font-size: 11px;
+	line-height: 1;
+	background: var( --kdna-admin-bg );
+	border-radius: 50%;
+	opacity: 0;
+	transition: opacity 120ms ease;
+}
+
+.kdna-editor__cell:hover .kdna-editor__piece-remove,
+.kdna-editor__cell.is-focused .kdna-editor__piece-remove {
+	opacity: 1;
+}
+
+.kdna-editor__icon-button.is-active {
+	background: var( --kdna-admin-accent-soft );
+	border-color: var( --kdna-admin-accent );
+	color: var( --kdna-admin-accent );
+}
+
+.kdna-editor__arrangement-select {
+	height: 26px;
+	padding: 0 4px;
+	font-size: 12px;
+	border: 1px solid var( --kdna-admin-border );
+	border-radius: 4px;
+	background: var( --kdna-admin-bg );
+}
+
+.kdna-editor__width-unit {
+	height: 22px;
+	padding: 0 2px;
+	font-size: 11px;
+	border: 1px solid var( --kdna-admin-border );
+	border-radius: 4px;
+	background: var( --kdna-admin-bg );
+}
+
+/*
+ * Icon picker modal.
+ */
+
+.kdna-icon-picker__overlay {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding: 5vh 20px;
+	background: rgba( 17, 24, 39, 0.55 );
+	z-index: 1600;
+}
+
+.kdna-icon-picker {
+	display: flex;
+	flex-direction: column;
+	width: min( 720px, 100% );
+	max-height: 86vh;
+	background: var( --kdna-admin-bg );
+	border-radius: var( --kdna-admin-radius );
+	box-shadow: 0 20px 60px rgba( 0, 0, 0, 0.18 );
+	overflow: hidden;
+}
+
+.kdna-icon-picker__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 16px;
+	border-bottom: 1px solid var( --kdna-admin-border );
+}
+
+.kdna-icon-picker__title {
+	margin: 0;
+	font-size: 16px;
+}
+
+.kdna-icon-picker__controls {
+	display: grid;
+	grid-template-columns: 1fr 200px;
+	gap: 10px;
+	padding: 12px 16px;
+	border-bottom: 1px solid var( --kdna-admin-border );
+}
+
+.kdna-icon-picker__search,
+.kdna-icon-picker__library {
+	height: 32px;
+	padding: 4px 8px;
+}
+
+.kdna-icon-picker__grid {
+	display: grid;
+	grid-template-columns: repeat( auto-fill, minmax( 96px, 1fr ) );
+	gap: 8px;
+	padding: 12px 16px;
+	overflow-y: auto;
+}
+
+.kdna-icon-picker__item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-height: 80px;
+	padding: 10px 6px;
+	background: var( --kdna-admin-surface );
+	border: 1px solid var( --kdna-admin-border );
+	border-radius: var( --kdna-admin-radius );
+	cursor: pointer;
+	transition: background 120ms, border-color 120ms, transform 120ms;
+}
+
+.kdna-icon-picker__item:hover,
+.kdna-icon-picker__item:focus {
+	background: var( --kdna-admin-bg );
+	border-color: var( --kdna-admin-accent );
+	color: var( --kdna-admin-accent );
+	outline: none;
+	transform: translateY( -1px );
+}
+
+.kdna-icon-picker__item i {
+	font-size: 24px;
+}
+
+.kdna-icon-picker__item-label {
+	font-size: 11px;
+	line-height: 1.2;
+	color: var( --kdna-admin-text-soft );
+	text-align: center;
+}
+
+.kdna-icon-picker__empty {
+	padding: 32px 16px;
+	text-align: center;
+	color: var( --kdna-admin-text-soft );
+}

@@ -160,6 +160,18 @@ class KDNA_Tables_Editor {
 
 		wp_enqueue_style( self::STYLE_HANDLE_ADMIN );
 
+		// Session 4: icon stylesheets so the picker can render glyphs. We
+		// enqueue Elementor's registered handles when available, no-op
+		// when not. Both Elementor free and Pro register these on admin.
+		foreach ( array( 'elementor-icons', 'font-awesome-5-all', 'font-awesome' ) as $icon_handle ) {
+			if ( wp_style_is( $icon_handle, 'registered' ) ) {
+				wp_enqueue_style( $icon_handle );
+			}
+		}
+
+		// Session 4: the image picker uses wp.media().
+		wp_enqueue_media();
+
 		// Alpine boots immediately when its script tag is parsed in the
 		// footer (document.readyState is no longer 'loading' by then), so
 		// kdna-admin.js must execute first to register the component
@@ -191,6 +203,19 @@ class KDNA_Tables_Editor {
 				'before'
 			);
 		}
+
+		// Session 4: emit the icon catalogue URL + nonces. The editor JS
+		// pulls icons.json lazily on first paint so the initial render is
+		// not blocked by the metadata fetch.
+		wp_add_inline_script(
+			self::SCRIPT_HANDLE_ADMIN,
+			'window.KDNATablesAdmin = ' . wp_json_encode(
+				array(
+					'iconsUrl' => KDNA_TABLES_URL . 'assets/js/kdna-icons.json?ver=' . KDNA_TABLES_VERSION,
+				)
+			) . ';',
+			'before'
+		);
 	}
 
 	/**

@@ -29,10 +29,14 @@ class KDNA_Tables_CPT {
 	const VALID_BADGE_POSITIONS  = array( 'top-left', 'top-centre', 'top-right' );
 	const VALID_CONTENT_TYPES    = array( 'text', 'icon', 'image' );
 	const VALID_ARRANGEMENTS     = array(
+		// Two-piece, every ordered permutation of the three piece types.
 		'icon-text',
 		'text-icon',
 		'image-text',
 		'text-image',
+		'icon-image',
+		'image-icon',
+		// Three-piece, every ordered permutation.
 		'icon-text-image',
 		'image-text-icon',
 		'text-icon-image',
