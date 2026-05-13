@@ -53,6 +53,9 @@
 	--kdna-comparison-available-shape-radius: 50%;
 	--kdna-comparison-unavailable-color: #9ca3af;
 	--kdna-comparison-unavailable-size: 18px;
+	--kdna-comparison-unavailable-bg: transparent;
+	--kdna-comparison-unavailable-shape-size: 32px;
+	--kdna-comparison-unavailable-shape-radius: 50%;
 	--kdna-tooltip-bg: #1f2937;
 	--kdna-tooltip-color: #ffffff;
 	--kdna-tooltip-radius: 8px;
@@ -251,11 +254,26 @@
 }
 
 .kdna-comparison__indicator--unavailable {
+	width: var(--kdna-comparison-unavailable-shape-size);
+	height: var(--kdna-comparison-unavailable-shape-size);
+	border-radius: var(--kdna-comparison-unavailable-shape-radius);
+	background: var(--kdna-comparison-unavailable-bg);
 	color: var(--kdna-comparison-unavailable-color);
 	font-size: var(--kdna-comparison-unavailable-size);
 }
 
+.kdna-comparison__indicator--unavailable i,
+.kdna-comparison__indicator--unavailable svg {
+	width: 1em;
+	height: 1em;
+	display: inline-block;
+}
+
 .kdna-comparison__indicator--unavailable.kdna-comparison__indicator--text {
+	width: auto;
+	height: auto;
+	border-radius: 0;
+	background: transparent;
 	font-weight: 700;
 }
 

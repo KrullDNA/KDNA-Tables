@@ -2024,6 +2024,79 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'unavailable_bg',
+			array(
+				'label'       => esc_html__( 'Background Colour', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::COLOR,
+				'selectors'   => array(
+					'{{WRAPPER}}' => '--kdna-comparison-unavailable-bg: {{VALUE}};',
+				),
+				'description' => esc_html__( 'Background colour of the shape behind the indicator.', 'kdna-tables' ),
+				'condition'   => array(
+					'unavailable_mode!' => 'hidden',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'unavailable_bg_size',
+			array(
+				'label'      => esc_html__( 'Shape Size', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array(
+					'px' => array( 'min' => 10, 'max' => 120, 'step' => 1 ),
+				),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-comparison-unavailable-shape-size: {{SIZE}}{{UNIT}};',
+				),
+				'condition'  => array(
+					'unavailable_mode!' => 'hidden',
+				),
+			)
+		);
+
+		$this->add_control(
+			'unavailable_bg_shape',
+			array(
+				'label'                => esc_html__( 'Shape', 'kdna-tables' ),
+				'type'                 => \Elementor\Controls_Manager::CHOOSE,
+				'options'              => array(
+					'circle'         => array(
+						'title' => esc_html__( 'Circle', 'kdna-tables' ),
+						'icon'  => 'eicon-circle',
+					),
+					'square'         => array(
+						'title' => esc_html__( 'Square', 'kdna-tables' ),
+						'icon'  => 'eicon-square',
+					),
+					'rounded-square' => array(
+						'title' => esc_html__( 'Rounded Square', 'kdna-tables' ),
+						'icon'  => 'eicon-frame-expand',
+					),
+					'none'           => array(
+						'title' => esc_html__( 'None', 'kdna-tables' ),
+						'icon'  => 'eicon-ban',
+					),
+				),
+				'default'              => 'circle',
+				'selectors_dictionary' => array(
+					'circle'         => '50%',
+					'square'         => '0',
+					'rounded-square' => '8px',
+					'none'           => '0',
+				),
+				'selectors'            => array(
+					'{{WRAPPER}}' => '--kdna-comparison-unavailable-shape-radius: {{VALUE}};',
+				),
+				'description'          => esc_html__( 'Pick a shape, or set Background to transparent for no shape behind the indicator.', 'kdna-tables' ),
+				'condition'            => array(
+					'unavailable_mode!' => 'hidden',
+				),
+			)
+		);
+
 		$this->add_group_control(
 			\Elementor\Group_Control_Typography::get_type(),
 			array(
@@ -2879,8 +2952,17 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 
 		if ( 'icon' === $mode ) {
 			$icon = isset( $settings['unavailable_icon'] ) ? $settings['unavailable_icon'] : null;
+			// Defensive default: when the icon setting is missing or empty
+			// (e.g. unmigrated legacy data or settings stripped by Elementor's
+			// section conditions), fall back to fas fa-minus so the
+			// unavailable cell still shows a visible dash. Available
+			// indicator works on the same code path, so this keeps the two
+			// in parity on every page.
 			if ( empty( $icon ) || ( empty( $icon['value'] ) && empty( $icon['library'] ) ) ) {
-				return '';
+				$icon = array(
+					'value'   => 'fas fa-minus',
+					'library' => 'fa-solid',
+				);
 			}
 			ob_start();
 			echo '<span class="kdna-comparison__indicator kdna-comparison__indicator--unavailable">';
