@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: KDNA Tables
- * Description: An Elementor widget providing general data tables and product comparison tables, with three responsive modes per instance.
- * Version: 1.1.0
+ * Description: A reusable table library, with an Elementor widget that picks tables from the library and renders them. Supports general data tables and product comparison tables, with three responsive modes per instance.
+ * Version: 2.0.0
  * Author: KDNA
  * Text Domain: kdna-tables
  * Domain Path: /languages
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'KDNA_TABLES_VERSION', '1.1.0' );
+define( 'KDNA_TABLES_VERSION', '2.0.0' );
 define( 'KDNA_TABLES_FILE', __FILE__ );
 define( 'KDNA_TABLES_PATH', plugin_dir_path( __FILE__ ) );
 define( 'KDNA_TABLES_URL', plugin_dir_url( __FILE__ ) );
