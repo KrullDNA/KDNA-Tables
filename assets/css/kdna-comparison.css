@@ -1,0 +1,331 @@
+/*
+ * KDNA Tables, Comparison Table baseline styles.
+ *
+ * Session 4 scope: structural styling close to the Laseraid V-Series
+ * reference (black header bar, image then label in item cells, blue
+ * circular check indicators, dashes for missing features, alternating
+ * row backgrounds, highlighted column accent and badge). Full Style
+ * controls are added in Session 5.
+ *
+ * Selectors never target .elementor-widget-container.
+ */
+
+.kdna-table__wrapper--comparison {
+	--kdna-comparison-bg: #ffffff;
+	--kdna-comparison-border-color: #e5e7eb;
+	--kdna-comparison-border-radius: 12px;
+	--kdna-comparison-header-bg: #000000;
+	--kdna-comparison-header-color: #ffffff;
+	--kdna-comparison-header-padding: 24px 16px;
+	--kdna-comparison-body-bg-odd: #ffffff;
+	--kdna-comparison-body-bg-even: #f7f7f8;
+	--kdna-comparison-body-color: #1f2937;
+	--kdna-comparison-body-padding: 16px;
+	--kdna-comparison-label-color: #1f2937;
+	--kdna-comparison-label-description-color: #6b7280;
+	--kdna-comparison-item-image-size: 96px;
+	--kdna-comparison-item-image-spacing: 12px;
+	--kdna-comparison-item-label-size: 18px;
+	--kdna-comparison-item-sublabel-size: 13px;
+	--kdna-comparison-highlight-bg: #f0f4ff;
+	--kdna-comparison-highlight-border: #3362dd;
+	--kdna-comparison-badge-bg: #3362dd;
+	--kdna-comparison-badge-color: #ffffff;
+	--kdna-comparison-cta-bg: #000000;
+	--kdna-comparison-cta-color: #ffffff;
+	--kdna-comparison-cta-hover-bg: #3362dd;
+	--kdna-comparison-cta-hover-color: #ffffff;
+	--kdna-comparison-available-color: #ffffff;
+	--kdna-comparison-available-bg: #3362dd;
+	--kdna-comparison-available-icon-size: 16px;
+	--kdna-comparison-available-shape-size: 32px;
+	--kdna-comparison-unavailable-color: #9ca3af;
+	--kdna-comparison-unavailable-size: 18px;
+	--kdna-tooltip-bg: #1f2937;
+	--kdna-tooltip-color: #ffffff;
+	--kdna-tooltip-radius: 8px;
+	--kdna-tooltip-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+	border-radius: var(--kdna-comparison-border-radius);
+	overflow: hidden;
+	background: var(--kdna-comparison-bg);
+}
+
+/* ─── Table base ───────────────────────────────────────────────────── */
+
+.kdna-comparison {
+	width: 100%;
+	border-collapse: collapse;
+	border-spacing: 0;
+	color: var(--kdna-comparison-body-color);
+	background: var(--kdna-comparison-bg);
+	table-layout: auto;
+}
+
+/* ─── Header row ───────────────────────────────────────────────────── */
+
+.kdna-comparison thead .kdna-comparison__cell {
+	background: var(--kdna-comparison-header-bg);
+	color: var(--kdna-comparison-header-color);
+	padding: var(--kdna-comparison-header-padding);
+	vertical-align: bottom;
+	text-align: center;
+	position: relative;
+}
+
+.kdna-comparison thead .kdna-comparison__cell--head-label {
+	width: 1%;
+}
+
+.kdna-comparison__item {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+}
+
+.kdna-comparison__item-image {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: var(--kdna-comparison-item-image-spacing);
+}
+
+.kdna-comparison__item-image img {
+	display: block;
+	width: var(--kdna-comparison-item-image-size);
+	height: auto;
+	max-width: 100%;
+	object-fit: contain;
+}
+
+.kdna-comparison__item-label {
+	font-size: var(--kdna-comparison-item-label-size);
+	font-weight: 700;
+	line-height: 1.2;
+}
+
+.kdna-comparison__item-sublabel {
+	font-size: var(--kdna-comparison-item-sublabel-size);
+	font-weight: 400;
+	line-height: 1.3;
+	opacity: 0.85;
+}
+
+/* ─── Highlighted item, header column ─────────────────────────────── */
+
+.kdna-comparison--has-highlight thead .kdna-comparison__cell--highlighted {
+	background: var(--kdna-comparison-highlight-border);
+}
+
+.kdna-comparison__badge {
+	position: absolute;
+	top: -14px;
+	z-index: 2;
+	display: inline-block;
+	padding: 4px 10px;
+	border-radius: 999px;
+	background: var(--kdna-comparison-badge-bg);
+	color: var(--kdna-comparison-badge-color);
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	line-height: 1.4;
+	white-space: nowrap;
+}
+
+.kdna-comparison__badge--top-left {
+	left: 0;
+}
+
+.kdna-comparison__badge--top-centre {
+	left: 50%;
+	transform: translateX(-50%);
+}
+
+.kdna-comparison__badge--top-right {
+	right: 0;
+}
+
+/* ─── Body rows ────────────────────────────────────────────────────── */
+
+.kdna-comparison tbody .kdna-comparison__cell {
+	padding: var(--kdna-comparison-body-padding);
+	text-align: center;
+	vertical-align: middle;
+	border-top: 1px solid var(--kdna-comparison-border-color);
+}
+
+.kdna-comparison tbody .kdna-comparison__row--odd > .kdna-comparison__cell {
+	background: var(--kdna-comparison-body-bg-odd);
+}
+
+.kdna-comparison tbody .kdna-comparison__row--even > .kdna-comparison__cell {
+	background: var(--kdna-comparison-body-bg-even);
+}
+
+.kdna-comparison tbody .kdna-comparison__cell--label {
+	text-align: left;
+	color: var(--kdna-comparison-label-color);
+	position: relative;
+}
+
+.kdna-comparison__feature-label {
+	display: inline;
+	font-weight: 700;
+}
+
+.kdna-comparison__feature-description {
+	display: block;
+	margin-top: 2px;
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--kdna-comparison-label-description-color);
+}
+
+/* ─── Highlighted column, body and CTA ────────────────────────────── */
+
+.kdna-comparison--has-highlight tbody .kdna-comparison__cell--highlighted {
+	background: var(--kdna-comparison-highlight-bg);
+}
+
+/* ─── Indicators ──────────────────────────────────────────────────── */
+
+.kdna-comparison__indicator {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 1;
+}
+
+.kdna-comparison__indicator--available {
+	width: var(--kdna-comparison-available-shape-size);
+	height: var(--kdna-comparison-available-shape-size);
+	border-radius: 50%;
+	background: var(--kdna-comparison-available-bg);
+	color: var(--kdna-comparison-available-color);
+	font-size: var(--kdna-comparison-available-icon-size);
+}
+
+.kdna-comparison__indicator--available i,
+.kdna-comparison__indicator--available svg {
+	width: 1em;
+	height: 1em;
+	display: inline-block;
+}
+
+.kdna-comparison__indicator--unavailable {
+	color: var(--kdna-comparison-unavailable-color);
+	font-size: var(--kdna-comparison-unavailable-size);
+	font-weight: 700;
+}
+
+/* ─── Tooltip (CSS hover only this session) ───────────────────────── */
+
+.kdna-comparison__tooltip-wrap {
+	position: relative;
+	display: inline-block;
+	margin-left: 6px;
+	vertical-align: middle;
+}
+
+.kdna-comparison__tooltip-trigger {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	margin: 0;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+	border-radius: 50%;
+}
+
+.kdna-comparison__tooltip-trigger:focus {
+	outline: 2px solid var(--kdna-comparison-highlight-border);
+	outline-offset: 2px;
+}
+
+.kdna-comparison__tooltip-icon {
+	font-size: 14px;
+	line-height: 1;
+	opacity: 0.7;
+	transition: opacity 0.15s ease;
+}
+
+.kdna-comparison__tooltip-trigger:hover .kdna-comparison__tooltip-icon,
+.kdna-comparison__tooltip-trigger:focus .kdna-comparison__tooltip-icon {
+	opacity: 1;
+}
+
+.kdna-comparison__tooltip {
+	position: absolute;
+	bottom: calc(100% + 8px);
+	left: 50%;
+	transform: translate(-50%, 4px);
+	min-width: 160px;
+	max-width: 240px;
+	padding: 8px 12px;
+	background: var(--kdna-tooltip-bg);
+	color: var(--kdna-tooltip-color);
+	border-radius: var(--kdna-tooltip-radius);
+	box-shadow: var(--kdna-tooltip-shadow);
+	font-size: 12px;
+	line-height: 1.4;
+	text-align: left;
+	white-space: normal;
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition: opacity 0.15s ease, transform 0.15s ease;
+	z-index: 5;
+}
+
+.kdna-comparison__tooltip-trigger:hover ~ .kdna-comparison__tooltip,
+.kdna-comparison__tooltip-trigger:focus ~ .kdna-comparison__tooltip,
+.kdna-comparison__tooltip-wrap:focus-within .kdna-comparison__tooltip,
+.kdna-comparison__tooltip:hover {
+	opacity: 1;
+	visibility: visible;
+	transform: translate(-50%, 0);
+	pointer-events: auto;
+}
+
+/* ─── CTA row and buttons ─────────────────────────────────────────── */
+
+.kdna-comparison__row--cta > .kdna-comparison__cell {
+	padding: 20px 16px;
+	text-align: center;
+	border-top: 1px solid var(--kdna-comparison-border-color);
+	background: transparent;
+}
+
+.kdna-comparison--has-highlight .kdna-comparison__row--cta > .kdna-comparison__cell--highlighted {
+	background: var(--kdna-comparison-highlight-bg);
+}
+
+.kdna-comparison__cta {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 10px 22px;
+	border-radius: 999px;
+	background: var(--kdna-comparison-cta-bg);
+	color: var(--kdna-comparison-cta-color);
+	font-weight: 600;
+	line-height: 1.2;
+	text-decoration: none;
+	transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.kdna-comparison__cta:hover,
+.kdna-comparison__cta:focus {
+	background: var(--kdna-comparison-cta-hover-bg);
+	color: var(--kdna-comparison-cta-hover-color);
+	text-decoration: none;
+	outline: none;
+}

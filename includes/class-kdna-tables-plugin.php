@@ -12,10 +12,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class KDNA_Tables_Plugin {
 
-	const FRONTEND_STYLE_HANDLE = 'kdna-tables';
-	const EDITOR_STYLE_HANDLE   = 'kdna-tables-editor';
-	const EDITOR_SCRIPT_HANDLE  = 'kdna-tables-editor';
-	const CATEGORY_SLUG         = 'kdna-tables';
+	const FRONTEND_STYLE_HANDLE   = 'kdna-tables';
+	const COMPARISON_STYLE_HANDLE = 'kdna-comparison';
+	const EDITOR_STYLE_HANDLE     = 'kdna-tables-editor';
+	const EDITOR_SCRIPT_HANDLE    = 'kdna-tables-editor';
+	const CATEGORY_SLUG           = 'kdna-tables';
 
 	public static function load_textdomain() {
 		load_plugin_textdomain(
@@ -52,6 +53,18 @@ class KDNA_Tables_Plugin {
 			array(),
 			KDNA_TABLES_VERSION
 		);
+
+		/*
+		 * The comparison stylesheet is registered separately so it only
+		 * loads when a widget instance returns it from get_style_depends().
+		 * Pages with only General tables stay free of comparison CSS.
+		 */
+		wp_register_style(
+			self::COMPARISON_STYLE_HANDLE,
+			KDNA_TABLES_URL . 'assets/css/kdna-comparison.css',
+			array( self::FRONTEND_STYLE_HANDLE ),
+			KDNA_TABLES_VERSION
+		);
 	}
 
 	public static function enqueue_editor_styles() {
@@ -62,12 +75,19 @@ class KDNA_Tables_Plugin {
 			KDNA_TABLES_VERSION
 		);
 
-		// The editor preview iframe also needs the frontend stylesheet so
+		// The editor preview iframe also needs the frontend stylesheets so
 		// the widget renders with parity inside the Elementor canvas.
 		wp_enqueue_style(
 			self::FRONTEND_STYLE_HANDLE,
 			KDNA_TABLES_URL . 'assets/css/kdna-tables.css',
 			array(),
+			KDNA_TABLES_VERSION
+		);
+
+		wp_enqueue_style(
+			self::COMPARISON_STYLE_HANDLE,
+			KDNA_TABLES_URL . 'assets/css/kdna-comparison.css',
+			array( self::FRONTEND_STYLE_HANDLE ),
 			KDNA_TABLES_VERSION
 		);
 	}
