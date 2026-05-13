@@ -18,6 +18,7 @@ class KDNA_Tables_Admin {
 	const MENU_SLUG_TOOLS      = 'kdna-tables-tools';
 	const NONCE_CREATE_TABLE   = 'kdna_tables_create_table';
 	const NONCE_DUPLICATE      = 'kdna_tables_duplicate_table';
+	const NONCE_EDITOR_AJAX    = 'kdna_tables_editor_ajax';
 
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'register_menu' ) );
@@ -35,6 +36,43 @@ class KDNA_Tables_Admin {
 
 		add_filter( 'parent_file', array( __CLASS__, 'parent_file' ) );
 		add_filter( 'submenu_file', array( __CLASS__, 'submenu_file' ) );
+
+		// AJAX endpoint used by the Elementor editor JS to look up a table's
+		// type when the source dropdown changes. Authenticated only.
+		add_action( 'wp_ajax_kdna_tables_get_table_type', array( __CLASS__, 'ajax_get_table_type' ) );
+
+		// Localise the Elementor editor JS with the AJAX url and nonce.
+		add_action( 'elementor/editor/after_enqueue_scripts', array( __CLASS__, 'localize_editor_script' ), 20 );
+	}
+
+	public static function ajax_get_table_type() {
+		check_ajax_referer( self::NONCE_EDITOR_AJAX );
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => 'forbidden' ), 403 );
+		}
+		$table_id = isset( $_POST['table_id'] ) ? absint( $_POST['table_id'] ) : 0;
+		if ( $table_id <= 0 ) {
+			wp_send_json_success( array( 'type' => '' ) );
+		}
+		$type = KDNA_Tables_CPT::get_type( $table_id );
+		wp_send_json_success( array( 'type' => $type ) );
+	}
+
+	public static function localize_editor_script() {
+		// Hooked after Elementor's editor scripts so the plugin's editor JS
+		// is already registered, but only emits the global if the handle
+		// actually got enqueued.
+		if ( ! wp_script_is( KDNA_Tables_Plugin::EDITOR_SCRIPT_HANDLE, 'enqueued' ) ) {
+			return;
+		}
+		wp_localize_script(
+			KDNA_Tables_Plugin::EDITOR_SCRIPT_HANDLE,
+			'KDNATablesEditor',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( self::NONCE_EDITOR_AJAX ),
+			)
+		);
 	}
 
 	public static function register_menu() {

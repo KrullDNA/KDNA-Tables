@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-cpt.php';
+require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-data.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-admin.php';
 
 KDNA_Tables_CPT::init();

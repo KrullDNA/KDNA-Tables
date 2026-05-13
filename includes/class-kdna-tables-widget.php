@@ -37,24 +37,31 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 	}
 
 	/*
-	 * Style dependencies. Elementor only invokes get_style_depends() on
-	 * pages where at least one widget instance renders, so listing the
-	 * comparison and responsive stylesheets here still keeps them off
-	 * pages without the widget. We deliberately do not introspect the
-	 * instance settings: recent Elementor builds route both
-	 * get_settings() and Controls_Stack::get_data('settings') through
-	 * sanitize_settings(array $settings): array, which fatals when the
-	 * stored settings for a given instance happen to be null. The CSS
-	 * overhead of always loading the comparison and responsive
-	 * stylesheets is a small price for not crashing the editor preview
-	 * or front end on those instances.
+	 * Style dependencies. v2.0 widget settings are a small set of scalars
+	 * (selected_table_id, sticky, responsive_mode, indicators), so
+	 * get_settings_for_display() is safe to call here, unlike the v1.x
+	 * repeater-heavy settings that crashed sanitize_settings() on null.
+	 * The selected table's type comes from CPT meta, a single cheap query
+	 * gated on widget render.
 	 */
 	public function get_style_depends() {
-		return array(
-			KDNA_Tables_Plugin::FRONTEND_STYLE_HANDLE,
-			KDNA_Tables_Plugin::COMPARISON_STYLE_HANDLE,
-			KDNA_Tables_Plugin::RESPONSIVE_STYLE_HANDLE,
-		);
+		$deps = array( KDNA_Tables_Plugin::FRONTEND_STYLE_HANDLE );
+
+		$settings = $this->get_settings_for_display();
+		$table_id = isset( $settings['selected_table_id'] ) ? (int) $settings['selected_table_id'] : 0;
+		if ( $table_id > 0 && class_exists( 'KDNA_Tables_CPT' ) ) {
+			$type = KDNA_Tables_CPT::get_type( $table_id );
+			if ( 'comparison' === $type ) {
+				$deps[] = KDNA_Tables_Plugin::COMPARISON_STYLE_HANDLE;
+			}
+		}
+
+		$responsive_mode = isset( $settings['responsive_mode'] ) ? (string) $settings['responsive_mode'] : '';
+		if ( '' !== $responsive_mode && 'none' !== $responsive_mode ) {
+			$deps[] = KDNA_Tables_Plugin::RESPONSIVE_STYLE_HANDLE;
+		}
+
+		return $deps;
 	}
 
 	/*
@@ -84,8 +91,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 	}
 
 	protected function register_controls() {
-		$this->register_type_chooser_controls();
-		$this->register_general_content_controls();
+		$this->register_source_table_controls();
 		$this->register_general_style_controls();
 		$this->register_comparison_content_controls();
 		$this->register_comparison_style_controls();
@@ -95,13 +101,100 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		$this->register_sticky_style_controls();
 	}
 
+	/*
+	 * Source Table section. The only Content controls that own data are now
+	 * the Select Table dropdown and a hidden mirror of the picked table's
+	 * type. The hidden type drives all the type-conditioned Style sections,
+	 * with the editor JS updating it on dropdown change via AJAX.
+	 */
+	protected function register_source_table_controls() {
+		$this->start_controls_section(
+			'section_source',
+			array(
+				'label' => esc_html__( 'Source Table', 'kdna-tables' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
+			)
+		);
+
+		$this->add_control(
+			'selected_table_id',
+			array(
+				'label'        => esc_html__( 'Table', 'kdna-tables' ),
+				'type'         => \Elementor\Controls_Manager::SELECT,
+				'options'      => $this->get_table_options(),
+				'default'      => '',
+				'label_block'  => true,
+				'description'  => esc_html__( 'Pick a table from your library. Edit a table once, every widget instance using it updates.', 'kdna-tables' ),
+			)
+		);
+
+		$this->add_control(
+			'selected_table_manage_link',
+			array(
+				'type'            => \Elementor\Controls_Manager::RAW_HTML,
+				'raw'             => sprintf(
+					'<a href="%1$s" target="_blank" rel="noopener" class="kdna-tables-manage-link">%2$s</a>',
+					esc_url( admin_url( 'edit.php?post_type=kdna_table' ) ),
+					esc_html__( 'Manage tables', 'kdna-tables' )
+				),
+				'content_classes' => 'elementor-descriptor',
+			)
+		);
+
+		/*
+		 * Hidden mirror of the selected table's type. Editor JS keeps it in
+		 * sync with selected_table_id via AJAX so the type-conditioned Style
+		 * sections re-evaluate as soon as a different table is picked.
+		 */
+		$this->add_control(
+			'selected_table_type',
+			array(
+				'type'    => \Elementor\Controls_Manager::HIDDEN,
+				'default' => '',
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	private function get_table_options() {
+		$options = array( '' => esc_html__( 'Select a table', 'kdna-tables' ) );
+
+		if ( ! post_type_exists( 'kdna_table' ) ) {
+			return $options;
+		}
+
+		$tables = get_posts(
+			array(
+				'post_type'      => 'kdna_table',
+				'post_status'    => 'publish',
+				'numberposts'    => -1,
+				'orderby'        => 'title',
+				'order'          => 'ASC',
+				'fields'         => 'ids',
+				'suppress_filters' => true,
+			)
+		);
+
+		foreach ( $tables as $id ) {
+			$title = get_the_title( $id );
+			if ( '' === trim( $title ) ) {
+				/* translators: %d: post id */
+				$title = sprintf( esc_html__( 'Table #%d', 'kdna-tables' ), $id );
+			}
+			$options[ (string) $id ] = $title;
+		}
+
+		return $options;
+	}
+
 	protected function register_sticky_content_controls() {
 		$this->start_controls_section(
 			'section_sticky',
 			array(
 				'label'     => esc_html__( 'Sticky First Column', 'kdna-tables' ),
 				'tab'       => \Elementor\Controls_Manager::TAB_CONTENT,
-				'condition' => array( 'table_type!' => '' ),
+				'condition' => array( 'selected_table_id!' => '' ),
 			)
 		);
 
@@ -128,7 +221,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'label'     => esc_html__( 'Sticky Column', 'kdna-tables' ),
 				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
 				'condition' => array(
-					'table_type!'         => '',
+					'selected_table_id!'  => '',
 					'sticky_first_column' => 'yes',
 				),
 			)
@@ -194,456 +287,9 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		$this->end_controls_section();
 	}
 
-	protected function register_type_chooser_controls() {
-		$this->start_controls_section(
-			'section_table_type',
-			array(
-				'label' => esc_html__( 'Table Type', 'kdna-tables' ),
-				'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
-			)
-		);
-
-		/*
-		 * A native SELECT triggers Elementor's standard live-render
-		 * path, so switching types updates the canvas immediately
-		 * without the previous custom JS handler. The setting is
-		 * registered in this always-active section so its value is
-		 * always present in the settings payload Elementor sends to
-		 * PHP for rendering.
-		 */
-		$this->add_control(
-			'table_type',
-			array(
-				'label'       => esc_html__( 'Table Type', 'kdna-tables' ),
-				'type'        => \Elementor\Controls_Manager::SELECT,
-				'options'     => array(
-					''           => esc_html__( 'Choose a table type', 'kdna-tables' ),
-					'general'    => esc_html__( 'General Table', 'kdna-tables' ),
-					'comparison' => esc_html__( 'Comparison Table', 'kdna-tables' ),
-				),
-				'default'     => '',
-				'description' => esc_html__( 'Switch between General and Comparison at any time. Settings for each type are preserved, so switching back restores your existing content.', 'kdna-tables' ),
-			)
-		);
-
-		$this->end_controls_section();
-	}
-
-	protected function register_general_content_controls() {
-		// ─── Section: Table ───────────────────────────────────────────────
-		$this->start_controls_section(
-			'section_general_table',
-			array(
-				'label'     => esc_html__( 'Table', 'kdna-tables' ),
-				'tab'       => \Elementor\Controls_Manager::TAB_CONTENT,
-				'condition' => array(
-					'table_type' => 'general',
-				),
-			)
-		);
-
-		$this->add_control(
-			'caption',
-			array(
-				'label'       => esc_html__( 'Caption', 'kdna-tables' ),
-				'type'        => \Elementor\Controls_Manager::TEXT,
-				'default'     => '',
-				'placeholder' => esc_html__( 'Optional table caption', 'kdna-tables' ),
-				'dynamic'     => array( 'active' => true ),
-				'description' => esc_html__( 'Rendered as a <caption> element above the table.', 'kdna-tables' ),
-			)
-		);
-
-		$this->add_control(
-			'first_row_is_header',
-			array(
-				'label'        => esc_html__( 'First row is header', 'kdna-tables' ),
-				'type'         => \Elementor\Controls_Manager::SWITCHER,
-				'label_on'     => esc_html__( 'Yes', 'kdna-tables' ),
-				'label_off'    => esc_html__( 'No', 'kdna-tables' ),
-				'return_value' => 'yes',
-				'default'      => 'yes',
-				'description'  => esc_html__( 'When on, the first row in the Rows repeater is rendered as <thead> with <th> cells.', 'kdna-tables' ),
-			)
-		);
-
-		$this->add_control(
-			'first_column_is_header',
-			array(
-				'label'        => esc_html__( 'First column is header', 'kdna-tables' ),
-				'type'         => \Elementor\Controls_Manager::SWITCHER,
-				'label_on'     => esc_html__( 'Yes', 'kdna-tables' ),
-				'label_off'    => esc_html__( 'No', 'kdna-tables' ),
-				'return_value' => 'yes',
-				'default'      => '',
-				'description'  => esc_html__( 'When on, the first cell of every row is rendered as <th scope="row">.', 'kdna-tables' ),
-			)
-		);
-
-		$this->end_controls_section();
-
-		// ─── Section: Columns ─────────────────────────────────────────────
-		$this->start_controls_section(
-			'section_general_columns',
-			array(
-				'label'     => esc_html__( 'Columns', 'kdna-tables' ),
-				'tab'       => \Elementor\Controls_Manager::TAB_CONTENT,
-				'condition' => array(
-					'table_type' => 'general',
-				),
-			)
-		);
-
-		$columns_repeater = new \Elementor\Repeater();
-
-		$columns_repeater->add_control(
-			'column_label',
-			array(
-				'label'   => esc_html__( 'Label', 'kdna-tables' ),
-				'type'    => \Elementor\Controls_Manager::TEXT,
-				'default' => esc_html__( 'Column', 'kdna-tables' ),
-				'dynamic' => array( 'active' => true ),
-			)
-		);
-
-		$columns_repeater->add_control(
-			'column_alignment',
-			array(
-				'label'   => esc_html__( 'Alignment', 'kdna-tables' ),
-				'type'    => \Elementor\Controls_Manager::CHOOSE,
-				'options' => array(
-					'left'   => array(
-						'title' => esc_html__( 'Left', 'kdna-tables' ),
-						'icon'  => 'eicon-text-align-left',
-					),
-					'center' => array(
-						'title' => esc_html__( 'Centre', 'kdna-tables' ),
-						'icon'  => 'eicon-text-align-center',
-					),
-					'right'  => array(
-						'title' => esc_html__( 'Right', 'kdna-tables' ),
-						'icon'  => 'eicon-text-align-right',
-					),
-				),
-				'default' => 'left',
-			)
-		);
-
-		$columns_repeater->add_control(
-			'column_width',
-			array(
-				'label'       => esc_html__( 'Width (%)', 'kdna-tables' ),
-				'type'        => \Elementor\Controls_Manager::SLIDER,
-				'size_units'  => array( '%' ),
-				'range'       => array(
-					'%' => array(
-						'min'  => 0,
-						'max'  => 100,
-						'step' => 1,
-					),
-				),
-				'default'     => array(
-					'unit' => '%',
-					'size' => 0,
-				),
-				'description' => esc_html__( 'Set to 0 for automatic width.', 'kdna-tables' ),
-			)
-		);
-
-		$this->add_control(
-			'columns',
-			array(
-				'label'       => esc_html__( 'Columns', 'kdna-tables' ),
-				'type'        => \Elementor\Controls_Manager::REPEATER,
-				'fields'      => $columns_repeater->get_controls(),
-				'title_field' => '{{{ column_label }}}',
-				'default'     => array(
-					array(
-						'column_label'     => esc_html__( 'Column 1', 'kdna-tables' ),
-						'column_alignment' => 'left',
-					),
-					array(
-						'column_label'     => esc_html__( 'Column 2', 'kdna-tables' ),
-						'column_alignment' => 'left',
-					),
-					array(
-						'column_label'     => esc_html__( 'Column 3', 'kdna-tables' ),
-						'column_alignment' => 'left',
-					),
-				),
-				'description' => esc_html__( 'Maximum 10 columns. Any beyond the tenth are ignored on the front end.', 'kdna-tables' ),
-			)
-		);
-
-		$this->end_controls_section();
-
-		// ─── Section: Rows ────────────────────────────────────────────────
-		$this->start_controls_section(
-			'section_general_rows',
-			array(
-				'label'     => esc_html__( 'Rows', 'kdna-tables' ),
-				'tab'       => \Elementor\Controls_Manager::TAB_CONTENT,
-				'condition' => array(
-					'table_type' => 'general',
-				),
-			)
-		);
-
-		$cells_repeater = new \Elementor\Repeater();
-
-		$cells_repeater->add_control(
-			'cell_type',
-			array(
-				'label'   => esc_html__( 'Cell type', 'kdna-tables' ),
-				'type'    => \Elementor\Controls_Manager::SELECT,
-				'options' => array(
-					'text'  => esc_html__( 'Text', 'kdna-tables' ),
-					'icon'  => esc_html__( 'Icon', 'kdna-tables' ),
-					'image' => esc_html__( 'Image', 'kdna-tables' ),
-					'mixed' => esc_html__( 'Mixed', 'kdna-tables' ),
-				),
-				'default' => 'text',
-			)
-		);
-
-		$cells_repeater->add_control(
-			'cell_text',
-			array(
-				'label'      => esc_html__( 'Text', 'kdna-tables' ),
-				'type'       => \Elementor\Controls_Manager::TEXTAREA,
-				'default'    => '',
-				'dynamic'    => array( 'active' => true ),
-				'conditions' => array(
-					'relation' => 'or',
-					'terms'    => array(
-						array(
-							'name'     => 'cell_type',
-							'operator' => '==',
-							'value'    => 'text',
-						),
-						array(
-							'name'     => 'cell_type',
-							'operator' => '==',
-							'value'    => 'mixed',
-						),
-					),
-				),
-			)
-		);
-
-		$cells_repeater->add_control(
-			'cell_icon',
-			array(
-				'label'            => esc_html__( 'Icon', 'kdna-tables' ),
-				'type'             => \Elementor\Controls_Manager::ICONS,
-				'fa4compatibility' => 'cell_icon_fa',
-				'conditions'       => array(
-					'relation' => 'or',
-					'terms'    => array(
-						array(
-							'name'     => 'cell_type',
-							'operator' => '==',
-							'value'    => 'icon',
-						),
-						array(
-							'name'     => 'cell_type',
-							'operator' => '==',
-							'value'    => 'mixed',
-						),
-					),
-				),
-			)
-		);
-
-		$cells_repeater->add_control(
-			'cell_image',
-			array(
-				'label'      => esc_html__( 'Image', 'kdna-tables' ),
-				'type'       => \Elementor\Controls_Manager::MEDIA,
-				'dynamic'    => array( 'active' => true ),
-				'conditions' => array(
-					'relation' => 'or',
-					'terms'    => array(
-						array(
-							'name'     => 'cell_type',
-							'operator' => '==',
-							'value'    => 'image',
-						),
-						array(
-							'name'     => 'cell_type',
-							'operator' => '==',
-							'value'    => 'mixed',
-						),
-					),
-				),
-			)
-		);
-
-		$cells_repeater->add_group_control(
-			\Elementor\Group_Control_Image_Size::get_type(),
-			array(
-				'name'       => 'cell_image',
-				'label'      => esc_html__( 'Image size', 'kdna-tables' ),
-				'default'    => 'medium',
-				'conditions' => array(
-					'relation' => 'or',
-					'terms'    => array(
-						array(
-							'name'     => 'cell_type',
-							'operator' => '==',
-							'value'    => 'image',
-						),
-						array(
-							'name'     => 'cell_type',
-							'operator' => '==',
-							'value'    => 'mixed',
-						),
-					),
-				),
-			)
-		);
-
-		$cells_repeater->add_control(
-			'cell_arrangement',
-			array(
-				'label'     => esc_html__( 'Arrangement', 'kdna-tables' ),
-				'type'      => \Elementor\Controls_Manager::SELECT,
-				'options'   => array(
-					'icon-text'       => esc_html__( 'Icon, text', 'kdna-tables' ),
-					'text-icon'       => esc_html__( 'Text, icon', 'kdna-tables' ),
-					'icon-text-image' => esc_html__( 'Icon, text, image', 'kdna-tables' ),
-					'image-text-icon' => esc_html__( 'Image, text, icon', 'kdna-tables' ),
-				),
-				'default'   => 'icon-text',
-				'condition' => array(
-					'cell_type' => 'mixed',
-				),
-			)
-		);
-
-		$cells_repeater->add_control(
-			'cell_alignment_override',
-			array(
-				'label'   => esc_html__( 'Alignment override', 'kdna-tables' ),
-				'type'    => \Elementor\Controls_Manager::CHOOSE,
-				'options' => array(
-					'inherit' => array(
-						'title' => esc_html__( 'Inherit', 'kdna-tables' ),
-						'icon'  => 'eicon-undo',
-					),
-					'left'    => array(
-						'title' => esc_html__( 'Left', 'kdna-tables' ),
-						'icon'  => 'eicon-text-align-left',
-					),
-					'center'  => array(
-						'title' => esc_html__( 'Centre', 'kdna-tables' ),
-						'icon'  => 'eicon-text-align-center',
-					),
-					'right'   => array(
-						'title' => esc_html__( 'Right', 'kdna-tables' ),
-						'icon'  => 'eicon-text-align-right',
-					),
-				),
-				'default' => 'inherit',
-			)
-		);
-
-		$rows_repeater = new \Elementor\Repeater();
-
-		$rows_repeater->add_control(
-			'row_label',
-			array(
-				'label'       => esc_html__( 'Row label (internal)', 'kdna-tables' ),
-				'type'        => \Elementor\Controls_Manager::TEXT,
-				'default'     => esc_html__( 'Row', 'kdna-tables' ),
-				'description' => esc_html__( 'Used only as the editor title for this row. Not rendered on the front end.', 'kdna-tables' ),
-			)
-		);
-
-		/*
-		 * Cells are stored as a nested REPEATER inside each row. One cell
-		 * per column, ordered. Rendering pads any missing cells with empty
-		 * <td> elements so the structure stays intact when a row is short.
-		 */
-		$rows_repeater->add_control(
-			'cells',
-			array(
-				'label'       => esc_html__( 'Cells', 'kdna-tables' ),
-				'type'        => \Elementor\Controls_Manager::REPEATER,
-				'fields'      => $cells_repeater->get_controls(),
-				'title_field' => '<# if ( cell_text ) { #>{{{ cell_text }}}<# } else { #>{{{ cell_type }}}<# } #>',
-				'description' => esc_html__( 'Maximum 10 cells per row, in column order.', 'kdna-tables' ),
-			)
-		);
-
-		$this->add_control(
-			'rows',
-			array(
-				'label'       => esc_html__( 'Rows', 'kdna-tables' ),
-				'type'        => \Elementor\Controls_Manager::REPEATER,
-				'fields'      => $rows_repeater->get_controls(),
-				'title_field' => '{{{ row_label }}}',
-				'default'     => array(
-					array(
-						'row_label' => esc_html__( 'Heading row', 'kdna-tables' ),
-						'cells'     => array(
-							array(
-								'cell_type' => 'text',
-								'cell_text' => esc_html__( 'Heading 1', 'kdna-tables' ),
-							),
-							array(
-								'cell_type' => 'text',
-								'cell_text' => esc_html__( 'Heading 2', 'kdna-tables' ),
-							),
-							array(
-								'cell_type' => 'text',
-								'cell_text' => esc_html__( 'Heading 3', 'kdna-tables' ),
-							),
-						),
-					),
-					array(
-						'row_label' => esc_html__( 'Row 1', 'kdna-tables' ),
-						'cells'     => array(
-							array(
-								'cell_type' => 'text',
-								'cell_text' => esc_html__( 'Cell 1', 'kdna-tables' ),
-							),
-							array(
-								'cell_type' => 'text',
-								'cell_text' => esc_html__( 'Cell 2', 'kdna-tables' ),
-							),
-							array(
-								'cell_type' => 'text',
-								'cell_text' => esc_html__( 'Cell 3', 'kdna-tables' ),
-							),
-						),
-					),
-					array(
-						'row_label' => esc_html__( 'Row 2', 'kdna-tables' ),
-						'cells'     => array(
-							array(
-								'cell_type' => 'text',
-								'cell_text' => esc_html__( 'Cell 4', 'kdna-tables' ),
-							),
-							array(
-								'cell_type' => 'text',
-								'cell_text' => esc_html__( 'Cell 5', 'kdna-tables' ),
-							),
-							array(
-								'cell_type' => 'text',
-								'cell_text' => esc_html__( 'Cell 6', 'kdna-tables' ),
-							),
-						),
-					),
-				),
-			)
-		);
-
-		$this->end_controls_section();
-	}
 
 	protected function register_general_style_controls() {
-		$general_condition = array( 'table_type' => 'general' );
+		$general_condition = array( 'selected_table_type' => 'general' );
 
 		// ─── Section: Table Wrapper ───────────────────────────────────────
 		$this->start_controls_section(
@@ -940,15 +586,20 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		$this->end_controls_section();
 
 		// ─── Section: First Column ────────────────────────────────────────
+		/*
+		 * "First column" styles apply when the selected table marks its
+		 * first column as a header. Whether that flag is set lives in the
+		 * CPT now and is not mirrored back into widget settings, so the
+		 * section is gated on selected table type alone. Styles take no
+		 * effect when the selected table does not use a header column,
+		 * which is harmless.
+		 */
 		$this->start_controls_section(
 			'section_general_style_first_col',
 			array(
 				'label'     => esc_html__( 'First Column', 'kdna-tables' ),
 				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
-				'condition' => array(
-					'table_type'             => 'general',
-					'first_column_is_header' => 'yes',
-				),
+				'condition' => $general_condition,
 			)
 		);
 
@@ -1386,207 +1037,8 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 	}
 
 	protected function register_comparison_content_controls() {
-		$comparison_condition = array( 'table_type' => 'comparison' );
+		$comparison_condition = array( 'selected_table_type' => 'comparison' );
 
-		// ─── Section: Compared Items ──────────────────────────────────────
-		$this->start_controls_section(
-			'section_comparison_items',
-			array(
-				'label'     => esc_html__( 'Compared Items', 'kdna-tables' ),
-				'tab'       => \Elementor\Controls_Manager::TAB_CONTENT,
-				'condition' => $comparison_condition,
-			)
-		);
-
-		$item_repeater = new \Elementor\Repeater();
-
-		$item_repeater->add_control(
-			'item_image',
-			array(
-				'label'   => esc_html__( 'Image', 'kdna-tables' ),
-				'type'    => \Elementor\Controls_Manager::MEDIA,
-				'dynamic' => array( 'active' => true ),
-			)
-		);
-
-		$item_repeater->add_group_control(
-			\Elementor\Group_Control_Image_Size::get_type(),
-			array(
-				'name'    => 'item_image',
-				'label'   => esc_html__( 'Image Size', 'kdna-tables' ),
-				'default' => 'medium',
-			)
-		);
-
-		$item_repeater->add_control(
-			'item_label',
-			array(
-				'label'   => esc_html__( 'Label', 'kdna-tables' ),
-				'type'    => \Elementor\Controls_Manager::TEXT,
-				'default' => esc_html__( 'Item', 'kdna-tables' ),
-				'dynamic' => array( 'active' => true ),
-			)
-		);
-
-		$item_repeater->add_control(
-			'item_sublabel',
-			array(
-				'label'       => esc_html__( 'Sublabel', 'kdna-tables' ),
-				'type'        => \Elementor\Controls_Manager::TEXT,
-				'default'     => '',
-				'placeholder' => esc_html__( 'Optional sublabel', 'kdna-tables' ),
-				'dynamic'     => array( 'active' => true ),
-			)
-		);
-
-		$item_repeater->add_control(
-			'cta_enable',
-			array(
-				'label'        => esc_html__( 'Enable CTA', 'kdna-tables' ),
-				'type'         => \Elementor\Controls_Manager::SWITCHER,
-				'label_on'     => esc_html__( 'On', 'kdna-tables' ),
-				'label_off'    => esc_html__( 'Off', 'kdna-tables' ),
-				'return_value' => 'yes',
-				'default'      => '',
-				'separator'    => 'before',
-			)
-		);
-
-		$item_repeater->add_control(
-			'cta_text',
-			array(
-				'label'     => esc_html__( 'CTA Text', 'kdna-tables' ),
-				'type'      => \Elementor\Controls_Manager::TEXT,
-				'default'   => esc_html__( 'Enquire', 'kdna-tables' ),
-				'condition' => array( 'cta_enable' => 'yes' ),
-				'dynamic'   => array( 'active' => true ),
-			)
-		);
-
-		$item_repeater->add_control(
-			'cta_url',
-			array(
-				'label'         => esc_html__( 'CTA URL', 'kdna-tables' ),
-				'type'          => \Elementor\Controls_Manager::URL,
-				'placeholder'   => 'https://example.com',
-				'show_external' => true,
-				'default'       => array(
-					'url'         => '',
-					'is_external' => '',
-					'nofollow'    => '',
-				),
-				'condition'     => array( 'cta_enable' => 'yes' ),
-				'dynamic'       => array( 'active' => true ),
-			)
-		);
-
-		$this->add_control(
-			'items',
-			array(
-				'label'       => esc_html__( 'Items', 'kdna-tables' ),
-				'type'        => \Elementor\Controls_Manager::REPEATER,
-				'fields'      => $item_repeater->get_controls(),
-				'title_field' => '{{{ item_label }}}',
-				'default'     => array(
-					array(
-						'item_label'    => esc_html__( 'Plan 1', 'kdna-tables' ),
-						'item_sublabel' => esc_html__( 'Starter', 'kdna-tables' ),
-					),
-					array(
-						'item_label'    => esc_html__( 'Plan 2', 'kdna-tables' ),
-						'item_sublabel' => esc_html__( 'Standard', 'kdna-tables' ),
-					),
-					array(
-						'item_label'    => esc_html__( 'Plan 3', 'kdna-tables' ),
-						'item_sublabel' => esc_html__( 'Premium', 'kdna-tables' ),
-					),
-				),
-				'description' => esc_html__( 'Minimum 2, maximum 6 items. Additional items are ignored on the front end.', 'kdna-tables' ),
-			)
-		);
-
-		/*
-		 * Hidden mirror of the items repeater length. Editor JS keeps this
-		 * in sync so the per-item cell control groups inside the Feature
-		 * Rows repeater can use it for visibility conditions. The renderer
-		 * also caps to the live items count, so this control is purely a
-		 * panel UX aid, not a data dependency.
-		 */
-		$this->add_control(
-			'item_count',
-			array(
-				'label'   => esc_html__( 'Item count', 'kdna-tables' ),
-				'type'    => \Elementor\Controls_Manager::HIDDEN,
-				'default' => '3',
-			)
-		);
-
-		$this->end_controls_section();
-
-		// ─── Section: Highlighted Item ────────────────────────────────────
-		$this->start_controls_section(
-			'section_comparison_highlight',
-			array(
-				'label'     => esc_html__( 'Highlighted Item', 'kdna-tables' ),
-				'tab'       => \Elementor\Controls_Manager::TAB_CONTENT,
-				'condition' => $comparison_condition,
-			)
-		);
-
-		$this->add_control(
-			'highlight_item',
-			array(
-				'label'   => esc_html__( 'Highlight Item', 'kdna-tables' ),
-				'type'    => \Elementor\Controls_Manager::SELECT,
-				'options' => array(
-					''  => esc_html__( 'None', 'kdna-tables' ),
-					'1' => esc_html__( 'Item 1', 'kdna-tables' ),
-					'2' => esc_html__( 'Item 2', 'kdna-tables' ),
-					'3' => esc_html__( 'Item 3', 'kdna-tables' ),
-					'4' => esc_html__( 'Item 4', 'kdna-tables' ),
-					'5' => esc_html__( 'Item 5', 'kdna-tables' ),
-					'6' => esc_html__( 'Item 6', 'kdna-tables' ),
-				),
-				'default' => '',
-			)
-		);
-
-		$this->add_control(
-			'highlight_badge_text',
-			array(
-				'label'     => esc_html__( 'Badge Text', 'kdna-tables' ),
-				'type'      => \Elementor\Controls_Manager::TEXT,
-				'default'   => esc_html__( 'Most Popular', 'kdna-tables' ),
-				'condition' => array( 'highlight_item!' => '' ),
-				'dynamic'   => array( 'active' => true ),
-			)
-		);
-
-		$this->add_control(
-			'highlight_badge_position',
-			array(
-				'label'     => esc_html__( 'Badge Position', 'kdna-tables' ),
-				'type'      => \Elementor\Controls_Manager::CHOOSE,
-				'options'   => array(
-					'top-left'   => array(
-						'title' => esc_html__( 'Top Left', 'kdna-tables' ),
-						'icon'  => 'eicon-h-align-left',
-					),
-					'top-centre' => array(
-						'title' => esc_html__( 'Top Centre', 'kdna-tables' ),
-						'icon'  => 'eicon-h-align-center',
-					),
-					'top-right'  => array(
-						'title' => esc_html__( 'Top Right', 'kdna-tables' ),
-						'icon'  => 'eicon-h-align-right',
-					),
-				),
-				'default'   => 'top-right',
-				'condition' => array( 'highlight_item!' => '' ),
-			)
-		);
-
-		$this->end_controls_section();
 
 		// ─── Section: Cell Indicators ─────────────────────────────────────
 		$this->start_controls_section(
@@ -1649,345 +1101,10 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 
 		$this->end_controls_section();
 
-		// ─── Section: Feature Rows ────────────────────────────────────────
-		$this->start_controls_section(
-			'section_comparison_features',
-			array(
-				'label'     => esc_html__( 'Feature Rows', 'kdna-tables' ),
-				'tab'       => \Elementor\Controls_Manager::TAB_CONTENT,
-				'condition' => $comparison_condition,
-			)
-		);
-
-		$feature_repeater = new \Elementor\Repeater();
-
-		$feature_repeater->add_control(
-			'feature_label',
-			array(
-				'label'   => esc_html__( 'Feature Label', 'kdna-tables' ),
-				'type'    => \Elementor\Controls_Manager::TEXT,
-				'default' => esc_html__( 'Feature', 'kdna-tables' ),
-				'dynamic' => array( 'active' => true ),
-			)
-		);
-
-		$feature_repeater->add_control(
-			'feature_description',
-			array(
-				'label'       => esc_html__( 'Description', 'kdna-tables' ),
-				'type'        => \Elementor\Controls_Manager::TEXTAREA,
-				'default'     => '',
-				'rows'        => 2,
-				'placeholder' => esc_html__( 'Optional short description shown below the label.', 'kdna-tables' ),
-				'dynamic'     => array( 'active' => true ),
-			)
-		);
-
-		$feature_repeater->add_control(
-			'feature_tooltip',
-			array(
-				'label'       => esc_html__( 'Tooltip', 'kdna-tables' ),
-				'type'        => \Elementor\Controls_Manager::TEXTAREA,
-				'default'     => '',
-				'rows'        => 2,
-				'description' => esc_html__( 'When filled, an info icon appears next to the feature label and reveals this text on hover or touch.', 'kdna-tables' ),
-				'dynamic'     => array( 'active' => true ),
-			)
-		);
-
-		/*
-		 * Hard-capped per-item cell control groups. The brief calls for one
-		 * group per maximum item slot, conditionally hidden based on item
-		 * count. Conditions reference the top-level item_count setting,
-		 * which the editor JS keeps in sync with the items repeater length.
-		 * If Elementor's panel does not honour the cross-scope condition
-		 * inside this repeater, the renderer still caps cells to the live
-		 * items count so the front end is correct either way.
-		 */
-		for ( $n = 1; $n <= 6; $n++ ) {
-			$slot_conditions = array(
-				'relation' => 'and',
-				'terms'    => array(
-					array(
-						'name'     => 'item_count',
-						'operator' => '>=',
-						'value'    => $n,
-					),
-				),
-			);
-
-			$feature_repeater->add_control(
-				'cell_' . $n . '_heading',
-				array(
-					/* translators: %d: slot number (1 to 6). */
-					'label'      => sprintf( esc_html__( 'Item %d Cell', 'kdna-tables' ), $n ),
-					'type'       => \Elementor\Controls_Manager::HEADING,
-					'separator'  => 'before',
-					'conditions' => $slot_conditions,
-				)
-			);
-
-			$feature_repeater->add_control(
-				'cell_' . $n . '_indicator',
-				array(
-					'label'       => esc_html__( 'Indicator', 'kdna-tables' ),
-					'type'        => \Elementor\Controls_Manager::CHOOSE,
-					'options'     => array(
-						'available'   => array(
-							'title' => esc_html__( 'Available', 'kdna-tables' ),
-							'icon'  => 'eicon-check-circle',
-						),
-						'unavailable' => array(
-							'title' => esc_html__( 'Unavailable', 'kdna-tables' ),
-							'icon'  => 'eicon-close-circle',
-						),
-						'custom'      => array(
-							'title' => esc_html__( 'Custom', 'kdna-tables' ),
-							'icon'  => 'eicon-edit',
-						),
-					),
-					'default'     => 'available',
-					'toggle'      => false,
-					'description' => esc_html__( 'Tick for available, cross for unavailable, pencil to write a custom value (text, icon, image or mixed).', 'kdna-tables' ),
-					'conditions'  => $slot_conditions,
-				)
-			);
-
-			$feature_repeater->add_control(
-				'cell_' . $n . '_custom_type',
-				array(
-					'label'      => esc_html__( 'Custom Type', 'kdna-tables' ),
-					'type'       => \Elementor\Controls_Manager::SELECT,
-					'options'    => array(
-						'text'  => esc_html__( 'Text', 'kdna-tables' ),
-						'icon'  => esc_html__( 'Icon', 'kdna-tables' ),
-						'image' => esc_html__( 'Image', 'kdna-tables' ),
-						'mixed' => esc_html__( 'Mixed', 'kdna-tables' ),
-					),
-					'default'    => 'text',
-					'conditions' => array(
-						'relation' => 'and',
-						'terms'    => array(
-							array(
-								'name'     => 'item_count',
-								'operator' => '>=',
-								'value'    => $n,
-							),
-							array(
-								'name'     => 'cell_' . $n . '_indicator',
-								'operator' => '==',
-								'value'    => 'custom',
-							),
-						),
-					),
-				)
-			);
-
-			$feature_repeater->add_control(
-				'cell_' . $n . '_text',
-				array(
-					'label'      => esc_html__( 'Text', 'kdna-tables' ),
-					'type'       => \Elementor\Controls_Manager::TEXTAREA,
-					'default'    => '',
-					'rows'       => 2,
-					'dynamic'    => array( 'active' => true ),
-					'conditions' => array(
-						'relation' => 'and',
-						'terms'    => array(
-							array(
-								'name'     => 'item_count',
-								'operator' => '>=',
-								'value'    => $n,
-							),
-							array(
-								'name'     => 'cell_' . $n . '_indicator',
-								'operator' => '==',
-								'value'    => 'custom',
-							),
-							array(
-								'name'     => 'cell_' . $n . '_custom_type',
-								'operator' => 'in',
-								'value'    => array( 'text', 'mixed' ),
-							),
-						),
-					),
-				)
-			);
-
-			$feature_repeater->add_control(
-				'cell_' . $n . '_icon',
-				array(
-					'label'      => esc_html__( 'Icon', 'kdna-tables' ),
-					'type'       => \Elementor\Controls_Manager::ICONS,
-					'conditions' => array(
-						'relation' => 'and',
-						'terms'    => array(
-							array(
-								'name'     => 'item_count',
-								'operator' => '>=',
-								'value'    => $n,
-							),
-							array(
-								'name'     => 'cell_' . $n . '_indicator',
-								'operator' => '==',
-								'value'    => 'custom',
-							),
-							array(
-								'name'     => 'cell_' . $n . '_custom_type',
-								'operator' => 'in',
-								'value'    => array( 'icon', 'mixed' ),
-							),
-						),
-					),
-				)
-			);
-
-			$feature_repeater->add_control(
-				'cell_' . $n . '_image',
-				array(
-					'label'      => esc_html__( 'Image', 'kdna-tables' ),
-					'type'       => \Elementor\Controls_Manager::MEDIA,
-					'dynamic'    => array( 'active' => true ),
-					'conditions' => array(
-						'relation' => 'and',
-						'terms'    => array(
-							array(
-								'name'     => 'item_count',
-								'operator' => '>=',
-								'value'    => $n,
-							),
-							array(
-								'name'     => 'cell_' . $n . '_indicator',
-								'operator' => '==',
-								'value'    => 'custom',
-							),
-							array(
-								'name'     => 'cell_' . $n . '_custom_type',
-								'operator' => 'in',
-								'value'    => array( 'image', 'mixed' ),
-							),
-						),
-					),
-				)
-			);
-
-			$feature_repeater->add_group_control(
-				\Elementor\Group_Control_Image_Size::get_type(),
-				array(
-					'name'       => 'cell_' . $n . '_image',
-					'label'      => esc_html__( 'Image Size', 'kdna-tables' ),
-					'default'    => 'medium',
-					'conditions' => array(
-						'relation' => 'and',
-						'terms'    => array(
-							array(
-								'name'     => 'item_count',
-								'operator' => '>=',
-								'value'    => $n,
-							),
-							array(
-								'name'     => 'cell_' . $n . '_indicator',
-								'operator' => '==',
-								'value'    => 'custom',
-							),
-							array(
-								'name'     => 'cell_' . $n . '_custom_type',
-								'operator' => 'in',
-								'value'    => array( 'image', 'mixed' ),
-							),
-						),
-					),
-				)
-			);
-
-			$feature_repeater->add_control(
-				'cell_' . $n . '_arrangement',
-				array(
-					'label'      => esc_html__( 'Arrangement', 'kdna-tables' ),
-					'type'       => \Elementor\Controls_Manager::SELECT,
-					'options'    => array(
-						'icon-text'       => esc_html__( 'Icon, text', 'kdna-tables' ),
-						'text-icon'       => esc_html__( 'Text, icon', 'kdna-tables' ),
-						'icon-text-image' => esc_html__( 'Icon, text, image', 'kdna-tables' ),
-						'image-text-icon' => esc_html__( 'Image, text, icon', 'kdna-tables' ),
-					),
-					'default'    => 'icon-text',
-					'conditions' => array(
-						'relation' => 'and',
-						'terms'    => array(
-							array(
-								'name'     => 'item_count',
-								'operator' => '>=',
-								'value'    => $n,
-							),
-							array(
-								'name'     => 'cell_' . $n . '_indicator',
-								'operator' => '==',
-								'value'    => 'custom',
-							),
-							array(
-								'name'     => 'cell_' . $n . '_custom_type',
-								'operator' => '==',
-								'value'    => 'mixed',
-							),
-						),
-					),
-				)
-			);
-		}
-
-		$this->add_control(
-			'feature_rows',
-			array(
-				'label'       => esc_html__( 'Feature Rows', 'kdna-tables' ),
-				'type'        => \Elementor\Controls_Manager::REPEATER,
-				'fields'      => $feature_repeater->get_controls(),
-				'title_field' => '{{{ feature_label }}}',
-				'default'     => array(
-					array(
-						'feature_label'       => esc_html__( 'Feature one', 'kdna-tables' ),
-						'feature_description' => esc_html__( 'Short description of this feature.', 'kdna-tables' ),
-						'cell_1_indicator'    => 'available',
-						'cell_2_indicator'    => 'available',
-						'cell_3_indicator'    => 'available',
-					),
-					array(
-						'feature_label'       => esc_html__( 'Feature two', 'kdna-tables' ),
-						'feature_description' => esc_html__( 'Short description of this feature.', 'kdna-tables' ),
-						'cell_1_indicator'    => 'unavailable',
-						'cell_2_indicator'    => 'available',
-						'cell_3_indicator'    => 'available',
-					),
-					array(
-						'feature_label'       => esc_html__( 'Feature three', 'kdna-tables' ),
-						'feature_description' => esc_html__( 'Short description of this feature.', 'kdna-tables' ),
-						'cell_1_indicator'    => 'unavailable',
-						'cell_2_indicator'    => 'unavailable',
-						'cell_3_indicator'    => 'available',
-					),
-					array(
-						'feature_label'       => esc_html__( 'Feature four', 'kdna-tables' ),
-						'feature_description' => esc_html__( 'Short description of this feature.', 'kdna-tables' ),
-						'cell_1_indicator'    => 'available',
-						'cell_2_indicator'    => 'available',
-						'cell_3_indicator'    => 'available',
-					),
-					array(
-						'feature_label'       => esc_html__( 'Feature five', 'kdna-tables' ),
-						'feature_description' => esc_html__( 'Short description of this feature.', 'kdna-tables' ),
-						'cell_1_indicator'    => 'unavailable',
-						'cell_2_indicator'    => 'unavailable',
-						'cell_3_indicator'    => 'available',
-					),
-				),
-			)
-		);
-
-		$this->end_controls_section();
 	}
 
 	protected function register_comparison_style_controls() {
-		$cmp_condition         = array( 'table_type' => 'comparison' );
+		$cmp_condition         = array( 'selected_table_type' => 'comparison' );
 		$highlight_selector    = '{{WRAPPER}} .kdna-comparison--has-highlight .kdna-comparison__cell--highlighted';
 		$highlight_card_sel    = '{{WRAPPER}} .kdna-comparison--has-highlight .kdna-comparison__item--highlighted';
 		$wrapper_selector      = '{{WRAPPER}} .kdna-table__wrapper--comparison';
@@ -3250,7 +2367,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'label'     => esc_html__( 'Responsive', 'kdna-tables' ),
 				'tab'       => \Elementor\Controls_Manager::TAB_CONTENT,
 				'condition' => array(
-					'table_type!' => '',
+					'selected_table_id!' => '',
 				),
 			)
 		);
@@ -3341,8 +2458,8 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'label'     => esc_html__( 'Card Stack Mode', 'kdna-tables' ),
 				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
 				'condition' => array(
-					'table_type!'     => '',
-					'responsive_mode' => 'card_stack',
+					'selected_table_id!' => '',
+					'responsive_mode'    => 'card_stack',
 				),
 			)
 		);
@@ -3433,8 +2550,8 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'label'     => esc_html__( 'Pivot Rows Mode', 'kdna-tables' ),
 				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
 				'condition' => array(
-					'table_type!'     => '',
-					'responsive_mode' => 'pivot_rows',
+					'selected_table_id!' => '',
+					'responsive_mode'    => 'pivot_rows',
 				),
 			)
 		);
@@ -3541,8 +2658,8 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'label'     => esc_html__( 'Column Picker Mode', 'kdna-tables' ),
 				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
 				'condition' => array(
-					'table_type!'     => '',
-					'responsive_mode' => 'column_picker',
+					'selected_table_id!' => '',
+					'responsive_mode'    => 'column_picker',
 				),
 			)
 		);
@@ -3868,17 +2985,35 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 	}
 
 	protected function render() {
-		$settings   = $this->get_settings_for_display();
-		$table_type = isset( $settings['table_type'] ) ? $settings['table_type'] : '';
+		$widget_settings = $this->get_settings_for_display();
+		$table_id        = isset( $widget_settings['selected_table_id'] ) ? (int) $widget_settings['selected_table_id'] : 0;
 
-		$wrapper_classes = array( 'kdna-table__wrapper' );
-		if ( '' !== $table_type ) {
-			$wrapper_classes[] = 'kdna-table__wrapper--' . sanitize_html_class( $table_type );
+		// No table picked yet, bail to the placeholder.
+		if ( $table_id <= 0 ) {
+			$this->render_wrapped_placeholder( '', esc_html__( 'Select a table from the dropdown.', 'kdna-tables' ) );
+			return;
 		}
 
-		$responsive_mode       = isset( $settings['responsive_mode'] ) ? $settings['responsive_mode'] : 'card_stack';
-		$responsive_breakpoint = isset( $settings['responsive_breakpoint'] ) ? $settings['responsive_breakpoint'] : 'mobile';
-		$pivot_label_position  = isset( $settings['pivot_label_position'] ) ? $settings['pivot_label_position'] : 'above';
+		$settings = KDNA_Tables_Data::get_settings_for_render( $table_id, $widget_settings );
+		if ( empty( $settings ) ) {
+			$this->render_wrapped_placeholder( '', esc_html__( 'The selected table no longer exists.', 'kdna-tables' ) );
+			return;
+		}
+
+		$table_type = isset( $settings['table_type'] ) ? (string) $settings['table_type'] : '';
+		if ( 'general' !== $table_type && 'comparison' !== $table_type ) {
+			$this->render_wrapped_placeholder( '', esc_html__( 'The selected table is missing a type.', 'kdna-tables' ) );
+			return;
+		}
+
+		$wrapper_classes = array(
+			'kdna-table__wrapper',
+			'kdna-table__wrapper--' . sanitize_html_class( $table_type ),
+		);
+
+		$responsive_mode       = isset( $widget_settings['responsive_mode'] ) ? $widget_settings['responsive_mode'] : 'card_stack';
+		$responsive_breakpoint = isset( $widget_settings['responsive_breakpoint'] ) ? $widget_settings['responsive_breakpoint'] : 'mobile';
+		$pivot_label_position  = isset( $widget_settings['pivot_label_position'] ) ? $widget_settings['pivot_label_position'] : 'above';
 
 		$picker_config = array();
 		if ( 'comparison' === $table_type && 'column_picker' === $responsive_mode ) {
@@ -3891,24 +3026,25 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 					'label' => isset( $item['item_label'] ) ? (string) $item['item_label'] : sprintf( esc_html__( 'Item %d', 'kdna-tables' ), $i + 1 ),
 				);
 			}
-			$defaults = isset( $settings['picker_default_items'] ) && is_array( $settings['picker_default_items'] ) ? $settings['picker_default_items'] : array();
+			$defaults      = isset( $widget_settings['picker_default_items'] ) && is_array( $widget_settings['picker_default_items'] ) ? $widget_settings['picker_default_items'] : array();
 			$picker_config = array(
-				'items'      => $items_for_picker,
-				'defaults'   => array_values( array_map( 'intval', $defaults ) ),
-				'maxSelect'  => isset( $settings['picker_max_select'] ) ? (int) $settings['picker_max_select'] : 2,
-				'label'      => isset( $settings['picker_label_text'] ) ? (string) $settings['picker_label_text'] : esc_html__( 'Compare', 'kdna-tables' ),
+				'items'     => $items_for_picker,
+				'defaults'  => array_values( array_map( 'intval', $defaults ) ),
+				'maxSelect' => isset( $widget_settings['picker_max_select'] ) ? (int) $widget_settings['picker_max_select'] : 2,
+				'label'     => isset( $widget_settings['picker_label_text'] ) ? (string) $widget_settings['picker_label_text'] : esc_html__( 'Compare', 'kdna-tables' ),
 			);
 		}
 
-		$sticky_first_column = ! empty( $settings['sticky_first_column'] ) && 'yes' === $settings['sticky_first_column'];
+		$sticky_first_column = ! empty( $widget_settings['sticky_first_column'] ) && 'yes' === $widget_settings['sticky_first_column'];
 
 		$wrapper_attrs = array(
-			'class'                       => implode( ' ', $wrapper_classes ),
-			'data-table-type'             => $table_type,
-			'data-responsive-mode'        => '' !== $table_type ? $responsive_mode : 'none',
-			'data-responsive-breakpoint'  => '' !== $table_type ? $responsive_breakpoint : 'mobile',
-			'data-pivot-label-position'   => $pivot_label_position,
-			'data-sticky-first-column'    => $sticky_first_column ? 'yes' : 'no',
+			'class'                      => implode( ' ', $wrapper_classes ),
+			'data-table-type'            => $table_type,
+			'data-responsive-mode'       => $responsive_mode,
+			'data-responsive-breakpoint' => $responsive_breakpoint,
+			'data-pivot-label-position'  => $pivot_label_position,
+			'data-sticky-first-column'   => $sticky_first_column ? 'yes' : 'no',
+			'data-table-id'              => (string) $table_id,
 		);
 		if ( ! empty( $picker_config ) ) {
 			$wrapper_attrs['data-picker-config'] = wp_json_encode( $picker_config );
@@ -3926,9 +3062,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		?>
 		<div<?php echo $attr_string; ?>>
 			<?php
-			if ( '' === $table_type ) {
-				include KDNA_TABLES_PATH . 'templates/render-placeholder.php';
-			} elseif ( 'general' === $table_type ) {
+			if ( 'general' === $table_type ) {
 				include KDNA_TABLES_PATH . 'templates/render-general.php';
 			} elseif ( 'comparison' === $table_type ) {
 				include KDNA_TABLES_PATH . 'templates/render-comparison.php';
@@ -3936,5 +3070,25 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			?>
 		</div>
 		<?php
+	}
+
+	/*
+	 * The shipped render-placeholder.php template carries its own hardcoded
+	 * message from v1.x, so we cannot use it for the new context-specific
+	 * messages without modifying the template (the brief locks template
+	 * files). Emit the same placeholder markup with a custom message
+	 * inline.
+	 */
+	private function render_wrapped_placeholder( $table_type, $message ) {
+		$wrapper_classes = array( 'kdna-table__wrapper', 'kdna-table__wrapper--placeholder' );
+		if ( '' !== $table_type ) {
+			$wrapper_classes[] = 'kdna-table__wrapper--' . sanitize_html_class( $table_type );
+		}
+		printf(
+			'<div class="%1$s" data-table-type="%2$s"><div class="kdna-table__placeholder" role="status"><span class="kdna-table__placeholder-message">%3$s</span></div></div>',
+			esc_attr( implode( ' ', $wrapper_classes ) ),
+			esc_attr( $table_type ),
+			esc_html( $message )
+		);
 	}
 }
