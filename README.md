@@ -40,8 +40,8 @@ A clean, fully styleable table for any tabular content. Up to ten columns.
 
 ### Comparison Table
 
-A product or service comparison modelled on the kind shown in the Laseraid
-V-Series example. Up to six items, unlimited feature rows.
+A product or service comparison table with up to six items and unlimited
+feature rows.
 
 - Items repeater with image, label, sublabel, and optional CTA per item.
 - Highlighted item with badge text and badge position (top-left,
@@ -237,6 +237,32 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 - UK English throughout code, labels, and documentation.
 
 ## Changelog
+
+### 1.1.0
+
+- **Style controls now actually apply.** CSS variable defaults were
+  declared on the inner `.kdna-table__wrapper` element, which shadowed
+  any override Elementor wrote to `{{WRAPPER}}` (the outer Elementor
+  element). Defaults are now scoped to
+  `:where(.elementor-widget-kdna-table)` with zero specificity, so
+  every Style control's override wins the cascade as designed.
+- **Table Type is a SELECT dropdown.** The card-based Type Chooser
+  and the separate Change Table Type section are replaced by a
+  single SELECT control at the top of the Content tab. Switching is
+  now driven by Elementor's native live-render path, so the canvas
+  updates immediately. Per-type settings are still preserved when
+  you switch back.
+- **Cell indicator buttons.** Inside each Feature Row, the per-item
+  indicator is now a CHOOSE control with a tick / cross / pencil
+  icon for Available / Unavailable / Custom, instead of a dropdown.
+- **Feature label column width.** A new Style control in *Feature
+  Label Column* sets the width of the first column in px, % or vw.
+  The remaining item columns share the leftover width equally via
+  `table-layout: fixed` and a `<colgroup>`.
+- **Generic default copy.** The Comparison Table defaults no longer
+  reference the Laseraid V-Series example. Items default to
+  Plan 1 / Plan 2 / Plan 3 and feature rows to Feature one through
+  Feature five with placeholder descriptions.
 
 ### 1.0.4
 

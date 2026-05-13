@@ -10,7 +10,10 @@
  * Selectors never target .elementor-widget-container.
  */
 
-.kdna-table__wrapper--comparison {
+/* Variable defaults are scoped to the Elementor widget class so Style
+ * controls writing the same variables to {{WRAPPER}} win the cascade.
+ * See kdna-tables.css for the full explanation. */
+:where(.elementor-widget-kdna-table) {
 	--kdna-comparison-bg: #ffffff;
 	--kdna-comparison-border-color: #e5e7eb;
 	--kdna-comparison-border-radius: 12px;
@@ -24,6 +27,7 @@
 	--kdna-comparison-row-hover-transition: 200ms;
 	--kdna-comparison-label-color: #1f2937;
 	--kdna-comparison-label-description-color: #6b7280;
+	--kdna-comparison-label-column-width: 25%;
 	--kdna-comparison-item-image-size: 96px;
 	--kdna-comparison-item-image-spacing: 12px;
 	--kdna-comparison-item-label-color: #ffffff;
@@ -56,6 +60,9 @@
 	--kdna-tooltip-max-width: 240px;
 	--kdna-tooltip-arrow-size: 6px;
 	--kdna-tooltip-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+}
+
+.kdna-table__wrapper--comparison {
 	border-radius: var(--kdna-comparison-border-radius);
 	overflow: hidden;
 	background: var(--kdna-comparison-bg);
@@ -69,7 +76,11 @@
 	border-spacing: 0;
 	color: var(--kdna-comparison-body-color);
 	background: var(--kdna-comparison-bg);
-	table-layout: auto;
+	table-layout: fixed;
+}
+
+.kdna-comparison__col--label {
+	width: var(--kdna-comparison-label-column-width, 25%);
 }
 
 /* ─── Header row ───────────────────────────────────────────────────── */

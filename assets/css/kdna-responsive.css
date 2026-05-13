@@ -13,7 +13,10 @@
  * pixel values via this stylesheet.
  */
 
-.kdna-table__wrapper {
+/* Variable defaults scoped to the Elementor widget class so Style
+ * controls writing the same variables to {{WRAPPER}} win the cascade.
+ * See kdna-tables.css for the full explanation. */
+:where(.elementor-widget-kdna-table) {
 	--kdna-card-bg: #ffffff;
 	--kdna-card-radius: 12px;
 	--kdna-card-padding: 16px;
