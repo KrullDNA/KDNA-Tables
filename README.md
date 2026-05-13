@@ -238,6 +238,13 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 
 ## Changelog
 
+### 1.0.4
+
+- The **Change Table Type** section now shows the two type cards
+  directly. Clicking a card switches the widget to that type without
+  the extra "Change table type" link step. Existing content for each
+  type is preserved when you switch back.
+
 ### 1.0.3
 
 - Fix canvas placeholder showing "Choose a table type to begin" even

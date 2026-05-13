@@ -277,15 +277,20 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		);
 
 		$this->add_control(
-			'change_table_type_link',
+			'change_table_type_intro',
 			array(
 				'type' => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'  => '<a href="#" class="kdna-table__change-type" data-kdna-action="clear-table-type" role="button">'
-					. esc_html__( 'Change table type', 'kdna-tables' )
-					. '</a>'
-					. '<div class="kdna-table__change-type-hint">'
-					. esc_html__( 'Resets the table type and shows the chooser again. Your content controls for the current type will be cleared.', 'kdna-tables' )
+				'raw'  => '<div class="kdna-table__change-type-hint">'
+					. esc_html__( 'Pick a different table type. Your existing content for each type is preserved when you switch back.', 'kdna-tables' )
 					. '</div>',
+			)
+		);
+
+		$this->add_control(
+			'change_table_type_cards',
+			array(
+				'type' => \Elementor\Controls_Manager::RAW_HTML,
+				'raw'  => $this->get_type_chooser_html(),
 			)
 		);
 
