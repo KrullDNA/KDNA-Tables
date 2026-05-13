@@ -622,3 +622,243 @@
 	text-align: center;
 	color: var( --kdna-admin-text-soft );
 }
+
+/*
+ * Session 5: comparison editor. Items strip, feature rows grid, and
+ * per-cell state controls.
+ */
+
+.kdna-comparison-editor__section {
+	margin-top: 24px;
+	padding: 16px;
+	background: var( --kdna-admin-bg );
+	border: 1px solid var( --kdna-admin-border );
+	border-radius: var( --kdna-admin-radius );
+}
+
+.kdna-comparison-editor__section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 14px;
+}
+
+.kdna-comparison-editor__section-header h3 {
+	margin: 0;
+	font-size: 14px;
+	color: var( --kdna-admin-text );
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+/* Items strip */
+
+.kdna-comparison-editor__items {
+	display: grid;
+	grid-template-columns: repeat( auto-fill, minmax( 200px, 1fr ) );
+	gap: 12px;
+}
+
+.kdna-comparison-editor__item-card {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 12px;
+	background: var( --kdna-admin-surface );
+	border: 2px solid var( --kdna-admin-border );
+	border-radius: var( --kdna-admin-radius );
+	transition: border-color 120ms;
+}
+
+.kdna-comparison-editor__item-card.is-highlighted {
+	border-color: var( --kdna-admin-accent );
+	box-shadow: 0 0 0 3px var( --kdna-admin-accent-soft );
+}
+
+.kdna-comparison-editor__item-image {
+	position: relative;
+}
+
+.kdna-comparison-editor__item-image-button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 96px;
+	padding: 0;
+	background: var( --kdna-admin-bg );
+	border: 1px dashed var( --kdna-admin-border-strong );
+	border-radius: 6px;
+	cursor: pointer;
+	overflow: hidden;
+}
+
+.kdna-comparison-editor__item-image-button:hover,
+.kdna-comparison-editor__item-image-button:focus {
+	border-color: var( --kdna-admin-accent );
+	outline: none;
+}
+
+.kdna-comparison-editor__item-image-button img {
+	max-width: 100%;
+	max-height: 100%;
+	object-fit: contain;
+}
+
+.kdna-comparison-editor__item-image-placeholder {
+	color: var( --kdna-admin-text-soft );
+	font-size: 12px;
+}
+
+.kdna-comparison-editor__item-image-remove {
+	position: absolute;
+	top: -8px;
+	right: -8px;
+}
+
+.kdna-comparison-editor__item-highlight {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	color: var( --kdna-admin-text );
+}
+
+.kdna-comparison-editor__item-label,
+.kdna-comparison-editor__item-sublabel,
+.kdna-comparison-editor__item-cta-text,
+.kdna-comparison-editor__item-cta-url {
+	width: 100%;
+	padding: 4px 8px;
+}
+
+.kdna-comparison-editor__item-label {
+	font-weight: 600;
+}
+
+.kdna-comparison-editor__item-cta-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+}
+
+.kdna-comparison-editor__item-cta-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.kdna-comparison-editor__item-toolbar {
+	display: flex;
+	gap: 4px;
+	margin-top: 4px;
+}
+
+/* Badge controls */
+
+.kdna-comparison-editor__badge {
+	display: grid;
+	grid-template-columns: 1fr 220px;
+	gap: 12px;
+	margin-top: 14px;
+	padding: 12px;
+	background: var( --kdna-admin-surface );
+	border: 1px solid var( --kdna-admin-border );
+	border-radius: var( --kdna-admin-radius );
+}
+
+@media ( max-width: 640px ) {
+	.kdna-comparison-editor__badge {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* Feature rows */
+
+.kdna-comparison-editor__feature-row {
+	margin-top: 12px;
+	background: var( --kdna-admin-bg );
+	border: 1px solid var( --kdna-admin-border );
+	border-radius: var( --kdna-admin-radius );
+	overflow: hidden;
+}
+
+.kdna-comparison-editor__feature-row-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 8px 12px;
+	background: var( --kdna-admin-surface );
+	border-bottom: 1px solid var( --kdna-admin-border );
+}
+
+.kdna-comparison-editor__feature-row-grid {
+	display: grid;
+	grid-template-columns: minmax( 220px, 1fr ) repeat( var( --kdna-items, 1 ), minmax( 140px, 1fr ) );
+	gap: 1px;
+	background: var( --kdna-admin-border );
+}
+
+.kdna-comparison-editor__feature-row-grid > * {
+	background: var( --kdna-admin-bg );
+	padding: 10px;
+}
+
+.kdna-comparison-editor__feature-label {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	background: var( --kdna-admin-surface );
+}
+
+.kdna-comparison-editor__feature-label-input {
+	width: 100%;
+	padding: 6px 8px;
+	font-weight: 600;
+}
+
+.kdna-comparison-editor__feature-description,
+.kdna-comparison-editor__feature-tooltip {
+	width: 100%;
+	padding: 6px 8px;
+	font-size: 12px;
+	resize: vertical;
+	min-height: 36px;
+}
+
+.kdna-comparison-editor__feature-tooltip {
+	color: var( --kdna-admin-text-soft );
+}
+
+/* Per-cell state and custom sub-editor */
+
+.kdna-comparison-editor__feature-cell {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.kdna-comparison-editor__feature-cell.is-available {
+	background: linear-gradient( 0deg, var( --kdna-admin-bg ), var( --kdna-admin-bg ) );
+}
+
+.kdna-comparison-editor__feature-cell-state {
+	display: inline-flex;
+	gap: 2px;
+	align-self: center;
+}
+
+.kdna-comparison-editor__feature-cell-custom {
+	padding: 8px;
+	background: var( --kdna-admin-surface );
+	border: 1px dashed var( --kdna-admin-border-strong );
+	border-radius: 4px;
+}
+
+.kdna-editor__cell-toolbar--always {
+	visibility: visible;
+	margin-top: 6px;
+}

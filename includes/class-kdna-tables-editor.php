@@ -315,11 +315,9 @@ class KDNA_Tables_Editor {
 		}
 
 		// Type is permanent for the entry, fixed at creation in Session 1.
-		// Bail out if the type is missing for this post.
+		// Each editor (general, comparison) owns its own meta key.
 		$type = KDNA_Tables_CPT::get_type( $post_id );
-		if ( 'general' !== $type ) {
-			// Comparison saves arrive in Session 5. Bail here so we do not
-			// stomp comparison data with a half-baked save handler.
+		if ( 'general' !== $type && 'comparison' !== $type ) {
 			return;
 		}
 
@@ -336,14 +334,20 @@ class KDNA_Tables_Editor {
 		$caption = isset( $decoded['caption'] ) ? sanitize_text_field( (string) $decoded['caption'] ) : '';
 		update_post_meta( $post_id, KDNA_Tables_CPT::META_CAPTION, $caption );
 
-		$general_state = isset( $decoded['general'] ) && is_array( $decoded['general'] )
-			? $decoded['general']
-			: array();
+		if ( 'general' === $type ) {
+			$general_state = isset( $decoded['general'] ) && is_array( $decoded['general'] )
+				? $decoded['general']
+				: array();
+			$sanitised = KDNA_Tables_CPT::sanitize_table_data( $general_state, 'general' );
+			update_post_meta( $post_id, KDNA_Tables_CPT::META_GENERAL, $sanitised );
+		} else {
+			$comparison_state = isset( $decoded['comparison'] ) && is_array( $decoded['comparison'] )
+				? $decoded['comparison']
+				: array();
+			$sanitised = KDNA_Tables_CPT::sanitize_table_data( $comparison_state, 'comparison' );
+			update_post_meta( $post_id, KDNA_Tables_CPT::META_COMPARISON, $sanitised );
+		}
 
-		// Sanitise via the central CPT sanitiser. It pads short rows and
-		// truncates long rows to match the live column count.
-		$sanitised = KDNA_Tables_CPT::sanitize_table_data( $general_state, 'general' );
-		update_post_meta( $post_id, KDNA_Tables_CPT::META_GENERAL, $sanitised );
 		update_post_meta( $post_id, KDNA_Tables_CPT::META_SCHEMA, KDNA_Tables_CPT::SCHEMA_VERSION );
 	}
 }

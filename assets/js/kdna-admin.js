@@ -1,25 +1,28 @@
 /*
- * KDNA Tables admin editor (general table).
+ * KDNA Tables admin editor (general + comparison).
  *
- * Session 3 scope: matrix editor, text-only cells, debounced save.
- * Session 4 scope: rich cell content (icon picker, image picker via
- * wp.media, arrangement selector), column width unit selector.
+ * Session 3: matrix editor for general tables (text-only cells).
+ * Session 4: rich cell content for general tables (icon picker, image
+ *            picker via wp.media, arrangement selector, width unit).
+ * Session 5: full editor for comparison tables (items strip, feature
+ *            rows, highlight, badge, CTAs, per-cell state + custom).
  *
  * State is snake_case end-to-end to match CPT meta keys. The Alpine
- * factory is exposed both on window and through Alpine.data() so the
- * inline x-data="kdnaTablesGeneralEditor()" resolves either way.
+ * factories are exposed on window and through Alpine.data() so the
+ * inline x-data="..." in each template resolves either way.
  */
 
 ( function () {
 	'use strict';
 
 	var MAX_COLUMNS = 10;
+	var MAX_ITEMS = 6;
 	var SERIALISE_DEBOUNCE_MS = 300;
 	var STATE_INPUT_ID = 'kdna_tables_editor_state';
 
-	/* ------------------------------------------------------------------
-	 * State helpers
-	 * ------------------------------------------------------------------ */
+	/* ==================================================================
+	 * Shared module helpers
+	 * ================================================================== */
 
 	function uid( prefix ) {
 		var bytes;
@@ -32,6 +35,115 @@
 		}
 		return prefix + '_' + Math.random().toString( 36 ).slice( 2, 10 ) + Date.now().toString( 36 );
 	}
+
+	function sortedTypes( types ) {
+		var order = { icon: 0, text: 1, image: 2 };
+		return ( types || [] ).slice().sort( function ( a, b ) {
+			return ( order[ a ] || 99 ) - ( order[ b ] || 99 );
+		} );
+	}
+
+	function arrangementOptionsFor( types ) {
+		var pieces = sortedTypes( types );
+		if ( pieces.length < 2 ) {
+			return [];
+		}
+		if ( pieces.length === 2 ) {
+			return [
+				pieces[ 0 ] + '-' + pieces[ 1 ],
+				pieces[ 1 ] + '-' + pieces[ 0 ]
+			];
+		}
+		return [
+			'icon-text-image',
+			'icon-image-text',
+			'text-icon-image',
+			'text-image-icon',
+			'image-text-icon',
+			'image-icon-text'
+		];
+	}
+
+	function pickDefaultArrangement( types, current ) {
+		var options = arrangementOptionsFor( types );
+		if ( options.length === 0 ) {
+			return current || 'icon-text';
+		}
+		if ( current && options.indexOf( current ) !== -1 ) {
+			return current;
+		}
+		return options[ 0 ];
+	}
+
+	function formatArrangementLabel( arrangement ) {
+		return arrangement.split( '-' ).map( function ( w ) {
+			return w.charAt( 0 ).toUpperCase() + w.slice( 1 );
+		} ).join( ', ' );
+	}
+
+	function loadIconCatalogue( callback ) {
+		var cfg = window.KDNATablesAdmin || {};
+		if ( ! cfg.iconsUrl ) {
+			callback( { libraries: [], icons: [] } );
+			return;
+		}
+		var xhr = new XMLHttpRequest();
+		xhr.open( 'GET', cfg.iconsUrl, true );
+		xhr.onreadystatechange = function () {
+			if ( xhr.readyState !== 4 ) {
+				return;
+			}
+			if ( xhr.status >= 200 && xhr.status < 300 ) {
+				try {
+					var parsed = JSON.parse( xhr.responseText );
+					callback( parsed );
+					return;
+				} catch ( e ) { /* fallthrough */ }
+			}
+			callback( { libraries: [], icons: [] } );
+		};
+		xhr.send();
+	}
+
+	function bindFormFlush( self ) {
+		var form = document.getElementById( 'post' );
+		if ( form ) {
+			form.addEventListener( 'submit', function () {
+				self.serialise();
+			}, true );
+		}
+	}
+
+	function openWpMediaFrame( onSelect ) {
+		if ( ! window.wp || ! window.wp.media ) {
+			/* eslint-disable-next-line no-alert */
+			alert( 'Image picker is unavailable. Reload the page.' );
+			return;
+		}
+		var frame = window.wp.media( {
+			title: 'Select image',
+			button: { text: 'Use this image' },
+			multiple: false,
+			library: { type: 'image' }
+		} );
+		frame.on( 'select', function () {
+			var attachment = frame.state().get( 'selection' ).first().toJSON();
+			onSelect( attachment );
+		} );
+		frame.open();
+	}
+
+	function attachmentToImage( attachment ) {
+		return {
+			id: parseInt( attachment.id, 10 ) || 0,
+			url: attachment.url || '',
+			alt: attachment.alt || attachment.title || ''
+		};
+	}
+
+	/* ==================================================================
+	 * General editor (Session 3 + 4)
+	 * ================================================================== */
 
 	function defaultColumn( seedIdx ) {
 		return {
@@ -67,7 +179,7 @@
 		};
 	}
 
-	function defaultState() {
+	function defaultGeneralState() {
 		return {
 			post_id: 0,
 			type: 'general',
@@ -81,11 +193,11 @@
 		};
 	}
 
-	function normaliseSeed( raw ) {
+	function normaliseGeneralSeed( raw ) {
 		if ( ! raw || typeof raw !== 'object' ) {
-			return defaultState();
+			return defaultGeneralState();
 		}
-		var state = defaultState();
+		var state = defaultGeneralState();
 		state.post_id = parseInt( raw.post_id, 10 ) || 0;
 		state.type = raw.type || 'general';
 		state.caption = typeof raw.caption === 'string' ? raw.caption : '';
@@ -111,7 +223,7 @@
 				state.general.rows = raw.general.rows.map( function ( row, rowIdx ) {
 					row = row || {};
 					var cells = Array.isArray( row.cells ) ? row.cells : [];
-					var out = cells.map( function ( cell, cellIdx ) {
+					var out = cells.map( function ( cell ) {
 						cell = cell || {};
 						return {
 							id: cell.id || uid( 'cell' ),
@@ -150,92 +262,9 @@
 		return state;
 	}
 
-	/* ------------------------------------------------------------------
-	 * Arrangement helpers
-	 * ------------------------------------------------------------------ */
-
-	function sortedTypes( types ) {
-		var order = { icon: 0, text: 1, image: 2 };
-		return ( types || [] ).slice().sort( function ( a, b ) {
-			return ( order[ a ] || 99 ) - ( order[ b ] || 99 );
-		} );
-	}
-
-	function arrangementOptionsFor( types ) {
-		var pieces = sortedTypes( types );
-		if ( pieces.length < 2 ) {
-			return [];
-		}
-		if ( pieces.length === 2 ) {
-			return [
-				pieces[ 0 ] + '-' + pieces[ 1 ],
-				pieces[ 1 ] + '-' + pieces[ 0 ]
-			];
-		}
-		// Three pieces. All six permutations are valid per the CPT VALID_ARRANGEMENTS.
-		return [
-			'icon-text-image',
-			'icon-image-text',
-			'text-icon-image',
-			'text-image-icon',
-			'image-text-icon',
-			'image-icon-text'
-		];
-	}
-
-	function pickDefaultArrangement( types, current ) {
-		var options = arrangementOptionsFor( types );
-		if ( options.length === 0 ) {
-			return current || 'icon-text';
-		}
-		if ( current && options.indexOf( current ) !== -1 ) {
-			return current;
-		}
-		return options[ 0 ];
-	}
-
-	function formatArrangementLabel( arrangement ) {
-		// Turn 'icon-text' into 'Icon, Text', 'icon-text-image' into 'Icon, Text, Image'.
-		return arrangement.split( '-' ).map( function ( w ) {
-			return w.charAt( 0 ).toUpperCase() + w.slice( 1 );
-		} ).join( ', ' );
-	}
-
-	/* ------------------------------------------------------------------
-	 * Icon catalogue
-	 * ------------------------------------------------------------------ */
-
-	function loadIconCatalogue( callback ) {
-		var cfg = window.KDNATablesAdmin || {};
-		if ( ! cfg.iconsUrl ) {
-			callback( { libraries: [], icons: [] } );
-			return;
-		}
-		var xhr = new XMLHttpRequest();
-		xhr.open( 'GET', cfg.iconsUrl, true );
-		xhr.onreadystatechange = function () {
-			if ( xhr.readyState !== 4 ) {
-				return;
-			}
-			if ( xhr.status >= 200 && xhr.status < 300 ) {
-				try {
-					var parsed = JSON.parse( xhr.responseText );
-					callback( parsed );
-					return;
-				} catch ( e ) { /* fallthrough */ }
-			}
-			callback( { libraries: [], icons: [] } );
-		};
-		xhr.send();
-	}
-
-	/* ------------------------------------------------------------------
-	 * Alpine component factory
-	 * ------------------------------------------------------------------ */
-
 	function kdnaTablesGeneralEditor() {
 		return {
-			state: normaliseSeed( window.kdnaTablesInitialState ),
+			state: normaliseGeneralSeed( window.kdnaTablesInitialState ),
 			focusedCell: null,
 			maxColumns: MAX_COLUMNS,
 			iconCatalogue: { libraries: [], icons: [] },
@@ -253,16 +282,8 @@
 				this.$watch( 'state', function () {
 					self.queueSerialise();
 				} );
-
-				var form = document.getElementById( 'post' );
-				if ( form ) {
-					form.addEventListener( 'submit', function () {
-						self.serialise();
-					}, true );
-				}
-
+				bindFormFlush( this );
 				this.serialise();
-
 				loadIconCatalogue( function ( catalogue ) {
 					self.iconCatalogue = catalogue || { libraries: [], icons: [] };
 				} );
@@ -317,10 +338,6 @@
 					self.focusedCell = null;
 				}, 10 );
 			},
-
-			/* ------------------------------------------------------------------
-			 * Column actions
-			 * ------------------------------------------------------------------ */
 
 			addColumn: function () {
 				if ( this.state.general.columns.length >= MAX_COLUMNS ) {
@@ -389,15 +406,10 @@
 					return;
 				}
 				col.width_unit = ( value === 'px' ) ? 'px' : '%';
-				// If switching to %, clamp the existing value.
 				if ( col.width_unit === '%' && col.width > 100 ) {
 					col.width = 100;
 				}
 			},
-
-			/* ------------------------------------------------------------------
-			 * Row actions
-			 * ------------------------------------------------------------------ */
 
 			addRow: function () {
 				this.state.general.rows.push(
@@ -420,10 +432,6 @@
 				var rows = this.state.general.rows;
 				rows.splice( target, 0, rows.splice( idx, 1 )[ 0 ] );
 			},
-
-			/* ------------------------------------------------------------------
-			 * Cell actions
-			 * ------------------------------------------------------------------ */
 
 			cellAt: function ( rowIdx, colIdx ) {
 				var row = this.state.general.rows[ rowIdx ];
@@ -463,10 +471,6 @@
 				}
 			},
 
-			/* ------------------------------------------------------------------
-			 * Piece visibility / ordering for the cell preview
-			 * ------------------------------------------------------------------ */
-
 			hasPiece: function ( cell, piece ) {
 				return !! cell && cell.content_types.indexOf( piece ) !== -1;
 			},
@@ -494,10 +498,6 @@
 				return cell.icon.value;
 			},
 
-			/* ------------------------------------------------------------------
-			 * Icon picker
-			 * ------------------------------------------------------------------ */
-
 			openIconPicker: function ( rowIdx, colIdx ) {
 				this.iconPicker.open = true;
 				this.iconPicker.targetRow = rowIdx;
@@ -519,9 +519,7 @@
 			},
 
 			selectIcon: function ( icon ) {
-				var rowIdx = this.iconPicker.targetRow;
-				var colIdx = this.iconPicker.targetCol;
-				var cell = this.cellAt( rowIdx, colIdx );
+				var cell = this.cellAt( this.iconPicker.targetRow, this.iconPicker.targetCol );
 				if ( ! cell ) {
 					this.closeIconPicker();
 					return;
@@ -552,28 +550,11 @@
 				cell.arrangement = pickDefaultArrangement( cell.content_types, cell.arrangement );
 			},
 
-			/* ------------------------------------------------------------------
-			 * Image picker (wp.media)
-			 * ------------------------------------------------------------------ */
-
 			openImagePicker: function ( rowIdx, colIdx ) {
-				if ( ! window.wp || ! window.wp.media ) {
-					/* eslint-disable-next-line no-alert */
-					alert( 'Image picker is unavailable. Reload the page.' );
-					return;
-				}
-				var self  = this;
-				var frame = window.wp.media( {
-					title: 'Select cell image',
-					button: { text: 'Use this image' },
-					multiple: false,
-					library: { type: 'image' }
-				} );
-				frame.on( 'select', function () {
-					var attachment = frame.state().get( 'selection' ).first().toJSON();
+				var self = this;
+				openWpMediaFrame( function ( attachment ) {
 					self.applyImage( rowIdx, colIdx, attachment );
 				} );
-				frame.open();
 			},
 
 			applyImage: function ( rowIdx, colIdx, attachment ) {
@@ -581,11 +562,7 @@
 				if ( ! cell || ! attachment ) {
 					return;
 				}
-				cell.image = {
-					id: parseInt( attachment.id, 10 ) || 0,
-					url: attachment.url || '',
-					alt: attachment.alt || attachment.title || ''
-				};
+				cell.image = attachmentToImage( attachment );
 				if ( cell.content_types.indexOf( 'image' ) === -1 ) {
 					cell.content_types.push( 'image' );
 				}
@@ -609,10 +586,519 @@
 		};
 	}
 
+	/* ==================================================================
+	 * Comparison editor (Session 5)
+	 * ================================================================== */
+
+	function defaultComparisonCell() {
+		return {
+			state: 'available',
+			custom: {
+				content_types: [ 'text' ],
+				text: '',
+				icon: { value: '', library: '' },
+				image: { id: 0, url: '', alt: '' },
+				arrangement: 'icon-text'
+			}
+		};
+	}
+
+	function defaultComparisonItem( seedIdx ) {
+		return {
+			id: uid( 'item' ),
+			image: { id: 0, url: '', alt: '' },
+			label: 'Item ' + ( seedIdx || 1 ),
+			sublabel: '',
+			cta: { enabled: false, text: 'Learn more', url: '' }
+		};
+	}
+
+	function defaultComparisonFeatureRow( seedIdx, itemCount ) {
+		var cells = [];
+		var n = Math.max( 0, itemCount || 0 );
+		for ( var i = 0; i < n; i++ ) {
+			cells.push( defaultComparisonCell() );
+		}
+		return {
+			id: uid( 'fr' ),
+			label: 'Feature ' + ( seedIdx || 1 ),
+			description: '',
+			tooltip: '',
+			cells: cells
+		};
+	}
+
+	function defaultComparisonState() {
+		return {
+			post_id: 0,
+			type: 'comparison',
+			caption: '',
+			comparison: {
+				highlighted_item_index: -1,
+				badge_text: 'Recommended',
+				badge_position: 'top-centre',
+				items: [ defaultComparisonItem( 1 ), defaultComparisonItem( 2 ) ],
+				feature_rows: [
+					defaultComparisonFeatureRow( 1, 2 ),
+					defaultComparisonFeatureRow( 2, 2 ),
+					defaultComparisonFeatureRow( 3, 2 )
+				]
+			}
+		};
+	}
+
+	function normaliseComparisonCell( cell ) {
+		cell = cell || {};
+		var state = ( cell.state === 'unavailable' || cell.state === 'custom' ) ? cell.state : 'available';
+		var custom = ( cell.custom && typeof cell.custom === 'object' ) ? cell.custom : {};
+		return {
+			state: state,
+			custom: {
+				content_types: Array.isArray( custom.content_types ) && custom.content_types.length
+					? custom.content_types.slice()
+					: [ 'text' ],
+				text: typeof custom.text === 'string' ? custom.text : '',
+				icon: custom.icon && typeof custom.icon === 'object'
+					? { value: custom.icon.value || '', library: custom.icon.library || '' }
+					: { value: '', library: '' },
+				image: custom.image && typeof custom.image === 'object'
+					? {
+						id: parseInt( custom.image.id, 10 ) || 0,
+						url: custom.image.url || '',
+						alt: custom.image.alt || ''
+					}
+					: { id: 0, url: '', alt: '' },
+				arrangement: custom.arrangement || 'icon-text'
+			}
+		};
+	}
+
+	function normaliseComparisonSeed( raw ) {
+		if ( ! raw || typeof raw !== 'object' ) {
+			return defaultComparisonState();
+		}
+		var state = defaultComparisonState();
+		state.post_id = parseInt( raw.post_id, 10 ) || 0;
+		state.type = 'comparison';
+		state.caption = typeof raw.caption === 'string' ? raw.caption : '';
+
+		if ( raw.comparison && typeof raw.comparison === 'object' ) {
+			state.comparison.highlighted_item_index = parseInt( raw.comparison.highlighted_item_index, 10 );
+			if ( isNaN( state.comparison.highlighted_item_index ) ) {
+				state.comparison.highlighted_item_index = -1;
+			}
+			state.comparison.badge_text = typeof raw.comparison.badge_text === 'string'
+				? raw.comparison.badge_text
+				: 'Recommended';
+			var pos = raw.comparison.badge_position;
+			state.comparison.badge_position = ( pos === 'top-left' || pos === 'top-right' )
+				? pos
+				: 'top-centre';
+
+			if ( Array.isArray( raw.comparison.items ) && raw.comparison.items.length ) {
+				state.comparison.items = raw.comparison.items.map( function ( item, idx ) {
+					item = item || {};
+					var cta = ( item.cta && typeof item.cta === 'object' ) ? item.cta : {};
+					return {
+						id: item.id || uid( 'item' ),
+						image: item.image && typeof item.image === 'object'
+							? {
+								id: parseInt( item.image.id, 10 ) || 0,
+								url: item.image.url || '',
+								alt: item.image.alt || ''
+							}
+							: { id: 0, url: '', alt: '' },
+						label: typeof item.label === 'string' ? item.label : 'Item ' + ( idx + 1 ),
+						sublabel: typeof item.sublabel === 'string' ? item.sublabel : '',
+						cta: {
+							enabled: ! ! cta.enabled,
+							text: typeof cta.text === 'string' ? cta.text : '',
+							url: typeof cta.url === 'string' ? cta.url : ''
+						}
+					};
+				} ).slice( 0, MAX_ITEMS );
+			}
+
+			var itemCount = state.comparison.items.length;
+			if ( state.comparison.highlighted_item_index >= itemCount ) {
+				state.comparison.highlighted_item_index = -1;
+			}
+
+			if ( Array.isArray( raw.comparison.feature_rows ) && raw.comparison.feature_rows.length ) {
+				state.comparison.feature_rows = raw.comparison.feature_rows.map( function ( row, idx ) {
+					row = row || {};
+					var cells = Array.isArray( row.cells ) ? row.cells.map( normaliseComparisonCell ) : [];
+					while ( cells.length < itemCount ) {
+						cells.push( defaultComparisonCell() );
+					}
+					if ( cells.length > itemCount ) {
+						cells.length = itemCount;
+					}
+					return {
+						id: row.id || uid( 'fr' ),
+						label: typeof row.label === 'string' ? row.label : 'Feature ' + ( idx + 1 ),
+						description: typeof row.description === 'string' ? row.description : '',
+						tooltip: typeof row.tooltip === 'string' ? row.tooltip : '',
+						cells: cells
+					};
+				} );
+			}
+		}
+		return state;
+	}
+
+	function kdnaTablesComparisonEditor() {
+		return {
+			state: normaliseComparisonSeed( window.kdnaTablesInitialState ),
+			maxItems: MAX_ITEMS,
+			iconCatalogue: { libraries: [], icons: [] },
+			iconPicker: {
+				open: false,
+				query: '',
+				library: '',
+				targetRow: -1,
+				targetCol: -1
+			},
+			focusedCell: null,
+			_serialiseTimer: null,
+
+			init: function () {
+				var self = this;
+				this.$watch( 'state', function () {
+					self.queueSerialise();
+				} );
+				bindFormFlush( this );
+				this.serialise();
+				loadIconCatalogue( function ( catalogue ) {
+					self.iconCatalogue = catalogue || { libraries: [], icons: [] };
+				} );
+			},
+
+			get iconLibraries() {
+				return this.iconCatalogue.libraries || [];
+			},
+
+			get filteredIcons() {
+				var icons = this.iconCatalogue.icons || [];
+				var lib   = this.iconPicker.library;
+				var q     = ( this.iconPicker.query || '' ).toLowerCase().trim();
+				return icons.filter( function ( icon ) {
+					if ( lib && icon.library !== lib ) {
+						return false;
+					}
+					if ( ! q ) {
+						return true;
+					}
+					var haystack = ( icon.name + ' ' + icon.class + ' ' + ( icon.keywords || '' ) ).toLowerCase();
+					return haystack.indexOf( q ) !== -1;
+				} ).slice( 0, 180 );
+			},
+
+			queueSerialise: function () {
+				var self = this;
+				clearTimeout( this._serialiseTimer );
+				this._serialiseTimer = setTimeout( function () {
+					self.serialise();
+				}, SERIALISE_DEBOUNCE_MS );
+			},
+
+			serialise: function () {
+				var input = document.getElementById( STATE_INPUT_ID );
+				if ( ! input ) {
+					return;
+				}
+				input.value = JSON.stringify( this.state );
+			},
+
+			/* ----------------------------------------------------------
+			 * Items
+			 * ---------------------------------------------------------- */
+
+			addItem: function () {
+				if ( this.state.comparison.items.length >= MAX_ITEMS ) {
+					return;
+				}
+				var nextIdx = this.state.comparison.items.length + 1;
+				this.state.comparison.items.push( defaultComparisonItem( nextIdx ) );
+				// Append a blank cell to every existing feature row at the new index.
+				this.state.comparison.feature_rows.forEach( function ( row ) {
+					row.cells.push( defaultComparisonCell() );
+				} );
+			},
+
+			removeItem: function ( idx ) {
+				if ( this.state.comparison.items.length <= 1 ) {
+					return;
+				}
+				this.state.comparison.items.splice( idx, 1 );
+				this.state.comparison.feature_rows.forEach( function ( row ) {
+					if ( row.cells.length > idx ) {
+						row.cells.splice( idx, 1 );
+					}
+				} );
+				// Shift highlight if the deleted item was highlighted, or
+				// if removing earlier index moved the highlighted index down.
+				var h = this.state.comparison.highlighted_item_index;
+				if ( h === idx ) {
+					this.state.comparison.highlighted_item_index = -1;
+				} else if ( h > idx ) {
+					this.state.comparison.highlighted_item_index = h - 1;
+				}
+			},
+
+			moveItem: function ( idx, dir ) {
+				var target = idx + dir;
+				if ( target < 0 || target >= this.state.comparison.items.length ) {
+					return;
+				}
+				var items = this.state.comparison.items;
+				items.splice( target, 0, items.splice( idx, 1 )[ 0 ] );
+				// Reorder every feature row's cells in lockstep so the
+				// per-item state stays attached to its item.
+				this.state.comparison.feature_rows.forEach( function ( row ) {
+					if ( target >= row.cells.length ) {
+						return;
+					}
+					row.cells.splice( target, 0, row.cells.splice( idx, 1 )[ 0 ] );
+				} );
+				// Move highlight along with the dragged item.
+				var h = this.state.comparison.highlighted_item_index;
+				if ( h === idx ) {
+					this.state.comparison.highlighted_item_index = target;
+				} else if ( dir < 0 && h === target ) {
+					this.state.comparison.highlighted_item_index = idx;
+				} else if ( dir > 0 && h === target ) {
+					this.state.comparison.highlighted_item_index = idx;
+				}
+			},
+
+			toggleHighlight: function ( idx ) {
+				if ( this.state.comparison.highlighted_item_index === idx ) {
+					this.state.comparison.highlighted_item_index = -1;
+				} else {
+					this.state.comparison.highlighted_item_index = idx;
+				}
+			},
+
+			isHighlighted: function ( idx ) {
+				return this.state.comparison.highlighted_item_index === idx;
+			},
+
+			hasHighlight: function () {
+				return this.state.comparison.highlighted_item_index >= 0;
+			},
+
+			openItemImagePicker: function ( idx ) {
+				var self = this;
+				openWpMediaFrame( function ( attachment ) {
+					var item = self.state.comparison.items[ idx ];
+					if ( item ) {
+						item.image = attachmentToImage( attachment );
+					}
+				} );
+			},
+
+			removeItemImage: function ( idx ) {
+				var item = this.state.comparison.items[ idx ];
+				if ( item ) {
+					item.image = { id: 0, url: '', alt: '' };
+				}
+			},
+
+			/* ----------------------------------------------------------
+			 * Feature rows
+			 * ---------------------------------------------------------- */
+
+			addFeatureRow: function () {
+				var idx = this.state.comparison.feature_rows.length + 1;
+				this.state.comparison.feature_rows.push(
+					defaultComparisonFeatureRow( idx, this.state.comparison.items.length )
+				);
+			},
+
+			removeFeatureRow: function ( idx ) {
+				if ( this.state.comparison.feature_rows.length === 0 ) {
+					return;
+				}
+				this.state.comparison.feature_rows.splice( idx, 1 );
+			},
+
+			moveFeatureRow: function ( idx, dir ) {
+				var target = idx + dir;
+				if ( target < 0 || target >= this.state.comparison.feature_rows.length ) {
+					return;
+				}
+				var rows = this.state.comparison.feature_rows;
+				rows.splice( target, 0, rows.splice( idx, 1 )[ 0 ] );
+			},
+
+			/* ----------------------------------------------------------
+			 * Cell state + custom content
+			 * ---------------------------------------------------------- */
+
+			featureCellAt: function ( rowIdx, colIdx ) {
+				var row = this.state.comparison.feature_rows[ rowIdx ];
+				if ( ! row ) {
+					return null;
+				}
+				return row.cells[ colIdx ] || null;
+			},
+
+			setCellState: function ( rowIdx, colIdx, value ) {
+				var cell = this.featureCellAt( rowIdx, colIdx );
+				if ( ! cell ) {
+					return;
+				}
+				if ( value !== 'available' && value !== 'unavailable' && value !== 'custom' ) {
+					return;
+				}
+				cell.state = value;
+			},
+
+			setCustomText: function ( rowIdx, colIdx, value ) {
+				var cell = this.featureCellAt( rowIdx, colIdx );
+				if ( ! cell ) {
+					return;
+				}
+				cell.custom.text = ( typeof value === 'string' ? value : '' );
+				if ( cell.custom.content_types.indexOf( 'text' ) === -1 ) {
+					cell.custom.content_types.push( 'text' );
+					cell.custom.arrangement = pickDefaultArrangement( cell.custom.content_types, cell.custom.arrangement );
+				}
+			},
+
+			setCustomArrangement: function ( rowIdx, colIdx, value ) {
+				var cell = this.featureCellAt( rowIdx, colIdx );
+				if ( ! cell ) {
+					return;
+				}
+				if ( arrangementOptionsFor( cell.custom.content_types ).indexOf( value ) !== -1 ) {
+					cell.custom.arrangement = value;
+				}
+			},
+
+			customHasPiece: function ( cell, piece ) {
+				return !! cell && cell.custom && cell.custom.content_types.indexOf( piece ) !== -1;
+			},
+
+			customPieceOrder: function ( cell, piece ) {
+				if ( ! cell || ! cell.custom || ! cell.custom.arrangement ) {
+					return 99;
+				}
+				var idx = cell.custom.arrangement.split( '-' ).indexOf( piece );
+				return idx === -1 ? 99 : idx + 1;
+			},
+
+			customArrangementOptions: function ( cell ) {
+				return arrangementOptionsFor( cell && cell.custom ? cell.custom.content_types : [] );
+			},
+
+			formatArrangement: function ( arrangement ) {
+				return formatArrangementLabel( arrangement );
+			},
+
+			/* ----------------------------------------------------------
+			 * Icon picker for custom cells
+			 * ---------------------------------------------------------- */
+
+			openCustomIconPicker: function ( rowIdx, colIdx ) {
+				this.iconPicker.open = true;
+				this.iconPicker.targetRow = rowIdx;
+				this.iconPicker.targetCol = colIdx;
+				this.iconPicker.query = '';
+				this.iconPicker.library = '';
+				var self = this;
+				this.$nextTick( function () {
+					if ( self.$refs.iconSearchInput ) {
+						self.$refs.iconSearchInput.focus();
+					}
+				} );
+			},
+
+			closeIconPicker: function () {
+				this.iconPicker.open = false;
+				this.iconPicker.targetRow = -1;
+				this.iconPicker.targetCol = -1;
+			},
+
+			selectIcon: function ( icon ) {
+				var cell = this.featureCellAt( this.iconPicker.targetRow, this.iconPicker.targetCol );
+				if ( ! cell ) {
+					this.closeIconPicker();
+					return;
+				}
+				cell.custom.icon = {
+					value: icon.class || '',
+					library: icon.library || ''
+				};
+				if ( cell.custom.content_types.indexOf( 'icon' ) === -1 ) {
+					cell.custom.content_types.push( 'icon' );
+				}
+				cell.custom.arrangement = pickDefaultArrangement( cell.custom.content_types, cell.custom.arrangement );
+				this.closeIconPicker();
+			},
+
+			removeCustomIcon: function ( rowIdx, colIdx ) {
+				var cell = this.featureCellAt( rowIdx, colIdx );
+				if ( ! cell ) {
+					return;
+				}
+				cell.custom.icon = { value: '', library: '' };
+				cell.custom.content_types = cell.custom.content_types.filter( function ( t ) {
+					return t !== 'icon';
+				} );
+				if ( cell.custom.content_types.length === 0 ) {
+					cell.custom.content_types = [ 'text' ];
+				}
+				cell.custom.arrangement = pickDefaultArrangement( cell.custom.content_types, cell.custom.arrangement );
+			},
+
+			/* ----------------------------------------------------------
+			 * Image picker for custom cells
+			 * ---------------------------------------------------------- */
+
+			openCustomImagePicker: function ( rowIdx, colIdx ) {
+				var self = this;
+				openWpMediaFrame( function ( attachment ) {
+					var cell = self.featureCellAt( rowIdx, colIdx );
+					if ( ! cell ) {
+						return;
+					}
+					cell.custom.image = attachmentToImage( attachment );
+					if ( cell.custom.content_types.indexOf( 'image' ) === -1 ) {
+						cell.custom.content_types.push( 'image' );
+					}
+					cell.custom.arrangement = pickDefaultArrangement( cell.custom.content_types, cell.custom.arrangement );
+				} );
+			},
+
+			removeCustomImage: function ( rowIdx, colIdx ) {
+				var cell = this.featureCellAt( rowIdx, colIdx );
+				if ( ! cell ) {
+					return;
+				}
+				cell.custom.image = { id: 0, url: '', alt: '' };
+				cell.custom.content_types = cell.custom.content_types.filter( function ( t ) {
+					return t !== 'image';
+				} );
+				if ( cell.custom.content_types.length === 0 ) {
+					cell.custom.content_types = [ 'text' ];
+				}
+				cell.custom.arrangement = pickDefaultArrangement( cell.custom.content_types, cell.custom.arrangement );
+			}
+		};
+	}
+
+	/* ==================================================================
+	 * Alpine registration
+	 * ================================================================== */
+
 	document.addEventListener( 'alpine:init', function () {
 		window.Alpine.data( 'kdnaTablesGeneralEditor', kdnaTablesGeneralEditor );
+		window.Alpine.data( 'kdnaTablesComparisonEditor', kdnaTablesComparisonEditor );
 	} );
 
 	window.kdnaTablesGeneralEditor = kdnaTablesGeneralEditor;
+	window.kdnaTablesComparisonEditor = kdnaTablesComparisonEditor;
 
 }() );
