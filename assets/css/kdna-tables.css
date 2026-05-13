@@ -1,14 +1,20 @@
 /*
  * KDNA Tables, base frontend styles.
  *
+ * CSS variable defaults are scoped to :where(.elementor-widget-kdna-table),
+ * the same element Elementor's {{WRAPPER}} resolves to, with zero
+ * specificity. Style controls writing to {{WRAPPER}} therefore win the
+ * cascade and the override propagates to all descendants. Declaring the
+ * variables on the inner .kdna-table__wrapper would shadow inheritance
+ * from the Style override on the parent, which is why earlier 1.0.x
+ * builds appeared to ignore most Style controls.
+ *
  * Selectors must never target .elementor-widget-container; the widget
  * output is a single .kdna-table__wrapper div under the atomic markup
- * experiment. Visual tokens live as CSS variables on the wrapper so
- * Style controls and Custom CSS overrides can target them via the
- * selector keyword.
+ * experiment.
  */
 
-.kdna-table__wrapper {
+:where(.elementor-widget-kdna-table) {
 	--kdna-table-bg: transparent;
 	--kdna-table-border-color: #e5e7eb;
 	--kdna-table-border-width: 1px;
@@ -27,6 +33,13 @@
 	--kdna-table-icon-size: 1.25em;
 	--kdna-table-cell-gap: 8px;
 	--kdna-table-row-hover-transition: 200ms;
+	--kdna-sticky-bg: #ffffff;
+	--kdna-sticky-shadow-color: rgba(0, 0, 0, 0.08);
+	--kdna-sticky-shadow-size: 8px;
+	--kdna-sticky-z-index: 2;
+}
+
+.kdna-table__wrapper {
 	box-sizing: border-box;
 }
 
@@ -178,13 +191,6 @@
  * Responsive modes break the table layout below the breakpoint, so
  * kdna-responsive.css overrides position back to static there.
  */
-
-.kdna-table__wrapper {
-	--kdna-sticky-bg: #ffffff;
-	--kdna-sticky-shadow-color: rgba(0, 0, 0, 0.08);
-	--kdna-sticky-shadow-size: 8px;
-	--kdna-sticky-z-index: 2;
-}
 
 .kdna-table__scroll {
 	overflow-x: auto;

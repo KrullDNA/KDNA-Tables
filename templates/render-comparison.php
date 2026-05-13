@@ -78,6 +78,12 @@ $sticky        = ! empty( $settings['__sticky_first_column'] );
 ?>
 <?php if ( $sticky ) : ?><div class="kdna-table__scroll"><?php endif; ?>
 <table class="<?php echo esc_attr( implode( ' ', $table_classes ) ); ?>" data-item-count="<?php echo (int) $item_count; ?>" style="<?php echo esc_attr( $table_style ); ?>">
+	<colgroup>
+		<col class="kdna-comparison__col kdna-comparison__col--label" />
+		<?php for ( $col_index = 1; $col_index <= $item_count; $col_index++ ) : ?>
+			<col class="kdna-comparison__col kdna-comparison__col--item kdna-comparison__col--item-<?php echo (int) $col_index; ?>" />
+		<?php endfor; ?>
+	</colgroup>
 	<thead>
 		<tr class="kdna-comparison__row kdna-comparison__row--head">
 			<th class="kdna-comparison__cell kdna-comparison__cell--label kdna-comparison__cell--head-label" scope="col">
@@ -233,7 +239,7 @@ $sticky        = ! empty( $settings['__sticky_first_column'] );
 						$cta_can_render   = $cta_enabled && '' !== $cta_url && ( $cta_has_text || $cta_has_icon );
 						$cta_aria_label   = '';
 						if ( $cta_can_render && ! $cta_has_text ) {
-							/* translators: %s: item label, e.g. "V10". */
+							/* translators: %s: item label. */
 							$cta_aria_label = sprintf( esc_attr__( 'Learn more about %s', 'kdna-tables' ), isset( $item['item_label'] ) ? $item['item_label'] : '' );
 						}
 						?>

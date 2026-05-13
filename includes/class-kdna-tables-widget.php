@@ -93,7 +93,6 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		$this->register_responsive_style_controls();
 		$this->register_sticky_content_controls();
 		$this->register_sticky_style_controls();
-		$this->register_change_type_controls();
 	}
 
 	protected function register_sticky_content_controls() {
@@ -196,17 +195,6 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 	}
 
 	protected function register_type_chooser_controls() {
-		/*
-		 * The Type Chooser section deliberately has no section-level
-		 * condition. Recent Elementor builds strip controls inside a
-		 * deactivated section from the settings payload that the editor
-		 * sends to PHP for canvas rendering, which would drop the
-		 * HIDDEN table_type value as soon as a type was picked and
-		 * leave the renderer with an empty type. The visible chooser
-		 * cards are conditioned individually on table_type, so the UX
-		 * is unchanged: chooser shows when no type is set, a small
-		 * "type set" note shows once a type is picked.
-		 */
 		$this->start_controls_section(
 			'section_table_type',
 			array(
@@ -215,110 +203,30 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			)
 		);
 
+		/*
+		 * A native SELECT triggers Elementor's standard live-render
+		 * path, so switching types updates the canvas immediately
+		 * without the previous custom JS handler. The setting is
+		 * registered in this always-active section so its value is
+		 * always present in the settings payload Elementor sends to
+		 * PHP for rendering.
+		 */
 		$this->add_control(
 			'table_type',
 			array(
-				'label'   => esc_html__( 'Selected table type', 'kdna-tables' ),
-				'type'    => \Elementor\Controls_Manager::HIDDEN,
-				'default' => '',
-			)
-		);
-
-		$this->add_control(
-			'type_chooser_intro',
-			array(
-				'type'      => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'       => '<div class="kdna-table__chooser-intro">'
-					. esc_html__( 'Choose the type of table you want to build. You can switch later using the link at the bottom of this tab.', 'kdna-tables' )
-					. '</div>',
-				'condition' => array(
-					'table_type' => '',
+				'label'       => esc_html__( 'Table Type', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::SELECT,
+				'options'     => array(
+					''           => esc_html__( 'Choose a table type', 'kdna-tables' ),
+					'general'    => esc_html__( 'General Table', 'kdna-tables' ),
+					'comparison' => esc_html__( 'Comparison Table', 'kdna-tables' ),
 				),
-			)
-		);
-
-		$this->add_control(
-			'type_chooser_cards',
-			array(
-				'type'      => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'       => $this->get_type_chooser_html(),
-				'condition' => array(
-					'table_type' => '',
-				),
-			)
-		);
-
-		$this->add_control(
-			'type_chooser_active',
-			array(
-				'type'      => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'       => '<div class="kdna-table__chooser-active">'
-					. esc_html__( 'Table type set. The matching Content and Style sections are now available. Use the Change Table Type section at the bottom of this tab to switch.', 'kdna-tables' )
-					. '</div>',
-				'condition' => array(
-					'table_type!' => '',
-				),
+				'default'     => '',
+				'description' => esc_html__( 'Switch between General and Comparison at any time. Settings for each type are preserved, so switching back restores your existing content.', 'kdna-tables' ),
 			)
 		);
 
 		$this->end_controls_section();
-	}
-
-	protected function register_change_type_controls() {
-		$this->start_controls_section(
-			'section_change_table_type',
-			array(
-				'label'     => esc_html__( 'Change Table Type', 'kdna-tables' ),
-				'tab'       => \Elementor\Controls_Manager::TAB_CONTENT,
-				'condition' => array(
-					'table_type!' => '',
-				),
-			)
-		);
-
-		$this->add_control(
-			'change_table_type_intro',
-			array(
-				'type' => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'  => '<div class="kdna-table__change-type-hint">'
-					. esc_html__( 'Pick a different table type. Your existing content for each type is preserved when you switch back.', 'kdna-tables' )
-					. '</div>',
-			)
-		);
-
-		$this->add_control(
-			'change_table_type_cards',
-			array(
-				'type' => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'  => $this->get_type_chooser_html(),
-			)
-		);
-
-		$this->end_controls_section();
-	}
-
-	protected function get_type_chooser_html() {
-		$general_label    = esc_html__( 'General Table', 'kdna-tables' );
-		$general_desc     = esc_html__( 'A clean, fully styleable table for any tabular content. Up to ten columns.', 'kdna-tables' );
-		$comparison_label = esc_html__( 'Comparison Table', 'kdna-tables' );
-		$comparison_desc  = esc_html__( 'Compare products or services across up to six items, with feature rows and tooltips.', 'kdna-tables' );
-
-		ob_start();
-		?>
-		<div class="kdna-table__chooser" role="group" aria-label="<?php echo esc_attr__( 'Choose table type', 'kdna-tables' ); ?>">
-			<button type="button" class="kdna-table__chooser-card" data-kdna-action="set-table-type" data-kdna-type="general">
-				<span class="kdna-table__chooser-icon" aria-hidden="true"><i class="eicon-table"></i></span>
-				<span class="kdna-table__chooser-title"><?php echo $general_label; ?></span>
-				<span class="kdna-table__chooser-desc"><?php echo $general_desc; ?></span>
-			</button>
-			<button type="button" class="kdna-table__chooser-card" data-kdna-action="set-table-type" data-kdna-type="comparison">
-				<span class="kdna-table__chooser-icon" aria-hidden="true"><i class="eicon-product-info"></i></span>
-				<span class="kdna-table__chooser-title"><?php echo $comparison_label; ?></span>
-				<span class="kdna-table__chooser-desc"><?php echo $comparison_desc; ?></span>
-			</button>
-		</div>
-		<?php
-		return ob_get_clean();
 	}
 
 	protected function register_general_content_controls() {
@@ -1581,15 +1489,15 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'title_field' => '{{{ item_label }}}',
 				'default'     => array(
 					array(
-						'item_label'    => 'V10',
-						'item_sublabel' => esc_html__( 'Entry-level', 'kdna-tables' ),
+						'item_label'    => esc_html__( 'Plan 1', 'kdna-tables' ),
+						'item_sublabel' => esc_html__( 'Starter', 'kdna-tables' ),
 					),
 					array(
-						'item_label'    => 'V20',
-						'item_sublabel' => esc_html__( 'Mid-range', 'kdna-tables' ),
+						'item_label'    => esc_html__( 'Plan 2', 'kdna-tables' ),
+						'item_sublabel' => esc_html__( 'Standard', 'kdna-tables' ),
 					),
 					array(
-						'item_label'    => 'V30',
+						'item_label'    => esc_html__( 'Plan 3', 'kdna-tables' ),
 						'item_sublabel' => esc_html__( 'Premium', 'kdna-tables' ),
 					),
 				),
@@ -1822,15 +1730,26 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			$feature_repeater->add_control(
 				'cell_' . $n . '_indicator',
 				array(
-					'label'      => esc_html__( 'Indicator', 'kdna-tables' ),
-					'type'       => \Elementor\Controls_Manager::SELECT,
-					'options'    => array(
-						'available'   => esc_html__( 'Available', 'kdna-tables' ),
-						'unavailable' => esc_html__( 'Unavailable', 'kdna-tables' ),
-						'custom'      => esc_html__( 'Custom', 'kdna-tables' ),
+					'label'       => esc_html__( 'Indicator', 'kdna-tables' ),
+					'type'        => \Elementor\Controls_Manager::CHOOSE,
+					'options'     => array(
+						'available'   => array(
+							'title' => esc_html__( 'Available', 'kdna-tables' ),
+							'icon'  => 'eicon-check-circle',
+						),
+						'unavailable' => array(
+							'title' => esc_html__( 'Unavailable', 'kdna-tables' ),
+							'icon'  => 'eicon-close-circle',
+						),
+						'custom'      => array(
+							'title' => esc_html__( 'Custom', 'kdna-tables' ),
+							'icon'  => 'eicon-edit',
+						),
 					),
-					'default'    => 'available',
-					'conditions' => $slot_conditions,
+					'default'     => 'available',
+					'toggle'      => false,
+					'description' => esc_html__( 'Tick for available, cross for unavailable, pencil to write a custom value (text, icon, image or mixed).', 'kdna-tables' ),
+					'conditions'  => $slot_conditions,
 				)
 			);
 
@@ -2026,36 +1945,36 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'title_field' => '{{{ feature_label }}}',
 				'default'     => array(
 					array(
-						'feature_label'       => 'V-FR',
-						'feature_description' => esc_html__( 'Fractional RF', 'kdna-tables' ),
+						'feature_label'       => esc_html__( 'Feature one', 'kdna-tables' ),
+						'feature_description' => esc_html__( 'Short description of this feature.', 'kdna-tables' ),
 						'cell_1_indicator'    => 'available',
 						'cell_2_indicator'    => 'available',
 						'cell_3_indicator'    => 'available',
 					),
 					array(
-						'feature_label'       => 'V-IPL',
-						'feature_description' => esc_html__( 'Intense Pulsed Light', 'kdna-tables' ),
+						'feature_label'       => esc_html__( 'Feature two', 'kdna-tables' ),
+						'feature_description' => esc_html__( 'Short description of this feature.', 'kdna-tables' ),
 						'cell_1_indicator'    => 'unavailable',
 						'cell_2_indicator'    => 'available',
 						'cell_3_indicator'    => 'available',
 					),
 					array(
-						'feature_label'       => 'V-NIR',
-						'feature_description' => esc_html__( 'Near Infrared', 'kdna-tables' ),
+						'feature_label'       => esc_html__( 'Feature three', 'kdna-tables' ),
+						'feature_description' => esc_html__( 'Short description of this feature.', 'kdna-tables' ),
 						'cell_1_indicator'    => 'unavailable',
 						'cell_2_indicator'    => 'unavailable',
 						'cell_3_indicator'    => 'available',
 					),
 					array(
-						'feature_label'       => 'V-Tone',
-						'feature_description' => esc_html__( 'Skin tone treatment', 'kdna-tables' ),
+						'feature_label'       => esc_html__( 'Feature four', 'kdna-tables' ),
+						'feature_description' => esc_html__( 'Short description of this feature.', 'kdna-tables' ),
 						'cell_1_indicator'    => 'available',
 						'cell_2_indicator'    => 'available',
 						'cell_3_indicator'    => 'available',
 					),
 					array(
-						'feature_label'       => 'V-Lift',
-						'feature_description' => esc_html__( 'Lifting protocol', 'kdna-tables' ),
+						'feature_label'       => esc_html__( 'Feature five', 'kdna-tables' ),
+						'feature_description' => esc_html__( 'Short description of this feature.', 'kdna-tables' ),
 						'cell_1_indicator'    => 'unavailable',
 						'cell_2_indicator'    => 'unavailable',
 						'cell_3_indicator'    => 'available',
@@ -2656,6 +2575,28 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'label'     => esc_html__( 'Feature Label Column', 'kdna-tables' ),
 				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
 				'condition' => $cmp_condition,
+			)
+		);
+
+		$this->add_responsive_control(
+			'label_column_width',
+			array(
+				'label'       => esc_html__( 'Column Width', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::SLIDER,
+				'size_units'  => array( '%', 'px', 'vw' ),
+				'range'       => array(
+					'%'  => array( 'min' => 5, 'max' => 80, 'step' => 1 ),
+					'px' => array( 'min' => 60, 'max' => 800, 'step' => 1 ),
+					'vw' => array( 'min' => 5, 'max' => 80, 'step' => 1 ),
+				),
+				'default'     => array(
+					'unit' => '%',
+					'size' => 25,
+				),
+				'selectors'   => array(
+					'{{WRAPPER}}' => '--kdna-comparison-label-column-width: {{SIZE}}{{UNIT}};',
+				),
+				'description' => esc_html__( 'Width of the feature label column. The item columns share the remaining width equally.', 'kdna-tables' ),
 			)
 		);
 
