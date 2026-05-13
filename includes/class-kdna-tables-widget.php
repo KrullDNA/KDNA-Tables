@@ -1675,6 +1675,47 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			)
 		);
 
+		// Column divider: opt-in vertical line between columns. Writes to
+		// border-right so the last column doesn't get an extra outer line;
+		// the rightmost cell's border-right is cancelled below.
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			array(
+				'name'           => 'column_divider_border',
+				'label'          => esc_html__( 'Column Divider Border', 'kdna-tables' ),
+				'selector'       => '{{WRAPPER}} .kdna-comparison .kdna-comparison__cell',
+				'fields_options' => array(
+					'border' => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-right-style: {{VALUE}};',
+						),
+					),
+					'width'  => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-right-width: {{TOP}}{{UNIT}};',
+						),
+					),
+					'color'  => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-right-color: {{VALUE}};',
+						),
+					),
+				),
+			)
+		);
+		// Cancel the right border on the last cell of every row so the
+		// vertical lines only show BETWEEN columns, not on the outer edge.
+		$this->add_control(
+			'column_divider_strip_outer',
+			array(
+				'type'      => \Elementor\Controls_Manager::HIDDEN,
+				'default'   => 'yes',
+				'selectors' => array(
+					'{{WRAPPER}} .kdna-comparison .kdna-comparison__row > :last-child' => 'border-right: 0;',
+				),
+			)
+		);
+
 		$this->add_control(
 			'row_hover_bg',
 			array(
@@ -2106,6 +2147,74 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'condition' => array(
 					'unavailable_mode' => 'text',
 				),
+			)
+		);
+
+		$this->end_controls_section();
+
+		// ─── Section: Cell Value Text ─────────────────────────────────────
+		// Styles the text-typed content that replaces the tick / cross in
+		// custom cells (e.g. 'Yours at end of term', 'N/A', 'Device bond').
+		$this->start_controls_section(
+			'section_comparison_style_value',
+			array(
+				'label'     => esc_html__( 'Cell Value Text', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => $cmp_condition,
+			)
+		);
+
+		$this->add_control(
+			'value_color',
+			array(
+				'label'     => esc_html__( 'Text Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--value' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'value_typography',
+				'label'    => esc_html__( 'Typography', 'kdna-tables' ),
+				'selector' => '{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--value, {{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--value .kdna-table__cell-text',
+			)
+		);
+
+		$this->add_responsive_control(
+			'value_text_align',
+			array(
+				'label'     => esc_html__( 'Alignment', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::CHOOSE,
+				'options'   => array(
+					'left'   => array(
+						'title' => esc_html__( 'Left', 'kdna-tables' ),
+						'icon'  => 'eicon-text-align-left',
+					),
+					'center' => array(
+						'title' => esc_html__( 'Centre', 'kdna-tables' ),
+						'icon'  => 'eicon-text-align-center',
+					),
+					'right'  => array(
+						'title' => esc_html__( 'Right', 'kdna-tables' ),
+						'icon'  => 'eicon-text-align-right',
+					),
+				),
+				'selectors' => array(
+					'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--value' => 'text-align: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Text_Shadow::get_type(),
+			array(
+				'name'     => 'value_text_shadow',
+				'label'    => esc_html__( 'Text Shadow', 'kdna-tables' ),
+				'selector' => '{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--value',
 			)
 		);
 
