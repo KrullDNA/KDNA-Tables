@@ -2992,7 +2992,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 
 	/**
 	 * Load the plugin-bundled default Unavailable SVG and inline it. The
-	 * file lives at assets/icons/cross.svg and is expected to use
+	 * file lives at assets/cross.svg and is expected to use
 	 * fill="currentColor" so the Style > Unavailable Indicator > Colour
 	 * cascades into it. Returns an empty string if the file is missing,
 	 * so callers can fall back to a Font Awesome glyph.
@@ -3006,7 +3006,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		if ( null !== $cached ) {
 			return $cached;
 		}
-		$path = KDNA_TABLES_PATH . 'assets/icons/cross.svg';
+		$path = KDNA_TABLES_PATH . 'assets/cross.svg';
 		if ( ! file_exists( $path ) || ! is_readable( $path ) ) {
 			$cached = '';
 			return $cached;
