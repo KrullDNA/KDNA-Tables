@@ -38,10 +38,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<label class="kdna-editor__flag">
 				<input type="checkbox" x-model="state.general.first_row_is_header" />
 				<?php esc_html_e( 'First row is header', 'kdna-tables' ); ?>
+				<span
+					class="kdna-editor__help"
+					tabindex="0"
+					aria-label="<?php esc_attr_e( 'First row is header help', 'kdna-tables' ); ?>"
+					title="<?php esc_attr_e( 'When on, the top row renders as a thead with th cells, given semantic table-header styling and read by screen readers as the header.', 'kdna-tables' ); ?>"
+				>?</span>
 			</label>
 			<label class="kdna-editor__flag">
 				<input type="checkbox" x-model="state.general.first_column_is_header" />
 				<?php esc_html_e( 'First column is header', 'kdna-tables' ); ?>
+				<span
+					class="kdna-editor__help"
+					tabindex="0"
+					aria-label="<?php esc_attr_e( 'First column is header help', 'kdna-tables' ); ?>"
+					title="<?php esc_attr_e( 'When on, the leftmost cell in every body row renders as th scope=row. Useful for row-label tables like specs or pricing.', 'kdna-tables' ); ?>"
+				>?</span>
 			</label>
 		</div>
 	</div>

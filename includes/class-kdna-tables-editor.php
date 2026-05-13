@@ -83,6 +83,18 @@ class KDNA_Tables_Editor {
 			'side',
 			'default'
 		);
+
+		// Structural preview, below the editor meta box. Renders a plain
+		// HTML table from the current Alpine state via a custom event the
+		// editor JS dispatches on every state change.
+		add_meta_box(
+			'kdna_tables_preview',
+			__( 'Structural preview', 'kdna-tables' ),
+			array( __CLASS__, 'render_preview_meta_box' ),
+			$cpt,
+			'normal',
+			'low'
+		);
 	}
 
 	public static function render_nonce_field() {
@@ -133,6 +145,30 @@ class KDNA_Tables_Editor {
 		echo '<strong>' . esc_html__( 'Pick a table type first.', 'kdna-tables' ) . '</strong>';
 		echo '<span>' . esc_html__( 'Tables created without picking a type need to be deleted and recreated from the Add New screen.', 'kdna-tables' ) . '</span>';
 		echo '</div>';
+	}
+
+	public static function render_preview_meta_box( $post ) {
+		?>
+		<div class="kdna-preview">
+			<p class="description">
+				<?php esc_html_e( 'Structural preview only. Visual styling is controlled by the KDNA Table Elementor widget where this table is used.', 'kdna-tables' ); ?>
+			</p>
+			<div id="kdna-preview-content" class="kdna-preview__content" aria-live="polite"></div>
+		</div>
+		<style>
+			.kdna-preview__content { margin-top: 8px; }
+			.kdna-preview__content table { border-collapse: collapse; width: 100%; font-size: 13px; }
+			.kdna-preview__content caption { caption-side: top; padding: 4px 0; text-align: left; font-weight: 600; }
+			.kdna-preview__content th,
+			.kdna-preview__content td { border: 1px solid #ccc; padding: 4px 6px; vertical-align: top; text-align: left; }
+			.kdna-preview__content th { background: #f6f7f7; font-weight: 600; }
+			.kdna-preview__content .kdna-preview__cell-piece { display: inline-block; margin-right: 4px; vertical-align: middle; }
+			.kdna-preview__content .kdna-preview__cell-piece img { max-width: 24px; max-height: 24px; vertical-align: middle; }
+			.kdna-preview__content .kdna-preview__cell-state { font-weight: 600; }
+			.kdna-preview__content .kdna-preview__badge { display: inline-block; padding: 0 4px; background: #2271b1; color: #fff; border-radius: 3px; font-size: 11px; margin-left: 4px; }
+			.kdna-preview__content .kdna-preview__empty { color: #50575e; font-style: italic; }
+		</style>
+		<?php
 	}
 
 	public static function render_shortcode_meta_box( $post ) {

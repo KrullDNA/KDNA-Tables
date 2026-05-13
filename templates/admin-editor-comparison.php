@@ -90,6 +90,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 							@click="toggleHighlight(itemIdx)"
 						/>
 						<span><?php esc_html_e( 'Highlight', 'kdna-tables' ); ?></span>
+						<span
+							class="kdna-editor__help"
+							tabindex="0"
+							aria-label="<?php esc_attr_e( 'Highlight item help', 'kdna-tables' ); ?>"
+							title="<?php esc_attr_e( 'Marks this item as the recommended option. The widget accents its column and renders the badge text above it. Click again to remove the highlight.', 'kdna-tables' ); ?>"
+						>?</span>
 					</label>
 
 					<!-- Label + sublabel -->
@@ -248,6 +254,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 							x-model="row.description"
 							placeholder="<?php esc_attr_e( 'Description (optional)', 'kdna-tables' ); ?>"
 						></textarea>
+						<label class="kdna-editor__inline-label">
+							<span><?php esc_html_e( 'Tooltip text', 'kdna-tables' ); ?></span>
+							<span
+								class="kdna-editor__help"
+								tabindex="0"
+								aria-label="<?php esc_attr_e( 'Tooltip text help', 'kdna-tables' ); ?>"
+								title="<?php esc_attr_e( 'When filled, the widget renders an info icon next to the feature label that reveals this text on hover, focus, or tap. Leave empty to suppress the info icon.', 'kdna-tables' ); ?>"
+							>?</span>
+						</label>
 						<textarea
 							class="kdna-comparison-editor__feature-tooltip"
 							rows="2"

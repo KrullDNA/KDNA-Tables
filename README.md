@@ -1,13 +1,17 @@
 # KDNA Tables
 
-A WordPress + Elementor plugin that ships a single widget capable of building
-both general data tables and product or service comparison tables. Designed
-to be lean: no third-party libraries on the front end, conditional asset
-loading, and every visual element exposed through Elementor Style controls
-or CSS variables.
+A WordPress + Elementor plugin that splits table content from table display.
+Tables live in a reusable library (a custom post type), and a single
+Elementor widget picks a table and renders it with full Style control.
+Edit a table once, every widget instance using it updates instantly. The
+same table can be styled differently in different widget instances on
+different pages.
 
 - **Plugin slug:** kdna-tables
+- **Version:** 2.0.0
 - **Widget:** KDNA Table (Elementor category: KDNA Tables)
+- **Shortcode:** `[kdna_table id="123"]` (non-Elementor contexts)
+- **Custom post type:** `kdna_table` (admin only, not public)
 - **Requires:** WordPress 6.0+, PHP 8.0+, Elementor
 
 ## Installation
@@ -15,46 +19,113 @@ or CSS variables.
 1. Download the latest `kdna-tables.zip` release.
 2. In WordPress, go to **Plugins, Add New, Upload Plugin** and choose the zip.
 3. Click **Install Now**, then **Activate**.
-4. Open any page or post with Elementor. Drag the **KDNA Table** widget from
-   the **KDNA Tables** category into the canvas.
-5. Pick **General Table** or **Comparison Table** in the Type Chooser. The
-   Content and Style tabs configure themselves to suit that mode. A
-   **Change table type** link at the bottom of the Content tab resets the
-   chooser.
+4. A new top-level **KDNA Tables** menu appears in WP Admin (with submenus
+   **All Tables**, **Add New**, and **Tools**).
 
-## Modes
+## Workflow
+
+### 1. Create a table in the library
+
+1. Go to **KDNA Tables, Add New** in WP Admin.
+2. Pick **General Table** or **Comparison Table** in the Type Chooser. Type
+   is permanent for that entry. To convert a table to the other type later,
+   duplicate it from the All Tables list and pick the other type.
+3. The custom matrix editor opens. Add columns/rows (general) or items and
+   feature rows (comparison). Each cell can carry text, icon, image, or any
+   combination in any arrangement.
+4. The **Structural preview** meta box below the editor shows a low-fidelity
+   HTML preview that updates live as you edit. Visual styling lives on the
+   widget, the preview only confirms structure.
+5. Publish.
+
+### 2. Render the table
+
+**With Elementor:** Drag the **KDNA Table** widget onto a page. In the
+Content tab, pick a table from the **Source Table** dropdown. Use the Style
+tab to apply per-instance colours, typography, borders, responsive mode,
+sticky column, and so on.
+
+**Without Elementor (classic editor, theme template, Gutenberg shortcode
+block):** Use the shortcode
+
+```
+[kdna_table id="123"]
+```
+
+The shortcode renders the table at desktop layout with default cell
+indicator icons and no per-instance styling. Frontend CSS auto-enqueues on
+the first shortcode render on a page.
+
+## Migration from v1.x
+
+v2.0.0 moves table data out of widget instances into the CPT library. Two
+paths are provided:
+
+### Lazy migration on edit
+
+Open an existing v1.x widget instance in the Elementor editor. The widget
+panel shows a yellow notice:
+
+> KDNA Tables: legacy data detected. Click Migrate to convert it into a
+> reusable table in your library.
+
+Click **Migrate**. The server creates a new `kdna_table` entry from the
+legacy settings (or reuses an existing entry if the same data was migrated
+before, by content hash), the widget instance updates to reference the new
+entry, and the page is marked dirty. Save the Elementor page to persist.
+The widget renders identically because the data layer maps the new shape
+back onto the same render template contract.
+
+### Bulk migration tool
+
+Run **KDNA Tables, Tools, Migrate v1.x widgets** as an administrator.
+
+1. Click **Scan for legacy widgets**. The scanner reports the list of posts
+   that still carry inline v1.x widget data, with an instance count per post.
+2. Click **Migrate all**. The tool processes 10 posts per AJAX chunk with a
+   progress bar. Before mutating each post, the original `_elementor_data`
+   blob is backed up to `_kdna_tables_pre_migration_backup` meta so the
+   change can be reversed.
+3. The log table shows per-post results, downloadable as JSON.
+4. Per-row **Rollback** buttons restore the original Elementor data for
+   that post if the migration result needs reverting.
+
+Identical legacy payloads collapse onto a single CPT entry via content-hash
+dedupe.
+
+## Table types
 
 ### General Table
 
 A clean, fully styleable table for any tabular content. Up to ten columns.
 
-- Caption, first row is header, first column is header switchers.
-- Columns repeater with label, alignment, and width percentage.
-- Rows repeater with a nested Cells sub-repeater. Each cell renders as
-  text, icon, image, or any mixed combination, with a per-cell alignment
-  override.
+- Caption, first row is header, first column is header switchers (data).
+- Columns with label, alignment, width (`%` or `px`, data).
+- Rows with cells. Each cell renders as text, icon, image, or any
+  combination, with arrangement order and per-cell alignment override
+  (data).
 - Style controls for the wrapper, header row, first column (when used as
   a header), body cells (including per-side cell borders and alternating
   row backgrounds), cell content (icon and image), and table layout
-  (border-collapse, border-spacing).
+  (border-collapse, border-spacing). (Widget.)
 
 ### Comparison Table
 
 A product or service comparison table with up to six items and unlimited
 feature rows.
 
-- Items repeater with image, label, sublabel, and optional CTA per item.
+- Items with image, label, sublabel, and optional CTA per item (data).
 - Highlighted item with badge text and badge position (top-left,
-  top-centre, top-right).
-- Global Cell Indicators: available icon, unavailable indicator (icon,
-  text, or hidden).
-- Feature Rows repeater with feature label, description, and tooltip. For
-  each item slot (1 to 6) the row exposes an indicator control plus
-  custom text, icon, image, and arrangement controls.
+  top-centre, top-right) (data).
+- Global Cell Indicators on the widget: available icon, unavailable
+  indicator (icon, text, or hidden).
+- Feature rows with label, description, and tooltip. Per-item per-row
+  cell state: available, unavailable, or custom (with text + icon +
+  image + arrangement). (Data.)
 - Style controls for the wrapper, items header row, item card, highlighted
   item, feature rows, feature label column, available indicator,
   unavailable indicator, CTA button (with normal and hover state tabs and
-  optional icon), and tooltip.
+  optional icon), and tooltip. (Widget.)
 
 ## Responsive Modes
 
@@ -238,27 +309,59 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 
 ## Changelog
 
-### 2.0.0 (in progress)
+### 2.0.0
 
-- **Tables now live in a reusable library.** A new `kdna_table` custom
-  post type stores every table. The Elementor widget becomes a thin
-  display layer that picks an entry from the library and renders it
-  with full Style control. Edit a table once, every widget instance
-  using it updates instantly. The same table can be styled differently
-  in different widget instances on different pages.
-- **Top-level KDNA Tables admin menu.** A new top-level admin menu
-  (`dashicons-grid-view`, position 25) with **All Tables**, **Add New**,
-  and **Tools** submenus. The All Tables list shows the table type,
-  row or item counts, feature row counts (comparison only) and the
-  `[kdna_table id="..."]` shortcode with a one-click Copy button.
-- **Type Chooser on Add New.** Clicking **Add New** opens a two-card
-  chooser (General Table or Comparison Table). The type is permanent
-  once the table is created. To convert a table to the other type,
-  duplicate it from the All Tables list.
-- **Duplicate row action.** Every kdna_table row in the list table
-  shows a **Duplicate** action that copies the title (with `(copy)`
-  appended), the type, the caption, and all data across to a new
-  draft.
+Major release. Data and display split.
+
+- **Tables live in a reusable library.** A new `kdna_table` custom post
+  type stores every table. The Elementor widget becomes a thin display
+  layer that picks an entry from the library and renders it with full
+  Style control. Edit a table once, every widget instance using it
+  updates instantly. The same table can be styled differently in
+  different widget instances on different pages.
+- **Top-level KDNA Tables admin menu** (position 25, `dashicons-grid-view`)
+  with **All Tables**, **Add New**, and **Tools** submenus. The All Tables
+  list shows the table type, row or item counts, feature row count
+  (comparison), a Used in count (cached), and the `[kdna_table id="..."]`
+  shortcode with a one-click Copy button. Per-row Duplicate action.
+- **Type Chooser on Add New.** Two cards (General Table or Comparison
+  Table) decide which custom matrix editor opens. Type is permanent for
+  that entry, duplicate to convert.
+- **Alpine.js admin editor.** CSS Grid matrix editor for general tables
+  with per-cell text contenteditable, icon picker (181-icon bundled set
+  across Font Awesome 6 solid, regular, brands and Elementor's eicon),
+  image picker via `wp.media`, mixed-content arrangement, per-cell
+  alignment override, per-column alignment + width (`%` or `px`).
+  Comparison editor with items header strip (image, label, sublabel,
+  CTA, highlight), inline badge controls, feature rows grid with
+  per-cell three-state controls (available / unavailable / custom) and
+  a custom sub-editor that mirrors the general cell editor.
+- **Structural preview meta box** below the editor renders a low-fidelity
+  HTML view of the current Alpine state, live-updates as you type, no
+  save required.
+- **Shortcode `[kdna_table id="123"]`** renders a table outside Elementor
+  with default cell indicator icons and no per-instance styling.
+  Frontend CSS auto-enqueues on first render. Empty id or missing post
+  renders nothing.
+- **Source Table dropdown** on the widget Content tab picks a table from
+  the library. All Style sections type-condition on a hidden mirror of
+  the selected table's type that updates via AJAX. Elementor editor JS
+  refactored to drop the v1.x type chooser code in favour of the
+  source-table-driven flow.
+- **Conditional asset loading preserved.** Comparison CSS only loads when
+  a comparison-type table is selected. Responsive CSS only loads when a
+  responsive mode is set.
+- **Migration from v1.x.** Lazy migration in the Elementor editor on
+  widget open, plus a bulk Tools page that scans every Elementor post
+  for legacy data, migrates in chunks of 10 with a progress bar,
+  deduplicates identical payloads by content hash, and writes a
+  per-post backup of `_elementor_data` for one-click rollback.
+- **Inline help.** Tooltip badges on the First row is header, First
+  column is header, Highlight item, and Tooltip text controls.
+- **All Style controls preserved.** Every Style section in the v1.x
+  widget keeps its exact controls, CSS variable bindings, selectors,
+  and conditional asset loading. The data layer is the only seam that
+  changed.
 
 ### 1.1.0
 

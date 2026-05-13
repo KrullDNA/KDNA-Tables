@@ -43,6 +43,11 @@ class KDNA_Tables_Admin {
 
 		// Localise the Elementor editor JS with the AJAX url and nonce.
 		add_action( 'elementor/editor/after_enqueue_scripts', array( __CLASS__, 'localize_editor_script' ), 20 );
+
+		// Bust the Used-in transient on every post save (Elementor data may
+		// have shifted) and when a kdna_table moves through statuses.
+		add_action( 'save_post', array( __CLASS__, 'flush_usage_counts' ) );
+		add_action( 'deleted_post', array( __CLASS__, 'flush_usage_counts' ) );
 	}
 
 	public static function ajax_get_table_type() {
@@ -103,11 +108,13 @@ class KDNA_Tables_Admin {
 			array( __CLASS__, 'render_type_chooser_page' )
 		);
 
+		// Tools page contains the bulk migration utility, which writes to
+		// arbitrary posts' _elementor_data. Restrict to administrators.
 		add_submenu_page(
 			self::MENU_SLUG_LIST,
 			__( 'KDNA Tables Tools', 'kdna-tables' ),
 			__( 'Tools', 'kdna-tables' ),
-			'edit_posts',
+			'manage_options',
 			self::MENU_SLUG_TOOLS,
 			array( __CLASS__, 'render_tools_page' )
 		);
@@ -170,6 +177,8 @@ class KDNA_Tables_Admin {
 		return $submenu_file;
 	}
 
+	const USAGE_TRANSIENT = 'kdna_tables_usage_v1';
+
 	public static function list_table_columns( $columns ) {
 		$new = array();
 		foreach ( $columns as $key => $label ) {
@@ -178,10 +187,51 @@ class KDNA_Tables_Admin {
 				$new['kdna_type']      = __( 'Type', 'kdna-tables' );
 				$new['kdna_count']     = __( 'Rows / Items', 'kdna-tables' );
 				$new['kdna_features']  = __( 'Feature rows', 'kdna-tables' );
+				$new['kdna_usage']     = __( 'Used in', 'kdna-tables' );
 				$new['kdna_shortcode'] = __( 'Shortcode', 'kdna-tables' );
 			}
 		}
 		return $new;
+	}
+
+	/**
+	 * Cheap usage count: one LIKE query per kdna_table id, cached in a
+	 * transient for 5 minutes. The transient is busted whenever any post
+	 * is saved (Elementor data may have moved). For small libraries this
+	 * adds a single page-load cost; larger libraries should switch to
+	 * indexed references in v2.1.
+	 */
+	public static function get_usage_counts() {
+		$cached = get_transient( self::USAGE_TRANSIENT );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+		global $wpdb;
+		$counts = array();
+		$ids    = get_posts(
+			array(
+				'post_type'      => KDNA_Tables_CPT::POST_TYPE,
+				'post_status'    => array( 'publish', 'draft', 'private' ),
+				'numberposts'    => -1,
+				'fields'         => 'ids',
+				'suppress_filters' => true,
+			)
+		);
+		foreach ( $ids as $id ) {
+			$like   = '%' . $wpdb->esc_like( '"selected_table_id":"' . (int) $id . '"' ) . '%';
+			$counts[ (int) $id ] = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = '_elementor_data' AND meta_value LIKE %s",
+					$like
+				)
+			);
+		}
+		set_transient( self::USAGE_TRANSIENT, $counts, 5 * MINUTE_IN_SECONDS );
+		return $counts;
+	}
+
+	public static function flush_usage_counts() {
+		delete_transient( self::USAGE_TRANSIENT );
 	}
 
 	public static function render_list_column( $column, $post_id ) {
@@ -234,6 +284,20 @@ class KDNA_Tables_Admin {
 					);
 				} else {
 					echo '<span aria-hidden="true">,</span>';
+				}
+				break;
+
+			case 'kdna_usage':
+				$counts = self::get_usage_counts();
+				$count  = isset( $counts[ (int) $post_id ] ) ? (int) $counts[ (int) $post_id ] : 0;
+				if ( $count > 0 ) {
+					printf(
+						/* translators: %d: number of posts */
+						esc_html( _n( '%d post', '%d posts', $count, 'kdna-tables' ) ),
+						(int) $count
+					);
+				} else {
+					echo '<span aria-hidden="true">,</span><span class="screen-reader-text">' . esc_html__( 'Not used yet', 'kdna-tables' ) . '</span>';
 				}
 				break;
 
@@ -340,13 +404,17 @@ class KDNA_Tables_Admin {
 	}
 
 	public static function render_tools_page() {
+		if ( class_exists( 'KDNA_Tables_Migration' ) ) {
+			KDNA_Tables_Migration::render_tools_page();
+			return;
+		}
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'kdna-tables' ) );
 		}
 		?>
 		<div class="wrap kdna-tools-page">
 			<h1><?php esc_html_e( 'KDNA Tables Tools', 'kdna-tables' ); ?></h1>
-			<p><?php esc_html_e( 'Migration utilities for converting v1.x widget instances into reusable tables will appear here in a later session.', 'kdna-tables' ); ?></p>
+			<p><?php esc_html_e( 'Migration utilities not available, the migration class failed to load.', 'kdna-tables' ); ?></p>
 		</div>
 		<?php
 	}

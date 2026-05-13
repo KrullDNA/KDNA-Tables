@@ -105,6 +105,12 @@
 		xhr.send();
 	}
 
+	function dispatchStateEvent( state ) {
+		try {
+			document.dispatchEvent( new CustomEvent( 'kdna:state', { detail: state } ) );
+		} catch ( e ) { /* old browser, ignore */ }
+	}
+
 	function bindFormFlush( self ) {
 		var form = document.getElementById( 'post' );
 		if ( form ) {
@@ -319,10 +325,10 @@
 
 			serialise: function () {
 				var input = document.getElementById( STATE_INPUT_ID );
-				if ( ! input ) {
-					return;
+				if ( input ) {
+					input.value = JSON.stringify( this.state );
 				}
-				input.value = JSON.stringify( this.state );
+				dispatchStateEvent( this.state );
 			},
 
 			isCellFocused: function ( rowIdx, colIdx ) {
@@ -804,10 +810,10 @@
 
 			serialise: function () {
 				var input = document.getElementById( STATE_INPUT_ID );
-				if ( ! input ) {
-					return;
+				if ( input ) {
+					input.value = JSON.stringify( this.state );
 				}
-				input.value = JSON.stringify( this.state );
+				dispatchStateEvent( this.state );
 			},
 
 			/* ----------------------------------------------------------
@@ -1100,5 +1106,164 @@
 
 	window.kdnaTablesGeneralEditor = kdnaTablesGeneralEditor;
 	window.kdnaTablesComparisonEditor = kdnaTablesComparisonEditor;
+
+	/* ==================================================================
+	 * Structural preview (separate meta box)
+	 *
+	 * Subscribes to the 'kdna:state' custom event the editor dispatches on
+	 * every state change and renders a low-fidelity HTML table into the
+	 * preview meta box. Pure DOM, no Alpine, no styling.
+	 * ================================================================== */
+
+	function escapeHtml( s ) {
+		return String( s == null ? '' : s )
+			.replace( /&/g, '&amp;' )
+			.replace( /</g, '&lt;' )
+			.replace( />/g, '&gt;' )
+			.replace( /"/g, '&quot;' );
+	}
+
+	function piecesOrder( arrangement ) {
+		if ( ! arrangement ) { return []; }
+		return arrangement.split( '-' ).filter( function ( p ) {
+			return p === 'icon' || p === 'text' || p === 'image';
+		} );
+	}
+
+	function cellPiecesHtml( cell, isCustom ) {
+		var src   = isCustom ? cell.custom : cell;
+		if ( ! src ) { return ''; }
+		var types = src.content_types || [];
+		var order = piecesOrder( src.arrangement );
+		if ( ! order.length ) { order = types.slice(); }
+		var parts = [];
+		order.forEach( function ( piece ) {
+			if ( types.indexOf( piece ) === -1 ) { return; }
+			if ( piece === 'text' && src.text ) {
+				parts.push( '<span class="kdna-preview__cell-piece">' + escapeHtml( src.text ) + '</span>' );
+			} else if ( piece === 'icon' && src.icon && src.icon.value ) {
+				parts.push( '<span class="kdna-preview__cell-piece"><i class="' + escapeHtml( src.icon.value ) + '" aria-hidden="true"></i></span>' );
+			} else if ( piece === 'image' && src.image && src.image.url ) {
+				parts.push( '<span class="kdna-preview__cell-piece"><img src="' + escapeHtml( src.image.url ) + '" alt="' + escapeHtml( src.image.alt || '' ) + '"></span>' );
+			}
+		} );
+		return parts.join( ' ' );
+	}
+
+	function buildGeneralPreviewHtml( state ) {
+		var data = state.general || {};
+		var cols = data.columns || [];
+		var rows = data.rows || [];
+		var html = '<table>';
+		if ( state.caption ) {
+			html += '<caption>' + escapeHtml( state.caption ) + '</caption>';
+		}
+		if ( ! cols.length ) {
+			html += '</table><p class="kdna-preview__empty">' + escapeHtml( 'No columns yet.' ) + '</p>';
+			return html;
+		}
+		var bodyRows = rows.slice();
+		if ( data.first_row_is_header && bodyRows.length ) {
+			var headRow = bodyRows.shift();
+			html += '<thead><tr>';
+			cols.forEach( function ( col, idx ) {
+				var cell = ( headRow.cells || [] )[ idx ] || {};
+				html += '<th>' + ( cellPiecesHtml( cell, false ) || '&nbsp;' ) + '</th>';
+			} );
+			html += '</tr></thead>';
+		}
+		html += '<tbody>';
+		bodyRows.forEach( function ( row ) {
+			html += '<tr>';
+			cols.forEach( function ( col, idx ) {
+				var cell = ( row.cells || [] )[ idx ] || {};
+				var tag  = ( idx === 0 && data.first_column_is_header ) ? 'th' : 'td';
+				html += '<' + tag + '>' + ( cellPiecesHtml( cell, false ) || '&nbsp;' ) + '</' + tag + '>';
+			} );
+			html += '</tr>';
+		} );
+		html += '</tbody></table>';
+		return html;
+	}
+
+	function buildComparisonPreviewHtml( state ) {
+		var data  = state.comparison || {};
+		var items = data.items || [];
+		var rows  = data.feature_rows || [];
+		if ( items.length === 0 ) {
+			return '<p class="kdna-preview__empty">' + escapeHtml( 'No items yet.' ) + '</p>';
+		}
+		var highlight = parseInt( data.highlighted_item_index, 10 );
+		var html = '<table>';
+		if ( state.caption ) {
+			html += '<caption>' + escapeHtml( state.caption ) + '</caption>';
+		}
+		html += '<thead><tr><th></th>';
+		items.forEach( function ( item, idx ) {
+			var label = escapeHtml( item.label || '' );
+			if ( item.sublabel ) {
+				label += ' <small>' + escapeHtml( item.sublabel ) + '</small>';
+			}
+			if ( idx === highlight && data.badge_text ) {
+				label += ' <span class="kdna-preview__badge">' + escapeHtml( data.badge_text ) + '</span>';
+			}
+			html += '<th>' + label + '</th>';
+		} );
+		html += '</tr></thead><tbody>';
+		rows.forEach( function ( row ) {
+			html += '<tr><td><strong>' + escapeHtml( row.label || '' ) + '</strong>';
+			if ( row.description ) {
+				html += '<br><small>' + escapeHtml( row.description ) + '</small>';
+			}
+			html += '</td>';
+			items.forEach( function ( _item, idx ) {
+				var cell = ( row.cells || [] )[ idx ] || { state: 'available' };
+				var inner = '';
+				if ( cell.state === 'available' ) {
+					inner = '<span class="kdna-preview__cell-state">&#10003;</span>';
+				} else if ( cell.state === 'unavailable' ) {
+					inner = '<span class="kdna-preview__cell-state">&times;</span>';
+				} else if ( cell.state === 'custom' ) {
+					inner = cellPiecesHtml( cell, true ) || '&nbsp;';
+				}
+				html += '<td>' + inner + '</td>';
+			} );
+			html += '</tr>';
+		} );
+		html += '</tbody></table>';
+		return html;
+	}
+
+	function renderPreview( state ) {
+		var el = document.getElementById( 'kdna-preview-content' );
+		if ( ! el ) { return; }
+		if ( ! state || ! state.type ) {
+			el.innerHTML = '<p class="kdna-preview__empty">' + escapeHtml( 'No data yet.' ) + '</p>';
+			return;
+		}
+		if ( state.type === 'general' ) {
+			el.innerHTML = buildGeneralPreviewHtml( state );
+		} else if ( state.type === 'comparison' ) {
+			el.innerHTML = buildComparisonPreviewHtml( state );
+		} else {
+			el.innerHTML = '';
+		}
+	}
+
+	document.addEventListener( 'kdna:state', function ( e ) {
+		renderPreview( e.detail );
+	} );
+
+	// Initial render from the seed in case the preview meta box mounts
+	// before the editor dispatches its first event.
+	function initialPreviewRender() {
+		var seed = window.kdnaTablesInitialState;
+		if ( seed ) { renderPreview( seed ); }
+	}
+	if ( document.readyState === 'loading' ) {
+		document.addEventListener( 'DOMContentLoaded', initialPreviewRender );
+	} else {
+		initialPreviewRender();
+	}
 
 }() );

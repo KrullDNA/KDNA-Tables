@@ -862,3 +862,41 @@
 	visibility: visible;
 	margin-top: 6px;
 }
+
+/*
+ * Session 6: inline help badges. Plain title-attribute tooltip with
+ * a small visible "?" affordance next to the control label.
+ */
+
+.kdna-editor__help {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	margin-left: 4px;
+	background: var( --kdna-admin-surface );
+	border: 1px solid var( --kdna-admin-border );
+	border-radius: 50%;
+	color: var( --kdna-admin-text-soft );
+	font-size: 11px;
+	line-height: 1;
+	cursor: help;
+}
+
+.kdna-editor__help:focus,
+.kdna-editor__help:hover {
+	background: var( --kdna-admin-accent );
+	border-color: var( --kdna-admin-accent );
+	color: #fff;
+	outline: none;
+}
+
+.kdna-editor__inline-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 12px;
+	color: var( --kdna-admin-text-soft );
+	margin-top: 4px;
+}

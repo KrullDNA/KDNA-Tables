@@ -14,11 +14,15 @@ require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-cpt.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-data.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-admin.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-editor.php';
+require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-migration.php';
+require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-shortcode.php';
 
 KDNA_Tables_CPT::init();
+KDNA_Tables_Shortcode::init();
 if ( is_admin() ) {
 	KDNA_Tables_Admin::init();
 	KDNA_Tables_Editor::init();
+	KDNA_Tables_Migration::init();
 }
 
 class KDNA_Tables_Plugin {
