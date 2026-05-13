@@ -251,6 +251,12 @@
 	width: 1em;
 	height: 1em;
 	display: inline-block;
+	fill: currentColor;
+}
+
+.kdna-comparison__indicator--available svg path,
+.kdna-comparison__indicator--available i::before {
+	fill: currentColor;
 }
 
 .kdna-comparison__indicator--unavailable {
@@ -267,6 +273,12 @@
 	width: 1em;
 	height: 1em;
 	display: inline-block;
+	fill: currentColor;
+}
+
+.kdna-comparison__indicator--unavailable svg path,
+.kdna-comparison__indicator--unavailable i::before {
+	fill: currentColor;
 }
 
 .kdna-comparison__indicator--unavailable.kdna-comparison__indicator--text {
