@@ -2951,22 +2951,30 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		}
 
 		if ( 'icon' === $mode ) {
-			$icon = isset( $settings['unavailable_icon'] ) ? $settings['unavailable_icon'] : null;
-			// Defensive default: when the icon setting is missing or empty
-			// (e.g. unmigrated legacy data or settings stripped by Elementor's
-			// section conditions), fall back to fas fa-minus so the
-			// unavailable cell still shows a visible dash. Available
-			// indicator works on the same code path, so this keeps the two
-			// in parity on every page.
-			if ( empty( $icon ) || ( empty( $icon['value'] ) && empty( $icon['library'] ) ) ) {
-				$icon = array(
-					'value'   => 'fas fa-minus',
-					'library' => 'fa-solid',
-				);
-			}
+			$icon       = isset( $settings['unavailable_icon'] ) ? $settings['unavailable_icon'] : null;
+			$icon_empty = empty( $icon ) || ( empty( $icon['value'] ) && empty( $icon['library'] ) );
+
 			ob_start();
 			echo '<span class="kdna-comparison__indicator kdna-comparison__indicator--unavailable">';
-			\Elementor\Icons_Manager::render_icon( $icon, array( 'aria-hidden' => 'true' ) );
+
+			if ( $icon_empty ) {
+				// No icon picked. Try the plugin-bundled default SVG first
+				// (assets/icons/cross.svg) so the visual default is the KDNA
+				// glyph. Fall back to fas fa-minus when the file is missing
+				// so behaviour stays safe between deploys.
+				$bundled = self::get_bundled_default_unavailable_svg();
+				if ( '' !== $bundled ) {
+					echo $bundled;
+				} else {
+					\Elementor\Icons_Manager::render_icon(
+						array( 'value' => 'fas fa-minus', 'library' => 'fa-solid' ),
+						array( 'aria-hidden' => 'true' )
+					);
+				}
+			} else {
+				\Elementor\Icons_Manager::render_icon( $icon, array( 'aria-hidden' => 'true' ) );
+			}
+
 			echo '<span class="kdna-table__sr-only">' . esc_html__( 'Not available', 'kdna-tables' ) . '</span>';
 			echo '</span>';
 			return ob_get_clean();
@@ -2980,6 +2988,73 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		}
 
 		return '';
+	}
+
+	/**
+	 * Load the plugin-bundled default Unavailable SVG and inline it. The
+	 * file lives at assets/icons/cross.svg and is expected to use
+	 * fill="currentColor" so the Style > Unavailable Indicator > Colour
+	 * cascades into it. Returns an empty string if the file is missing,
+	 * so callers can fall back to a Font Awesome glyph.
+	 *
+	 * Cached statically per request, and only sanitised lightly with
+	 * wp_kses so embedded <script> or external xlink:href refs cannot
+	 * leak in if someone replaces the bundled file.
+	 */
+	public static function get_bundled_default_unavailable_svg() {
+		static $cached = null;
+		if ( null !== $cached ) {
+			return $cached;
+		}
+		$path = KDNA_TABLES_PATH . 'assets/icons/cross.svg';
+		if ( ! file_exists( $path ) || ! is_readable( $path ) ) {
+			$cached = '';
+			return $cached;
+		}
+		$raw = file_get_contents( $path );
+		if ( false === $raw || '' === trim( $raw ) ) {
+			$cached = '';
+			return $cached;
+		}
+		$allowed = array(
+			'svg'      => array(
+				'xmlns'       => true,
+				'viewbox'     => true,
+				'fill'        => true,
+				'stroke'      => true,
+				'aria-hidden' => true,
+				'role'        => true,
+				'focusable'   => true,
+				'class'       => true,
+				'width'       => true,
+				'height'      => true,
+				'preserveaspectratio' => true,
+			),
+			'path'     => array( 'd' => true, 'fill' => true, 'stroke' => true, 'stroke-width' => true, 'stroke-linecap' => true, 'stroke-linejoin' => true, 'fill-rule' => true, 'clip-rule' => true, 'opacity' => true ),
+			'g'        => array( 'fill' => true, 'stroke' => true, 'opacity' => true, 'transform' => true ),
+			'rect'     => array( 'x' => true, 'y' => true, 'width' => true, 'height' => true, 'rx' => true, 'ry' => true, 'fill' => true, 'stroke' => true ),
+			'circle'   => array( 'cx' => true, 'cy' => true, 'r' => true, 'fill' => true, 'stroke' => true ),
+			'line'     => array( 'x1' => true, 'y1' => true, 'x2' => true, 'y2' => true, 'stroke' => true, 'stroke-width' => true, 'stroke-linecap' => true ),
+			'polyline' => array( 'points' => true, 'fill' => true, 'stroke' => true, 'stroke-width' => true, 'stroke-linecap' => true, 'stroke-linejoin' => true ),
+			'polygon'  => array( 'points' => true, 'fill' => true, 'stroke' => true ),
+			'title'    => array(),
+			'desc'     => array(),
+		);
+		$svg = wp_kses( $raw, $allowed );
+		// Drop any width / height attribute on the root <svg> so the CSS
+		// shape size controls the rendered footprint, not whatever the
+		// designer baked into the file.
+		$svg = preg_replace( '/<svg([^>]*)\s(width|height)="[^"]*"/i', '<svg$1', $svg );
+		// Tag the svg with the same e-font-icon-svg-style class set the
+		// available indicator uses so existing CSS (width:1em; height:1em)
+		// applies without a special case.
+		if ( false === stripos( $svg, 'class="' ) ) {
+			$svg = preg_replace( '/<svg\b/i', '<svg class="kdna-comparison__indicator-svg" aria-hidden="true"', $svg, 1 );
+		} else {
+			$svg = preg_replace( '/<svg([^>]*\bclass=")([^"]*)"/i', '<svg$1$2 kdna-comparison__indicator-svg"', $svg, 1 );
+		}
+		$cached = $svg;
+		return $cached;
 	}
 
 	/*
