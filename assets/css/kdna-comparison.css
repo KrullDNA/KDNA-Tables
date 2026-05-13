@@ -69,6 +69,7 @@
 	border-radius: var(--kdna-comparison-border-radius);
 	overflow: hidden;
 	background: var(--kdna-comparison-bg);
+	margin: 0;
 }
 
 /* ─── Table base ───────────────────────────────────────────────────── */
@@ -80,6 +81,17 @@
 	color: var(--kdna-comparison-body-color);
 	background: var(--kdna-comparison-bg);
 	table-layout: fixed;
+	/* Reset theme/block-editor defaults: themes like Hello Elementor and
+	 * core block CSS often add table margin-bottom and 1px cell borders,
+	 * which leak through as bottom space and unwanted vertical lines.
+	 * Style controls re-introduce them deliberately when wanted. */
+	margin: 0;
+}
+
+.kdna-comparison th,
+.kdna-comparison td {
+	border-left: 0;
+	border-right: 0;
 }
 
 .kdna-comparison__col--label {
