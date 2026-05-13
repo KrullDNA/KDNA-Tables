@@ -10,6 +10,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-cpt.php';
+require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-admin.php';
+
+KDNA_Tables_CPT::init();
+if ( is_admin() ) {
+	KDNA_Tables_Admin::init();
+}
+
 class KDNA_Tables_Plugin {
 
 	const FRONTEND_STYLE_HANDLE    = 'kdna-tables';

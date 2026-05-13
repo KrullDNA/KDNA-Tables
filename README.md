@@ -238,6 +238,28 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 
 ## Changelog
 
+### 2.0.0 (in progress)
+
+- **Tables now live in a reusable library.** A new `kdna_table` custom
+  post type stores every table. The Elementor widget becomes a thin
+  display layer that picks an entry from the library and renders it
+  with full Style control. Edit a table once, every widget instance
+  using it updates instantly. The same table can be styled differently
+  in different widget instances on different pages.
+- **Top-level KDNA Tables admin menu.** A new top-level admin menu
+  (`dashicons-grid-view`, position 25) with **All Tables**, **Add New**,
+  and **Tools** submenus. The All Tables list shows the table type,
+  row or item counts, feature row counts (comparison only) and the
+  `[kdna_table id="..."]` shortcode with a one-click Copy button.
+- **Type Chooser on Add New.** Clicking **Add New** opens a two-card
+  chooser (General Table or Comparison Table). The type is permanent
+  once the table is created. To convert a table to the other type,
+  duplicate it from the All Tables list.
+- **Duplicate row action.** Every kdna_table row in the list table
+  shows a **Duplicate** action that copies the title (with `(copy)`
+  appended), the type, the caption, and all data across to a new
+  draft.
+
 ### 1.1.0
 
 - **Style controls now actually apply.** CSS variable defaults were
