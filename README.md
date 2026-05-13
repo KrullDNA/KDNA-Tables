@@ -238,6 +238,14 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 
 ## Changelog
 
+### 1.0.1
+
+- Fix fatal `TypeError` in `Controls_Stack::sanitize_settings()` on
+  recent Elementor builds when a fresh widget instance had not yet
+  saved settings. `get_style_depends()` now reads raw stored settings
+  via `get_data('settings')` instead of the strict-typed
+  `get_settings()` path.
+
 ### 1.0.0
 
 Initial release.

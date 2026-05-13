@@ -38,23 +38,32 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 
 	/*
 	 * Declaring the frontend stylesheet as a style dependency lets
-	 * Elementor auto-enqueue it only on pages where the widget renders,
-	 * which satisfies the conditional asset loading rule. The comparison
-	 * stylesheet is added only when this widget instance is configured
-	 * as a comparison table, so pages without comparison widgets stay
-	 * free of that CSS.
+	 * Elementor auto-enqueue it only on pages where the widget renders.
+	 * The comparison stylesheet is added only when this instance is a
+	 * comparison table, and the responsive stylesheet only when a
+	 * responsive mode is active.
+	 *
+	 * We read raw settings via get_data('settings') rather than
+	 * get_settings(). Newer Elementor builds declare
+	 * sanitize_settings(array $settings): array as a strict signature
+	 * and throw a TypeError when an instance's stored settings are
+	 * still null (typical for a brand-new widget before any save).
+	 * Raw data sidesteps the sanitiser and is sufficient for the few
+	 * keys we consult here.
 	 */
 	public function get_style_depends() {
 		$depends  = array( KDNA_Tables_Plugin::FRONTEND_STYLE_HANDLE );
-		$settings = $this->get_settings();
+		$settings = $this->kdna_raw_settings();
 
 		if ( isset( $settings['table_type'] ) && 'comparison' === $settings['table_type'] ) {
 			$depends[] = KDNA_Tables_Plugin::COMPARISON_STYLE_HANDLE;
 		}
 
-		$mode = isset( $settings['responsive_mode'] ) ? $settings['responsive_mode'] : 'card_stack';
-		if ( ! empty( $settings['table_type'] ) && '' !== $mode && 'none' !== $mode ) {
-			$depends[] = KDNA_Tables_Plugin::RESPONSIVE_STYLE_HANDLE;
+		if ( ! empty( $settings['table_type'] ) ) {
+			$mode = isset( $settings['responsive_mode'] ) ? $settings['responsive_mode'] : 'card_stack';
+			if ( '' !== $mode && 'none' !== $mode ) {
+				$depends[] = KDNA_Tables_Plugin::RESPONSIVE_STYLE_HANDLE;
+			}
 		}
 
 		return $depends;
@@ -69,6 +78,11 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 	 */
 	public function get_script_depends() {
 		return array( KDNA_Tables_Plugin::FRONTEND_SCRIPT_HANDLE );
+	}
+
+	protected function kdna_raw_settings() {
+		$raw = $this->get_data( 'settings' );
+		return is_array( $raw ) ? $raw : array();
 	}
 
 	/*
