@@ -196,32 +196,22 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 	}
 
 	protected function register_type_chooser_controls() {
+		/*
+		 * The Type Chooser section deliberately has no section-level
+		 * condition. Recent Elementor builds strip controls inside a
+		 * deactivated section from the settings payload that the editor
+		 * sends to PHP for canvas rendering, which would drop the
+		 * HIDDEN table_type value as soon as a type was picked and
+		 * leave the renderer with an empty type. The visible chooser
+		 * cards are conditioned individually on table_type, so the UX
+		 * is unchanged: chooser shows when no type is set, a small
+		 * "type set" note shows once a type is picked.
+		 */
 		$this->start_controls_section(
 			'section_table_type',
 			array(
-				'label'     => esc_html__( 'Table Type', 'kdna-tables' ),
-				'tab'       => \Elementor\Controls_Manager::TAB_CONTENT,
-				'condition' => array(
-					'table_type' => '',
-				),
-			)
-		);
-
-		$this->add_control(
-			'type_chooser_intro',
-			array(
-				'type' => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'  => '<div class="kdna-table__chooser-intro">'
-					. esc_html__( 'Choose the type of table you want to build. You can switch later using the link at the bottom of this tab.', 'kdna-tables' )
-					. '</div>',
-			)
-		);
-
-		$this->add_control(
-			'type_chooser_cards',
-			array(
-				'type' => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'  => $this->get_type_chooser_html(),
+				'label' => esc_html__( 'Table Type', 'kdna-tables' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
 			)
 		);
 
@@ -231,6 +221,43 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'label'   => esc_html__( 'Selected table type', 'kdna-tables' ),
 				'type'    => \Elementor\Controls_Manager::HIDDEN,
 				'default' => '',
+			)
+		);
+
+		$this->add_control(
+			'type_chooser_intro',
+			array(
+				'type'      => \Elementor\Controls_Manager::RAW_HTML,
+				'raw'       => '<div class="kdna-table__chooser-intro">'
+					. esc_html__( 'Choose the type of table you want to build. You can switch later using the link at the bottom of this tab.', 'kdna-tables' )
+					. '</div>',
+				'condition' => array(
+					'table_type' => '',
+				),
+			)
+		);
+
+		$this->add_control(
+			'type_chooser_cards',
+			array(
+				'type'      => \Elementor\Controls_Manager::RAW_HTML,
+				'raw'       => $this->get_type_chooser_html(),
+				'condition' => array(
+					'table_type' => '',
+				),
+			)
+		);
+
+		$this->add_control(
+			'type_chooser_active',
+			array(
+				'type'      => \Elementor\Controls_Manager::RAW_HTML,
+				'raw'       => '<div class="kdna-table__chooser-active">'
+					. esc_html__( 'Table type set. The matching Content and Style sections are now available. Use the Change Table Type section at the bottom of this tab to switch.', 'kdna-tables' )
+					. '</div>',
+				'condition' => array(
+					'table_type!' => '',
+				),
 			)
 		);
 

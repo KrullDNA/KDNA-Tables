@@ -238,6 +238,17 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 
 ## Changelog
 
+### 1.0.3
+
+- Fix canvas placeholder showing "Choose a table type to begin" even
+  after a type was selected. The HIDDEN `table_type` control was
+  registered inside a section conditioned on `table_type=''`; once a
+  type was picked the section deactivated and recent Elementor builds
+  stripped its controls from the settings payload sent to the canvas
+  renderer. The Type Chooser section is now always active and the
+  individual chooser cards condition on `table_type` instead, so the
+  hidden value is preserved.
+
 ### 1.0.2
 
 - Fix the same `sanitize_settings()` `TypeError` reported against
