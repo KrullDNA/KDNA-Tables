@@ -1,0 +1,203 @@
+/*
+ * KDNA Tables, base frontend styles.
+ *
+ * Selectors must never target .elementor-widget-container; the widget
+ * output is a single .kdna-table__wrapper div under the atomic markup
+ * experiment. Visual tokens live as CSS variables on the wrapper so
+ * Style controls and Custom CSS overrides can target them via the
+ * selector keyword.
+ */
+
+.kdna-table__wrapper {
+	--kdna-table-bg: transparent;
+	--kdna-table-border-color: #e5e7eb;
+	--kdna-table-border-width: 1px;
+	--kdna-table-border-radius: 12px;
+	--kdna-table-header-bg: #000000;
+	--kdna-table-header-color: #ffffff;
+	--kdna-table-header-padding: 14px 16px;
+	--kdna-table-body-bg-odd: #ffffff;
+	--kdna-table-body-bg-even: #f7f7f8;
+	--kdna-table-body-color: #1f2937;
+	--kdna-table-body-padding: 12px 16px;
+	--kdna-table-first-col-bg: transparent;
+	--kdna-table-first-col-color: inherit;
+	--kdna-table-first-col-weight: 700;
+	--kdna-table-icon-color: #3362dd;
+	--kdna-table-icon-size: 1.25em;
+	--kdna-table-cell-gap: 8px;
+	--kdna-table-row-hover-transition: 200ms;
+	box-sizing: border-box;
+}
+
+.kdna-table__wrapper *,
+.kdna-table__wrapper *::before,
+.kdna-table__wrapper *::after {
+	box-sizing: border-box;
+}
+
+.kdna-table__wrapper--general {
+	border-radius: var(--kdna-table-border-radius);
+	overflow: hidden;
+}
+
+/* Screen-reader-only utility used by indicator labels and similar. */
+
+.kdna-table__sr-only {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect(0, 0, 0, 0) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}
+
+/* ─── Placeholders ─────────────────────────────────────────────────── */
+
+.kdna-table__placeholder,
+.kdna-table__coming-soon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 120px;
+	padding: 32px 24px;
+	border: 1px dashed #c5cad0;
+	border-radius: 8px;
+	background: #f7f7f8;
+	color: #6d7882;
+	text-align: center;
+}
+
+.kdna-table__placeholder-message,
+.kdna-table__coming-soon-message {
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+/* ─── Table base ───────────────────────────────────────────────────── */
+
+.kdna-table {
+	width: 100%;
+	border-collapse: collapse;
+	border-spacing: 0;
+	background: var(--kdna-table-bg);
+	color: var(--kdna-table-body-color);
+	table-layout: auto;
+}
+
+.kdna-table__caption {
+	caption-side: top;
+	padding: 0 0 12px;
+	font-weight: 600;
+	text-align: left;
+	color: var(--kdna-table-body-color);
+}
+
+.kdna-table__cell {
+	padding: var(--kdna-table-body-padding);
+	border: var(--kdna-table-border-width) solid var(--kdna-table-border-color);
+	vertical-align: middle;
+	text-align: var(--kdna-table-cell-text-align, left);
+	transition: background-color var(--kdna-table-row-hover-transition, 200ms) ease,
+		color var(--kdna-table-row-hover-transition, 200ms) ease;
+}
+
+.kdna-table thead .kdna-table__cell,
+.kdna-table .kdna-table__cell--header {
+	background: var(--kdna-table-header-bg);
+	color: var(--kdna-table-header-color);
+	padding: var(--kdna-table-header-padding);
+	font-weight: 600;
+}
+
+.kdna-table tbody .kdna-table__row--odd > .kdna-table__cell {
+	background: var(--kdna-table-body-bg-odd);
+}
+
+.kdna-table tbody .kdna-table__row--even > .kdna-table__cell {
+	background: var(--kdna-table-body-bg-even);
+}
+
+.kdna-table .kdna-table__cell--row-header {
+	background: var(--kdna-table-first-col-bg);
+	color: var(--kdna-table-first-col-color);
+	font-weight: var(--kdna-table-first-col-weight);
+}
+
+/* ─── Cell content pieces ─────────────────────────────────────────── */
+
+.kdna-table__cell-text,
+.kdna-table__cell-icon,
+.kdna-table__cell-image {
+	display: inline-flex;
+	align-items: center;
+	vertical-align: middle;
+}
+
+.kdna-table__cell-text {
+	line-height: 1.5;
+}
+
+.kdna-table__cell-text + .kdna-table__cell-icon,
+.kdna-table__cell-text + .kdna-table__cell-image,
+.kdna-table__cell-icon + .kdna-table__cell-text,
+.kdna-table__cell-icon + .kdna-table__cell-image,
+.kdna-table__cell-image + .kdna-table__cell-text,
+.kdna-table__cell-image + .kdna-table__cell-icon {
+	margin-left: var(--kdna-table-cell-gap);
+}
+
+.kdna-table__cell-icon {
+	color: var(--kdna-table-icon-color);
+	font-size: var(--kdna-table-icon-size);
+	line-height: 1;
+	transition: color var(--kdna-table-row-hover-transition, 200ms) ease;
+}
+
+.kdna-table__cell-icon i,
+.kdna-table__cell-icon svg {
+	width: 1em;
+	height: 1em;
+	display: inline-block;
+}
+
+.kdna-table__cell-image img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+}
+
+/* ─── Sticky first column ──────────────────────────────────────────
+ * Active only when sticky_first_column is on. The render wraps the
+ * <table> in .kdna-table__scroll to provide horizontal overflow. The
+ * first cell of every row sticks to the left edge of the scroller
+ * with its own background, optional right-edge shadow, and z-index.
+ * Responsive modes break the table layout below the breakpoint, so
+ * kdna-responsive.css overrides position back to static there.
+ */
+
+.kdna-table__wrapper {
+	--kdna-sticky-bg: #ffffff;
+	--kdna-sticky-shadow-color: rgba(0, 0, 0, 0.08);
+	--kdna-sticky-shadow-size: 8px;
+	--kdna-sticky-z-index: 2;
+}
+
+.kdna-table__scroll {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.kdna-table__wrapper[data-sticky-first-column="yes"] .kdna-table thead .kdna-table__cell:first-child,
+.kdna-table__wrapper[data-sticky-first-column="yes"] .kdna-table tbody .kdna-table__cell:first-child,
+.kdna-table__wrapper[data-sticky-first-column="yes"] .kdna-comparison thead .kdna-comparison__cell--head-label,
+.kdna-table__wrapper[data-sticky-first-column="yes"] .kdna-comparison tbody .kdna-comparison__cell--label {
+	position: sticky;
+	left: 0;
+	z-index: var(--kdna-sticky-z-index, 2);
+	background: var(--kdna-sticky-bg);
+	box-shadow: var(--kdna-sticky-shadow-size, 8px) 0 var(--kdna-sticky-shadow-size, 8px) calc(var(--kdna-sticky-shadow-size, 8px) * -0.5) var(--kdna-sticky-shadow-color, transparent);
+}

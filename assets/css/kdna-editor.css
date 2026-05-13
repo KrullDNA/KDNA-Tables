@@ -1,0 +1,97 @@
+/*
+ * KDNA Tables, editor-only styles.
+ *
+ * Styles for the Type Chooser cards and the Change Table Type link, both
+ * of which only appear inside the Elementor editor panel.
+ */
+
+.kdna-table__chooser-intro {
+	margin: 0 0 12px;
+	color: #495157;
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.kdna-table__chooser {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 10px;
+	margin: 0 0 4px;
+}
+
+.kdna-table__chooser-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 18px 14px;
+	border: 1px solid #d5dadf;
+	border-radius: 8px;
+	background: #ffffff;
+	color: #495157;
+	text-align: center;
+	cursor: pointer;
+	transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+	font: inherit;
+}
+
+.kdna-table__chooser-card:hover,
+.kdna-table__chooser-card:focus {
+	border-color: #3362dd;
+	background: #f4f7ff;
+	color: #1a2233;
+	outline: none;
+	box-shadow: 0 0 0 1px #3362dd;
+}
+
+.kdna-table__chooser-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	background: #eef2ff;
+	color: #3362dd;
+	font-size: 24px;
+}
+
+.kdna-table__chooser-card:hover .kdna-table__chooser-icon,
+.kdna-table__chooser-card:focus .kdna-table__chooser-icon {
+	background: #3362dd;
+	color: #ffffff;
+}
+
+.kdna-table__chooser-title {
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.kdna-table__chooser-desc {
+	font-size: 11px;
+	line-height: 1.4;
+	color: #6d7882;
+}
+
+.kdna-table__change-type {
+	display: inline-block;
+	margin-top: 4px;
+	color: #3362dd;
+	font-size: 12px;
+	font-weight: 600;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.kdna-table__change-type:hover,
+.kdna-table__change-type:focus {
+	color: #1a3aa8;
+	outline: none;
+}
+
+.kdna-table__change-type-hint {
+	margin-top: 6px;
+	color: #6d7882;
+	font-size: 11px;
+	line-height: 1.5;
+}
