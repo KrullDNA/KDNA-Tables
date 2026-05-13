@@ -14,14 +14,14 @@
  * controls writing the same variables to {{WRAPPER}} win the cascade.
  * See kdna-tables.css for the full explanation. */
 :where(.elementor-widget-kdna-table) {
-	--kdna-comparison-bg: #ffffff;
+	--kdna-comparison-bg: transparent;
 	--kdna-comparison-border-color: #e5e7eb;
 	--kdna-comparison-border-radius: 12px;
 	--kdna-comparison-header-bg: #000000;
 	--kdna-comparison-header-color: #ffffff;
 	--kdna-comparison-header-padding: 24px 16px;
-	--kdna-comparison-body-bg-odd: #ffffff;
-	--kdna-comparison-body-bg-even: #f7f7f8;
+	--kdna-comparison-body-bg-odd: transparent;
+	--kdna-comparison-body-bg-even: transparent;
 	--kdna-comparison-body-color: #1f2937;
 	--kdna-comparison-body-padding: 16px;
 	--kdna-comparison-row-hover-transition: 200ms;
