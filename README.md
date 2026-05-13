@@ -238,13 +238,20 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 
 ## Changelog
 
+### 1.0.2
+
+- Fix the same `sanitize_settings()` `TypeError` reported against
+  1.0.1. Recent Elementor builds also route
+  `Controls_Stack::get_data('settings')` through the strict sanitiser,
+  so the previous workaround still crashed on instances whose stored
+  settings were `null`. `get_style_depends()` no longer inspects
+  instance settings at all and instead returns the full set of style
+  handles. They still only load on pages that render the widget.
+
 ### 1.0.1
 
-- Fix fatal `TypeError` in `Controls_Stack::sanitize_settings()` on
-  recent Elementor builds when a fresh widget instance had not yet
-  saved settings. `get_style_depends()` now reads raw stored settings
-  via `get_data('settings')` instead of the strict-typed
-  `get_settings()` path.
+- Initial attempt to fix `sanitize_settings()` `TypeError` by reading
+  raw settings via `get_data('settings')`. Superseded by 1.0.2.
 
 ### 1.0.0
 
