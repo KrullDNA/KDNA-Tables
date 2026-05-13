@@ -37,52 +37,33 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 	}
 
 	/*
-	 * Declaring the frontend stylesheet as a style dependency lets
-	 * Elementor auto-enqueue it only on pages where the widget renders.
-	 * The comparison stylesheet is added only when this instance is a
-	 * comparison table, and the responsive stylesheet only when a
-	 * responsive mode is active.
-	 *
-	 * We read raw settings via get_data('settings') rather than
-	 * get_settings(). Newer Elementor builds declare
-	 * sanitize_settings(array $settings): array as a strict signature
-	 * and throw a TypeError when an instance's stored settings are
-	 * still null (typical for a brand-new widget before any save).
-	 * Raw data sidesteps the sanitiser and is sufficient for the few
-	 * keys we consult here.
+	 * Style dependencies. Elementor only invokes get_style_depends() on
+	 * pages where at least one widget instance renders, so listing the
+	 * comparison and responsive stylesheets here still keeps them off
+	 * pages without the widget. We deliberately do not introspect the
+	 * instance settings: recent Elementor builds route both
+	 * get_settings() and Controls_Stack::get_data('settings') through
+	 * sanitize_settings(array $settings): array, which fatals when the
+	 * stored settings for a given instance happen to be null. The CSS
+	 * overhead of always loading the comparison and responsive
+	 * stylesheets is a small price for not crashing the editor preview
+	 * or front end on those instances.
 	 */
 	public function get_style_depends() {
-		$depends  = array( KDNA_Tables_Plugin::FRONTEND_STYLE_HANDLE );
-		$settings = $this->kdna_raw_settings();
-
-		if ( isset( $settings['table_type'] ) && 'comparison' === $settings['table_type'] ) {
-			$depends[] = KDNA_Tables_Plugin::COMPARISON_STYLE_HANDLE;
-		}
-
-		if ( ! empty( $settings['table_type'] ) ) {
-			$mode = isset( $settings['responsive_mode'] ) ? $settings['responsive_mode'] : 'card_stack';
-			if ( '' !== $mode && 'none' !== $mode ) {
-				$depends[] = KDNA_Tables_Plugin::RESPONSIVE_STYLE_HANDLE;
-			}
-		}
-
-		return $depends;
+		return array(
+			KDNA_Tables_Plugin::FRONTEND_STYLE_HANDLE,
+			KDNA_Tables_Plugin::COMPARISON_STYLE_HANDLE,
+			KDNA_Tables_Plugin::RESPONSIVE_STYLE_HANDLE,
+		);
 	}
 
 	/*
 	 * Frontend JS handles the tooltip touch / keyboard interaction and
 	 * the column picker. It always loads when the widget is present so
 	 * tooltips remain accessible even when no responsive mode is set.
-	 * It is still excluded from pages without the widget through
-	 * Elementor's per-instance asset auto-loading.
 	 */
 	public function get_script_depends() {
 		return array( KDNA_Tables_Plugin::FRONTEND_SCRIPT_HANDLE );
-	}
-
-	protected function kdna_raw_settings() {
-		$raw = $this->get_data( 'settings' );
-		return is_array( $raw ) ? $raw : array();
 	}
 
 	/*
