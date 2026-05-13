@@ -95,3 +95,12 @@
 	font-size: 11px;
 	line-height: 1.5;
 }
+
+.kdna-table__chooser-active {
+	padding: 10px 12px;
+	background: #f4f7ff;
+	border-left: 3px solid #3362dd;
+	color: #495157;
+	font-size: 12px;
+	line-height: 1.5;
+}
