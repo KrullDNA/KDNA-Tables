@@ -61,20 +61,14 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 	}
 
 	/*
-	 * Frontend JS only loads when an interactive responsive mode needs it.
-	 * Session 6 uses it for column_picker; Session 7 widens this for the
-	 * tooltip touch / keyboard handler.
+	 * Frontend JS handles the tooltip touch / keyboard interaction and
+	 * the column picker. It always loads when the widget is present so
+	 * tooltips remain accessible even when no responsive mode is set.
+	 * It is still excluded from pages without the widget through
+	 * Elementor's per-instance asset auto-loading.
 	 */
 	public function get_script_depends() {
-		$depends  = array();
-		$settings = $this->get_settings();
-
-		$mode = isset( $settings['responsive_mode'] ) ? $settings['responsive_mode'] : '';
-		if ( ! empty( $settings['table_type'] ) && 'column_picker' === $mode ) {
-			$depends[] = KDNA_Tables_Plugin::FRONTEND_SCRIPT_HANDLE;
-		}
-
-		return $depends;
+		return array( KDNA_Tables_Plugin::FRONTEND_SCRIPT_HANDLE );
 	}
 
 	/*
@@ -102,7 +96,108 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		$this->register_comparison_style_controls();
 		$this->register_responsive_content_controls();
 		$this->register_responsive_style_controls();
+		$this->register_sticky_content_controls();
+		$this->register_sticky_style_controls();
 		$this->register_change_type_controls();
+	}
+
+	protected function register_sticky_content_controls() {
+		$this->start_controls_section(
+			'section_sticky',
+			array(
+				'label'     => esc_html__( 'Sticky First Column', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_CONTENT,
+				'condition' => array( 'table_type!' => '' ),
+			)
+		);
+
+		$this->add_control(
+			'sticky_first_column',
+			array(
+				'label'        => esc_html__( 'Sticky First Column', 'kdna-tables' ),
+				'type'         => \Elementor\Controls_Manager::SWITCHER,
+				'label_on'     => esc_html__( 'On', 'kdna-tables' ),
+				'label_off'    => esc_html__( 'Off', 'kdna-tables' ),
+				'return_value' => 'yes',
+				'default'      => '',
+				'description'  => esc_html__( 'Keeps the first column visible as the table scrolls horizontally on desktop. Responsive modes take precedence at their breakpoint.', 'kdna-tables' ),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	protected function register_sticky_style_controls() {
+		$this->start_controls_section(
+			'section_sticky_style',
+			array(
+				'label'     => esc_html__( 'Sticky Column', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array(
+					'table_type!'         => '',
+					'sticky_first_column' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'sticky_bg',
+			array(
+				'label'       => esc_html__( 'Background', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::COLOR,
+				'selectors'   => array(
+					'{{WRAPPER}}' => '--kdna-sticky-bg: {{VALUE}};',
+				),
+				'description' => esc_html__( 'Solid background sits behind the sticky column while the rest of the table scrolls under it.', 'kdna-tables' ),
+			)
+		);
+
+		$this->add_control(
+			'sticky_shadow_color',
+			array(
+				'label'     => esc_html__( 'Right Edge Shadow Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}}' => '--kdna-sticky-shadow-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'sticky_shadow_size',
+			array(
+				'label'      => esc_html__( 'Right Edge Shadow Size', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array(
+					'px' => array( 'min' => 0, 'max' => 40, 'step' => 1 ),
+				),
+				'default'    => array(
+					'unit' => 'px',
+					'size' => 8,
+				),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-sticky-shadow-size: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'sticky_z_index',
+			array(
+				'label'     => esc_html__( 'Z-Index', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::NUMBER,
+				'min'       => 0,
+				'max'       => 100,
+				'step'      => 1,
+				'default'   => 2,
+				'selectors' => array(
+					'{{WRAPPER}}' => '--kdna-sticky-z-index: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_section();
 	}
 
 	protected function register_type_chooser_controls() {
@@ -3837,16 +3932,23 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			);
 		}
 
+		$sticky_first_column = ! empty( $settings['sticky_first_column'] ) && 'yes' === $settings['sticky_first_column'];
+
 		$wrapper_attrs = array(
 			'class'                       => implode( ' ', $wrapper_classes ),
 			'data-table-type'             => $table_type,
 			'data-responsive-mode'        => '' !== $table_type ? $responsive_mode : 'none',
 			'data-responsive-breakpoint'  => '' !== $table_type ? $responsive_breakpoint : 'mobile',
 			'data-pivot-label-position'   => $pivot_label_position,
+			'data-sticky-first-column'    => $sticky_first_column ? 'yes' : 'no',
 		);
 		if ( ! empty( $picker_config ) ) {
 			$wrapper_attrs['data-picker-config'] = wp_json_encode( $picker_config );
 		}
+
+		// Expose the sticky flag to render templates so they can wrap the
+		// table in the horizontal scroll container.
+		$settings['__sticky_first_column'] = $sticky_first_column;
 
 		$attr_string = '';
 		foreach ( $wrapper_attrs as $name => $value ) {

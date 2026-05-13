@@ -169,3 +169,35 @@
 	max-width: 100%;
 	height: auto;
 }
+
+/* ─── Sticky first column ──────────────────────────────────────────
+ * Active only when sticky_first_column is on. The render wraps the
+ * <table> in .kdna-table__scroll to provide horizontal overflow. The
+ * first cell of every row sticks to the left edge of the scroller
+ * with its own background, optional right-edge shadow, and z-index.
+ * Responsive modes break the table layout below the breakpoint, so
+ * kdna-responsive.css overrides position back to static there.
+ */
+
+.kdna-table__wrapper {
+	--kdna-sticky-bg: #ffffff;
+	--kdna-sticky-shadow-color: rgba(0, 0, 0, 0.08);
+	--kdna-sticky-shadow-size: 8px;
+	--kdna-sticky-z-index: 2;
+}
+
+.kdna-table__scroll {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.kdna-table__wrapper[data-sticky-first-column="yes"] .kdna-table thead .kdna-table__cell:first-child,
+.kdna-table__wrapper[data-sticky-first-column="yes"] .kdna-table tbody .kdna-table__cell:first-child,
+.kdna-table__wrapper[data-sticky-first-column="yes"] .kdna-comparison thead .kdna-comparison__cell--head-label,
+.kdna-table__wrapper[data-sticky-first-column="yes"] .kdna-comparison tbody .kdna-comparison__cell--label {
+	position: sticky;
+	left: 0;
+	z-index: var(--kdna-sticky-z-index, 2);
+	background: var(--kdna-sticky-bg);
+	box-shadow: var(--kdna-sticky-shadow-size, 8px) 0 var(--kdna-sticky-shadow-size, 8px) calc(var(--kdna-sticky-shadow-size, 8px) * -0.5) var(--kdna-sticky-shadow-color, transparent);
+}

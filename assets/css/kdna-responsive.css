@@ -329,6 +329,15 @@
 	.kdna-table__wrapper[data-responsive-mode="column_picker"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-picker {
 		display: block;
 	}
+
+	/* ── Sticky first column yields to responsive modes at mobile ── */
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-sticky-first-column="yes"][data-responsive-breakpoint="mobile"] .kdna-table__cell,
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-sticky-first-column="yes"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell,
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-sticky-first-column="yes"][data-responsive-breakpoint="mobile"] .kdna-comparison__cell,
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-sticky-first-column="yes"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison__cell {
+		position: static;
+		box-shadow: none;
+	}
 }
 
 /* ─── Tablet-and-mobile breakpoint (768 to 1024px) ────────────────── */
@@ -519,5 +528,12 @@
 	/* ── Column Picker ── */
 	.kdna-table__wrapper[data-responsive-mode="column_picker"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-picker {
 		display: block;
+	}
+
+	/* ── Sticky first column yields to responsive modes at tablet ── */
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-sticky-first-column="yes"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell,
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-sticky-first-column="yes"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison__cell {
+		position: static;
+		box-shadow: none;
 	}
 }

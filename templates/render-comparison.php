@@ -74,7 +74,9 @@ if ( $has_highlight ) {
 
 $feature_count = count( $feature_rows );
 $table_style   = sprintf( '--kdna-items-count: %d; --kdna-feature-count: %d;', (int) $item_count, (int) $feature_count );
+$sticky        = ! empty( $settings['__sticky_first_column'] );
 ?>
+<?php if ( $sticky ) : ?><div class="kdna-table__scroll"><?php endif; ?>
 <table class="<?php echo esc_attr( implode( ' ', $table_classes ) ); ?>" data-item-count="<?php echo (int) $item_count; ?>" style="<?php echo esc_attr( $table_style ); ?>">
 	<thead>
 		<tr class="kdna-comparison__row kdna-comparison__row--head">
@@ -226,12 +228,23 @@ $table_style   = sprintf( '--kdna-items-count: %d; --kdna-feature-count: %d;', (
 					$target_attr = $cta_target ? ' target="_blank"' : '';
 					?>
 					<td class="<?php echo esc_attr( implode( ' ', $cell_classes ) ); ?>">
-						<?php if ( $cta_enabled && '' !== $cta_url && '' !== $cta_text ) : ?>
-							<a href="<?php echo esc_url( $cta_url ); ?>" class="kdna-comparison__cta kdna-comparison__cta--icon-<?php echo esc_attr( $cta_icon_position ); ?>"<?php echo $target_attr . $rel_attr; ?>>
+						<?php
+						$cta_has_text     = '' !== $cta_text;
+						$cta_can_render   = $cta_enabled && '' !== $cta_url && ( $cta_has_text || $cta_has_icon );
+						$cta_aria_label   = '';
+						if ( $cta_can_render && ! $cta_has_text ) {
+							/* translators: %s: item label, e.g. "V10". */
+							$cta_aria_label = sprintf( esc_attr__( 'Learn more about %s', 'kdna-tables' ), isset( $item['item_label'] ) ? $item['item_label'] : '' );
+						}
+						?>
+						<?php if ( $cta_can_render ) : ?>
+							<a href="<?php echo esc_url( $cta_url ); ?>" class="kdna-comparison__cta kdna-comparison__cta--icon-<?php echo esc_attr( $cta_icon_position ); ?>"<?php echo $target_attr . $rel_attr; ?><?php if ( '' !== $cta_aria_label ) : ?> aria-label="<?php echo esc_attr( $cta_aria_label ); ?>"<?php endif; ?>>
 								<?php if ( $cta_has_icon && 'before' === $cta_icon_position ) : ?>
 									<span class="kdna-comparison__cta-icon" aria-hidden="true"><?php \Elementor\Icons_Manager::render_icon( $cta_icon, array( 'aria-hidden' => 'true' ) ); ?></span>
 								<?php endif; ?>
-								<span class="kdna-comparison__cta-text"><?php echo esc_html( $cta_text ); ?></span>
+								<?php if ( $cta_has_text ) : ?>
+									<span class="kdna-comparison__cta-text"><?php echo esc_html( $cta_text ); ?></span>
+								<?php endif; ?>
 								<?php if ( $cta_has_icon && 'after' === $cta_icon_position ) : ?>
 									<span class="kdna-comparison__cta-icon" aria-hidden="true"><?php \Elementor\Icons_Manager::render_icon( $cta_icon, array( 'aria-hidden' => 'true' ) ); ?></span>
 								<?php endif; ?>
@@ -243,3 +256,4 @@ $table_style   = sprintf( '--kdna-items-count: %d; --kdna-feature-count: %d;', (
 		<?php endif; ?>
 	</tbody>
 </table>
+<?php if ( $sticky ) : ?></div><?php endif; ?>

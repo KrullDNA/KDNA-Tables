@@ -1,17 +1,18 @@
 /*
  * KDNA Tables, frontend handler.
  *
- * Attached via Elementor's element-handler pattern. The Column Picker
- * mode reads a JSON config from the wrapper's data-picker-config
- * attribute, builds a select + chips UI, and toggles each item column's
- * cells via the .kdna-comparison__col--hidden modifier. Re-runs on
+ * Attached via Elementor's element-handler pattern. Initialises the
+ * tooltip touch / keyboard behaviour for every widget instance and the
+ * Column Picker chrome for column-picker mode. The handler re-runs on
  * Elementor breakpoint resize events.
  */
 
 ( function ( $ ) {
 	'use strict';
 
-	var WIDGET_NAME = 'kdna-table.default';
+	var WIDGET_NAME = 'kdna-table';
+
+	/* ── Column Picker ────────────────────────────────────────────── */
 
 	function readPickerConfig( $wrapper ) {
 		var raw = $wrapper.attr( 'data-picker-config' );
@@ -26,8 +27,7 @@
 	}
 
 	function applySelection( $wrapper, selectedSlots ) {
-		var $cells = $wrapper.find( '[data-slot]' );
-		$cells.each( function () {
+		$wrapper.find( '[data-slot]' ).each( function () {
 			var slot = parseInt( this.getAttribute( 'data-slot' ), 10 );
 			if ( ! slot ) {
 				return;
@@ -45,7 +45,9 @@
 				return;
 			}
 			var $chip = $( '<span class="kdna-picker__chip" />' ).text( item.label );
-			var $remove = $( '<button type="button" class="kdna-picker__chip-remove" aria-label="Remove" />' ).text( '×' );
+			var $remove = $( '<button type="button" class="kdna-picker__chip-remove" />' )
+				.attr( 'aria-label', 'Remove ' + item.label )
+				.text( '×' );
 			$remove.on( 'click', function () {
 				onRemove( slot );
 			} );
@@ -55,18 +57,17 @@
 	}
 
 	function buildPicker( $wrapper, config ) {
-		var existing = $wrapper.find( '> .kdna-picker' );
-		if ( existing.length ) {
-			existing.remove();
-		}
+		$wrapper.find( '> .kdna-picker' ).remove();
 
-		var $picker = $( '<div class="kdna-picker" role="group" aria-label="Column picker" />' );
-		var $label = $( '<span class="kdna-picker__label" />' ).text( config.label || 'Compare' );
-		var $chips = $( '<div class="kdna-picker__chips" aria-live="polite" />' );
+		var $picker = $( '<div class="kdna-picker" role="group" />' )
+			.attr( 'aria-label', config.label || 'Compare' );
 		var selectId = 'kdna-picker-' + Math.random().toString( 36 ).slice( 2, 9 );
+		var $label = $( '<label class="kdna-picker__label" />' )
+			.attr( 'for', selectId )
+			.text( config.label || 'Compare' );
+		var $chips = $( '<div class="kdna-picker__chips" aria-live="polite" />' );
 		var $select = $( '<select class="kdna-picker__select" />' ).attr( 'id', selectId );
 
-		$label.attr( 'for', selectId );
 		$picker.append( $label ).append( $chips ).append( $select );
 
 		var maxSelect = ( config.maxSelect === 1 || config.maxSelect === 2 ) ? config.maxSelect : 2;
@@ -133,24 +134,144 @@
 		$wrapper.find( '> .kdna-picker' ).remove();
 	}
 
+	/* ── Tooltips ─────────────────────────────────────────────────── */
+
+	function setTooltipOpen( $wrap, open ) {
+		var $trigger = $wrap.find( '> .kdna-comparison__tooltip-trigger' );
+		$wrap.toggleClass( 'is-open', !! open );
+		$trigger.attr( 'aria-expanded', open ? 'true' : 'false' );
+	}
+
+	function flipPositionIfAuto( $wrap ) {
+		var stored = $wrap.data( 'kdnaTooltipMode' );
+		if ( ! stored ) {
+			stored = $wrap.attr( 'data-tooltip-position' ) || 'top';
+			$wrap.data( 'kdnaTooltipMode', stored );
+		}
+		if ( 'auto' !== stored ) {
+			return;
+		}
+
+		var $trigger = $wrap.find( '> .kdna-comparison__tooltip-trigger' );
+		var $tooltip = $wrap.find( '> .kdna-comparison__tooltip' );
+		if ( ! $trigger.length || ! $tooltip.length ) {
+			return;
+		}
+
+		var triggerRect = $trigger[ 0 ].getBoundingClientRect();
+		// Force measurement: temporarily make tooltip visible offscreen for
+		// a stable height even before transitions land.
+		var prevVisibility = $tooltip[ 0 ].style.visibility;
+		var prevDisplay    = $tooltip[ 0 ].style.display;
+		$tooltip[ 0 ].style.visibility = 'hidden';
+		$tooltip[ 0 ].style.display    = 'block';
+		var tooltipHeight = $tooltip[ 0 ].offsetHeight || 60;
+		$tooltip[ 0 ].style.visibility = prevVisibility;
+		$tooltip[ 0 ].style.display    = prevDisplay;
+
+		var roomAbove = triggerRect.top;
+		var resolved  = ( roomAbove < tooltipHeight + 12 ) ? 'bottom' : 'top';
+		$wrap.attr( 'data-tooltip-position', resolved );
+	}
+
+	function initTooltips( $scope ) {
+		var $wraps = $scope.find( '.kdna-comparison__tooltip-wrap' );
+
+		$wraps.each( function () {
+			var $wrap    = $( this );
+			var $trigger = $wrap.find( '> .kdna-comparison__tooltip-trigger' );
+			var $tooltip = $wrap.find( '> .kdna-comparison__tooltip' );
+
+			if ( ! $trigger.length || ! $tooltip.length ) {
+				return;
+			}
+
+			$trigger
+				.attr( 'role', 'button' )
+				.attr( 'tabindex', '0' )
+				.attr( 'aria-expanded', 'false' );
+
+			if ( ! $tooltip.attr( 'role' ) ) {
+				$tooltip.attr( 'role', 'tooltip' );
+			}
+
+			if ( $wrap.data( 'kdnaTooltipBound' ) ) {
+				return;
+			}
+			$wrap.data( 'kdnaTooltipBound', true );
+
+			$trigger.on( 'click.kdnaTooltip', function ( event ) {
+				event.preventDefault();
+				event.stopPropagation();
+				var isOpen = $wrap.hasClass( 'is-open' );
+				if ( ! isOpen ) {
+					flipPositionIfAuto( $wrap );
+				}
+				setTooltipOpen( $wrap, ! isOpen );
+			} );
+
+			$trigger.on( 'keydown.kdnaTooltip', function ( event ) {
+				if ( 'Enter' === event.key || ' ' === event.key || 'Spacebar' === event.key ) {
+					event.preventDefault();
+					flipPositionIfAuto( $wrap );
+					setTooltipOpen( $wrap, true );
+				} else if ( 'Escape' === event.key || 'Esc' === event.key ) {
+					if ( $wrap.hasClass( 'is-open' ) ) {
+						event.preventDefault();
+						setTooltipOpen( $wrap, false );
+						$trigger.focus();
+					}
+				}
+			} );
+
+			$trigger.on( 'mouseenter.kdnaTooltip focus.kdnaTooltip', function () {
+				flipPositionIfAuto( $wrap );
+			} );
+		} );
+	}
+
+	/* ── Per-instance init ────────────────────────────────────────── */
+
 	function initInstance( $scope ) {
 		var $wrapper = $scope.find( '.kdna-table__wrapper' ).first();
 		if ( ! $wrapper.length ) {
 			return;
 		}
 
+		initTooltips( $wrapper );
+
 		var mode = $wrapper.attr( 'data-responsive-mode' );
-		if ( 'column_picker' !== mode ) {
+		if ( 'column_picker' === mode ) {
+			var config = readPickerConfig( $wrapper );
+			if ( config && config.items && config.items.length ) {
+				buildPicker( $wrapper, config );
+			}
+		} else {
 			clearPickerState( $wrapper );
+		}
+	}
+
+	var documentClickBound = false;
+	function bindDocumentDismiss() {
+		if ( documentClickBound ) {
 			return;
 		}
-
-		var config = readPickerConfig( $wrapper );
-		if ( ! config || ! config.items || ! config.items.length ) {
-			return;
-		}
-
-		buildPicker( $wrapper, config );
+		documentClickBound = true;
+		$( document ).on( 'click.kdnaTooltip', function ( event ) {
+			$( '.kdna-comparison__tooltip-wrap.is-open' ).each( function () {
+				if ( $( event.target ).closest( this ).length ) {
+					return;
+				}
+				setTooltipOpen( $( this ), false );
+			} );
+		} );
+		$( document ).on( 'keydown.kdnaTooltip', function ( event ) {
+			if ( 'Escape' === event.key || 'Esc' === event.key ) {
+				$( '.kdna-comparison__tooltip-wrap.is-open' ).each( function () {
+					setTooltipOpen( $( this ), false );
+				} );
+			}
+		} );
 	}
 
 	$( window ).on( 'elementor/frontend/init', function () {
@@ -158,11 +279,13 @@
 			return;
 		}
 
-		elementorFrontend.elementsHandler.attachHandler( WIDGET_NAME.split( '.' )[ 0 ], function ( $scope ) {
+		bindDocumentDismiss();
+
+		elementorFrontend.elementsHandler.attachHandler( WIDGET_NAME, function ( $scope ) {
 			initInstance( $scope );
 
 			if ( elementorFrontend.elements && elementorFrontend.elements.$window ) {
-				elementorFrontend.elements.$window.on( 'resize', function () {
+				elementorFrontend.elements.$window.on( 'resize.kdnaTables', function () {
 					initInstance( $scope );
 				} );
 			}

@@ -330,6 +330,7 @@
 .kdna-comparison__tooltip-trigger:hover ~ .kdna-comparison__tooltip,
 .kdna-comparison__tooltip-trigger:focus ~ .kdna-comparison__tooltip,
 .kdna-comparison__tooltip-wrap:focus-within .kdna-comparison__tooltip,
+.kdna-comparison__tooltip-wrap.is-open .kdna-comparison__tooltip,
 .kdna-comparison__tooltip:hover {
 	opacity: 1;
 	visibility: visible;

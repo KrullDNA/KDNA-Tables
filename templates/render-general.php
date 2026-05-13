@@ -43,7 +43,10 @@ $body_rows = $rows;
 if ( $first_row_header && ! empty( $body_rows ) ) {
 	$head_row  = array_shift( $body_rows );
 }
+
+$sticky = ! empty( $settings['__sticky_first_column'] );
 ?>
+<?php if ( $sticky ) : ?><div class="kdna-table__scroll"><?php endif; ?>
 <table class="kdna-table kdna-table--general">
 	<?php if ( '' !== $caption ) : ?>
 		<caption class="kdna-table__caption"><?php echo esc_html( $caption ); ?></caption>
@@ -116,3 +119,4 @@ if ( $first_row_header && ! empty( $body_rows ) ) {
 		<?php endforeach; ?>
 	</tbody>
 </table>
+<?php if ( $sticky ) : ?></div><?php endif; ?>
