@@ -1,8 +1,22 @@
 /*
- * KDNA Tables admin styles. Session 1 covers the Type Chooser screen,
- * the All Tables list table pills and the Shortcode copy button. The
- * Alpine.js editor styles arrive in Session 3.
+ * KDNA Tables admin styles. Type Chooser, list table pills, Shortcode
+ * copy button, and the Alpine.js matrix editor shared between the
+ * General Table editor (Session 3) and the Comparison Table editor
+ * (Session 5).
  */
+
+:root {
+	--kdna-admin-bg: #fff;
+	--kdna-admin-surface: #f6f7f7;
+	--kdna-admin-border: #dcdcde;
+	--kdna-admin-border-strong: #c3c4c7;
+	--kdna-admin-text: #1d2327;
+	--kdna-admin-text-soft: #50575e;
+	--kdna-admin-accent: #2271b1;
+	--kdna-admin-accent-soft: rgba( 34, 113, 177, 0.12 );
+	--kdna-admin-danger: #b32d2e;
+	--kdna-admin-radius: 8px;
+}
 
 .kdna-type-chooser {
 	max-width: 960px;
@@ -145,4 +159,277 @@
 
 .kdna-tools-page p {
 	max-width: 60ch;
+}
+
+/*
+ * Matrix editor (general table). The grid uses display:contents on the
+ * per-row wrapper so each row label + cell becomes a direct grid item
+ * of the matrix. Cloak prevents Alpine flashes before mount.
+ */
+
+[x-cloak] {
+	display: none !important;
+}
+
+.kdna-editor {
+	background: var( --kdna-admin-bg );
+	border: 1px solid var( --kdna-admin-border );
+	border-radius: var( --kdna-admin-radius );
+	padding: 16px;
+	color: var( --kdna-admin-text );
+}
+
+.kdna-editor__header {
+	display: grid;
+	grid-template-columns: minmax( 200px, 320px ) 1fr;
+	gap: 16px 24px;
+	align-items: end;
+	margin-bottom: 18px;
+}
+
+.kdna-editor__field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.kdna-editor__label {
+	font-size: 12px;
+	font-weight: 600;
+	color: var( --kdna-admin-text-soft );
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.kdna-editor__flags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px 24px;
+}
+
+.kdna-editor__flag {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+	color: var( --kdna-admin-text );
+}
+
+.kdna-editor__caption-input {
+	width: 100%;
+	padding: 6px 10px;
+}
+
+.kdna-editor__matrix-wrap {
+	overflow-x: auto;
+	border: 1px solid var( --kdna-admin-border );
+	border-radius: var( --kdna-admin-radius );
+}
+
+.kdna-editor__matrix {
+	display: grid;
+	grid-template-columns:
+		minmax( 160px, 1fr )
+		repeat( var( --kdna-cols, 1 ), minmax( 160px, 1fr ) )
+		56px;
+	gap: 1px;
+	background: var( --kdna-admin-border );
+	min-width: 100%;
+}
+
+.kdna-editor__row {
+	display: contents;
+}
+
+.kdna-editor__corner,
+.kdna-editor__col-head,
+.kdna-editor__add-col,
+.kdna-editor__row-head,
+.kdna-editor__cell,
+.kdna-editor__add-row {
+	background: var( --kdna-admin-bg );
+	padding: 8px;
+}
+
+.kdna-editor__corner {
+	background: var( --kdna-admin-surface );
+}
+
+.kdna-editor__col-head {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	background: var( --kdna-admin-surface );
+}
+
+.kdna-editor__col-label {
+	width: 100%;
+	padding: 6px 8px;
+	font-weight: 600;
+}
+
+.kdna-editor__col-toolbar,
+.kdna-editor__row-toolbar,
+.kdna-editor__cell-toolbar {
+	display: inline-flex;
+	gap: 2px;
+	align-items: center;
+}
+
+.kdna-editor__col-toolbar {
+	flex-wrap: wrap;
+}
+
+.kdna-editor__width {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.kdna-editor__width-input {
+	width: 56px;
+	padding: 2px 4px;
+}
+
+.kdna-editor__icon-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 26px;
+	height: 26px;
+	padding: 0 6px;
+	background: var( --kdna-admin-bg );
+	border: 1px solid var( --kdna-admin-border );
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 13px;
+	color: var( --kdna-admin-text-soft );
+	line-height: 1;
+}
+
+.kdna-editor__icon-button:hover {
+	background: var( --kdna-admin-accent-soft );
+	border-color: var( --kdna-admin-accent );
+	color: var( --kdna-admin-accent );
+}
+
+.kdna-editor__icon-button[aria-pressed="true"] {
+	background: var( --kdna-admin-accent );
+	border-color: var( --kdna-admin-accent );
+	color: #fff;
+}
+
+.kdna-editor__icon-button:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.kdna-editor__icon-button--danger:hover {
+	background: rgba( 179, 45, 46, 0.08 );
+	border-color: var( --kdna-admin-danger );
+	color: var( --kdna-admin-danger );
+}
+
+.kdna-editor__add-col,
+.kdna-editor__add-row {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var( --kdna-admin-surface );
+}
+
+.kdna-editor__row-head {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	background: var( --kdna-admin-surface );
+}
+
+.kdna-editor__row-label {
+	font-size: 12px;
+	font-weight: 600;
+	color: var( --kdna-admin-text-soft );
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.kdna-editor__cell {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.kdna-editor__cell-text {
+	min-height: 36px;
+	padding: 6px 8px;
+	border: 1px dashed transparent;
+	border-radius: 4px;
+	font-size: 13px;
+	line-height: 1.45;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.kdna-editor__cell-text:hover {
+	border-color: var( --kdna-admin-border );
+}
+
+.kdna-editor__cell-text:focus {
+	outline: none;
+	border-color: var( --kdna-admin-accent );
+	background: var( --kdna-admin-accent-soft );
+}
+
+.kdna-editor__cell-toolbar {
+	height: 26px;
+	visibility: hidden;
+}
+
+.kdna-editor__cell.is-focused .kdna-editor__cell-toolbar {
+	visibility: visible;
+}
+
+.kdna-editor__cell--align-left .kdna-editor__cell-text {
+	text-align: left;
+}
+
+.kdna-editor__cell--align-centre .kdna-editor__cell-text {
+	text-align: center;
+}
+
+.kdna-editor__cell--align-right .kdna-editor__cell-text {
+	text-align: right;
+}
+
+/*
+ * Comparison editor placeholder. The real editor lands in Session 5.
+ */
+
+.kdna-editor__placeholder {
+	padding: 32px;
+	border: 1px dashed var( --kdna-admin-border-strong );
+	border-radius: var( --kdna-admin-radius );
+	background: var( --kdna-admin-surface );
+	color: var( --kdna-admin-text-soft );
+	text-align: center;
+}
+
+.kdna-editor__placeholder strong {
+	display: block;
+	margin-bottom: 4px;
+	color: var( --kdna-admin-text );
+}
+
+/*
+ * Shortcode side meta box.
+ */
+
+.kdna-tables-shortcode-box code {
+	display: block;
+	padding: 6px 10px;
+	margin: 0 0 10px;
+	background: var( --kdna-admin-surface );
+	border: 1px solid var( --kdna-admin-border );
+	border-radius: 4px;
+	font-size: 12px;
 }

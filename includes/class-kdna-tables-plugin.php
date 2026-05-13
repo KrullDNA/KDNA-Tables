@@ -13,10 +13,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-cpt.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-data.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-admin.php';
+require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-editor.php';
 
 KDNA_Tables_CPT::init();
 if ( is_admin() ) {
 	KDNA_Tables_Admin::init();
+	KDNA_Tables_Editor::init();
 }
 
 class KDNA_Tables_Plugin {
