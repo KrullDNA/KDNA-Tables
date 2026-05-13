@@ -362,16 +362,29 @@
 .kdna-editor__cell-text {
 	min-height: 36px;
 	padding: 6px 8px;
-	border: 1px dashed transparent;
+	border: 1px dashed var( --kdna-admin-border );
 	border-radius: 4px;
 	font-size: 13px;
 	line-height: 1.45;
 	white-space: pre-wrap;
 	word-break: break-word;
+	cursor: text;
+	background: var( --kdna-admin-bg );
+}
+
+.kdna-editor__cell-text:empty::before {
+	content: attr( data-placeholder );
+	color: var( --kdna-admin-text-soft );
+	opacity: 0.55;
+	pointer-events: none;
 }
 
 .kdna-editor__cell-text:hover {
-	border-color: var( --kdna-admin-border );
+	border-color: var( --kdna-admin-accent );
+}
+
+.kdna-editor__cell-piece--text {
+	cursor: text;
 }
 
 .kdna-editor__cell-text:focus {

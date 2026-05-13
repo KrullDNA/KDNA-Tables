@@ -215,17 +215,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 										title="<?php echo esc_attr__( 'Remove icon', 'kdna-tables' ); ?>"
 									>&times;</button>
 								</span>
-								<!-- Text piece. Always present in DOM so contenteditable
-								     keeps focus across content_types toggles. -->
+								<!-- Text piece. Always present in DOM so the contenteditable
+								     keeps focus across content_types toggles. The wrapper
+								     forwards clicks to the inner contenteditable so the
+								     whole padded box is a hit target, and the data-placeholder
+								     gives a visible cue when the cell is empty. -->
 								<div
 									class="kdna-editor__cell-piece kdna-editor__cell-piece--text"
 									:style="`order: ${ pieceOrder(cell, 'text') };`"
+									@click="$event.currentTarget.querySelector('[contenteditable]').focus()"
 								>
 									<div
 										class="kdna-editor__cell-text"
 										contenteditable="plaintext-only"
 										role="textbox"
 										spellcheck="true"
+										data-placeholder="<?php esc_attr_e( 'Click to type', 'kdna-tables' ); ?>"
 										x-init="$el.innerText = cell.text"
 										@input="setCellText(rowIdx, colIdx, $event.target.innerText)"
 										@focus="focusedCell = `${ rowIdx }-${ colIdx }`"
