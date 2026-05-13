@@ -327,16 +327,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 											:aria-label="`<?php echo esc_js( __( 'Remove icon', 'kdna-tables' ) ); ?>`"
 										>&times;</button>
 									</span>
-									<!-- Text piece -->
+									<!-- Text piece. Wrapper click forwards focus to the inner
+									     contenteditable so the whole padded box is a hit
+									     target, and the data-placeholder gives a visible
+									     cue when the cell is empty. -->
 									<div
 										class="kdna-editor__cell-piece kdna-editor__cell-piece--text"
 										:style="`order: ${ customPieceOrder(cell, 'text') };`"
+										@click="$event.currentTarget.querySelector('[contenteditable]').focus()"
 									>
 										<div
 											class="kdna-editor__cell-text"
 											contenteditable="plaintext-only"
 											role="textbox"
 											spellcheck="true"
+											data-placeholder="<?php esc_attr_e( 'Click to type', 'kdna-tables' ); ?>"
 											x-init="$el.innerText = cell.custom.text"
 											@input="setCustomText(rowIdx, colIdx, $event.target.innerText)"
 											@keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); $event.target.blur(); }"
