@@ -138,20 +138,32 @@
 		display: none;
 	}
 
+	/* Body cells (NOT header): card background only, no header bg override.
+	 * Header cells inherit the user's cmp_header_bg from the desktop
+	 * selector. Targeting tbody specifically avoids stomping that. */
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__cell,
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell {
-		display: block;
+		display: flex;
+		align-items: center;
 		grid-column: 1;
 		grid-row: var(--kdna-card-row, auto);
-		background: var(--kdna-card-bg);
 		padding: var(--kdna-card-padding);
 		border-bottom: 0;
 	}
 
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison tbody .kdna-comparison__cell,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison tbody .kdna-comparison__cell {
+		background: var(--kdna-card-bg);
+	}
+
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison thead .kdna-comparison__cell--item,
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison thead .kdna-comparison__cell--item {
-		background: var(--kdna-comparison-header-bg);
+		/* No background override here. The cmp_header_bg Style control
+		 * writes to .kdna-comparison thead .kdna-comparison__cell (desktop
+		 * selector) and cascades through. color falls back to the variable
+		 * so existing themes still get a sensible header foreground. */
 		color: var(--kdna-comparison-header-color);
+		justify-content: center;
 		border-top-left-radius: var(--kdna-card-radius);
 		border-top-right-radius: var(--kdna-card-radius);
 	}
@@ -163,6 +175,24 @@
 		justify-content: space-between;
 		gap: 12px;
 		text-align: left;
+	}
+
+	/* CTA cells in card stack don't carry an explicit --kdna-card-row, so
+	 * grid auto-places them after the last explicit row, which is why the
+	 * bottom of the card looks taller than its content. Place them
+	 * implicitly at the end of each item's block via a sibling rule
+	 * relying on the data-slot attribute the renderer already outputs. */
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__cell--cta-cell,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--cta-cell {
+		grid-row: var(--kdna-card-row, auto);
+		justify-content: center;
+	}
+
+	/* Empty CTA cells (item has no CTA enabled) collapse so they don't
+	 * inflate the card. */
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__cell--cta-cell:empty,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--cta-cell:empty {
+		display: none;
 	}
 
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__cell--value::before,
