@@ -45,11 +45,33 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 	 * free of that CSS.
 	 */
 	public function get_style_depends() {
-		$depends = array( KDNA_Tables_Plugin::FRONTEND_STYLE_HANDLE );
-
+		$depends  = array( KDNA_Tables_Plugin::FRONTEND_STYLE_HANDLE );
 		$settings = $this->get_settings();
+
 		if ( isset( $settings['table_type'] ) && 'comparison' === $settings['table_type'] ) {
 			$depends[] = KDNA_Tables_Plugin::COMPARISON_STYLE_HANDLE;
+		}
+
+		$mode = isset( $settings['responsive_mode'] ) ? $settings['responsive_mode'] : 'card_stack';
+		if ( ! empty( $settings['table_type'] ) && '' !== $mode && 'none' !== $mode ) {
+			$depends[] = KDNA_Tables_Plugin::RESPONSIVE_STYLE_HANDLE;
+		}
+
+		return $depends;
+	}
+
+	/*
+	 * Frontend JS only loads when an interactive responsive mode needs it.
+	 * Session 6 uses it for column_picker; Session 7 widens this for the
+	 * tooltip touch / keyboard handler.
+	 */
+	public function get_script_depends() {
+		$depends  = array();
+		$settings = $this->get_settings();
+
+		$mode = isset( $settings['responsive_mode'] ) ? $settings['responsive_mode'] : '';
+		if ( ! empty( $settings['table_type'] ) && 'column_picker' === $mode ) {
+			$depends[] = KDNA_Tables_Plugin::FRONTEND_SCRIPT_HANDLE;
 		}
 
 		return $depends;
@@ -78,6 +100,8 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		$this->register_general_style_controls();
 		$this->register_comparison_content_controls();
 		$this->register_comparison_style_controls();
+		$this->register_responsive_content_controls();
+		$this->register_responsive_style_controls();
 		$this->register_change_type_controls();
 	}
 
@@ -3156,6 +3180,451 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		$this->end_controls_section();
 	}
 
+	protected function register_responsive_content_controls() {
+		$this->start_controls_section(
+			'section_responsive',
+			array(
+				'label'     => esc_html__( 'Responsive', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_CONTENT,
+				'condition' => array(
+					'table_type!' => '',
+				),
+			)
+		);
+
+		$this->add_control(
+			'responsive_mode',
+			array(
+				'label'   => esc_html__( 'Responsive Mode', 'kdna-tables' ),
+				'type'    => \Elementor\Controls_Manager::SELECT,
+				'options' => array(
+					'none'          => esc_html__( 'None (table stays in place)', 'kdna-tables' ),
+					'card_stack'    => esc_html__( 'Card Stack', 'kdna-tables' ),
+					'pivot_rows'    => esc_html__( 'Pivot Rows', 'kdna-tables' ),
+					'column_picker' => esc_html__( 'Column Picker', 'kdna-tables' ),
+				),
+				'default' => 'card_stack',
+			)
+		);
+
+		$this->add_control(
+			'responsive_breakpoint',
+			array(
+				'label'     => esc_html__( 'Activate At', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::SELECT,
+				'options'   => array(
+					'mobile'             => esc_html__( 'Mobile only', 'kdna-tables' ),
+					'tablet_and_mobile'  => esc_html__( 'Tablet and Mobile', 'kdna-tables' ),
+				),
+				'default'   => 'mobile',
+				'condition' => array(
+					'responsive_mode!' => 'none',
+				),
+			)
+		);
+
+		$this->add_control(
+			'picker_max_select',
+			array(
+				'label'     => esc_html__( 'Maximum Selectable', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::NUMBER,
+				'min'       => 1,
+				'max'       => 2,
+				'step'      => 1,
+				'default'   => 2,
+				'condition' => array( 'responsive_mode' => 'column_picker' ),
+			)
+		);
+
+		$this->add_control(
+			'picker_default_items',
+			array(
+				'label'       => esc_html__( 'Default Selected Items', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::SELECT2,
+				'multiple'    => true,
+				'options'     => array(
+					'1' => esc_html__( 'Item 1', 'kdna-tables' ),
+					'2' => esc_html__( 'Item 2', 'kdna-tables' ),
+					'3' => esc_html__( 'Item 3', 'kdna-tables' ),
+					'4' => esc_html__( 'Item 4', 'kdna-tables' ),
+					'5' => esc_html__( 'Item 5', 'kdna-tables' ),
+					'6' => esc_html__( 'Item 6', 'kdna-tables' ),
+				),
+				'default'     => array( '1', '2' ),
+				'condition'   => array( 'responsive_mode' => 'column_picker' ),
+				'description' => esc_html__( 'Slot numbers (1 to 6) of the items selected on initial load.', 'kdna-tables' ),
+			)
+		);
+
+		$this->add_control(
+			'picker_label_text',
+			array(
+				'label'     => esc_html__( 'Picker Label', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::TEXT,
+				'default'   => esc_html__( 'Compare', 'kdna-tables' ),
+				'condition' => array( 'responsive_mode' => 'column_picker' ),
+				'dynamic'   => array( 'active' => true ),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	protected function register_responsive_style_controls() {
+		// ─── Section: Card Stack Mode ─────────────────────────────────────
+		$this->start_controls_section(
+			'section_responsive_style_card',
+			array(
+				'label'     => esc_html__( 'Card Stack Mode', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array(
+					'table_type!'     => '',
+					'responsive_mode' => 'card_stack',
+				),
+			)
+		);
+
+		$this->add_control(
+			'card_bg',
+			array(
+				'label'     => esc_html__( 'Card Background', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}}' => '--kdna-card-bg: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			array(
+				'name'     => 'card_border',
+				'selector' => '{{WRAPPER}} .kdna-table__wrapper [data-responsive-mode="card_stack"] .kdna-table__card, {{WRAPPER}} .kdna-table__wrapper [data-responsive-mode="card_stack"] .kdna-comparison__card',
+			)
+		);
+
+		$this->add_responsive_control(
+			'card_border_radius',
+			array(
+				'label'      => esc_html__( 'Card Border Radius', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-card-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Box_Shadow::get_type(),
+			array(
+				'name'     => 'card_shadow',
+				'selector' => '{{WRAPPER}} .kdna-table__wrapper [data-responsive-mode="card_stack"] .kdna-table__card, {{WRAPPER}} .kdna-table__wrapper [data-responsive-mode="card_stack"] .kdna-comparison__card',
+			)
+		);
+
+		$this->add_responsive_control(
+			'card_padding',
+			array(
+				'label'      => esc_html__( 'Card Padding', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em' ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-card-padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'card_spacing',
+			array(
+				'label'      => esc_html__( 'Card Spacing', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 80, 'step' => 1 ) ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-card-spacing: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'card_header_sticky',
+			array(
+				'label'        => esc_html__( 'Sticky Card Header', 'kdna-tables' ),
+				'type'         => \Elementor\Controls_Manager::SWITCHER,
+				'label_on'     => esc_html__( 'On', 'kdna-tables' ),
+				'label_off'    => esc_html__( 'Off', 'kdna-tables' ),
+				'return_value' => 'yes',
+				'default'      => '',
+				'description'  => esc_html__( 'Keeps the item header visible while scrolling within the card.', 'kdna-tables' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		// ─── Section: Pivot Rows Mode ─────────────────────────────────────
+		$this->start_controls_section(
+			'section_responsive_style_pivot',
+			array(
+				'label'     => esc_html__( 'Pivot Rows Mode', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array(
+					'table_type!'     => '',
+					'responsive_mode' => 'pivot_rows',
+				),
+			)
+		);
+
+		$this->add_control(
+			'pivot_label_position',
+			array(
+				'label'   => esc_html__( 'Label Position', 'kdna-tables' ),
+				'type'    => \Elementor\Controls_Manager::CHOOSE,
+				'options' => array(
+					'above'  => array(
+						'title' => esc_html__( 'Above', 'kdna-tables' ),
+						'icon'  => 'eicon-v-align-top',
+					),
+					'inline' => array(
+						'title' => esc_html__( 'Inline', 'kdna-tables' ),
+						'icon'  => 'eicon-h-align-left',
+					),
+				),
+				'default' => 'above',
+			)
+		);
+
+		$this->add_responsive_control(
+			'pivot_label_width',
+			array(
+				'label'      => esc_html__( 'Label Width (%)', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( '%' ),
+				'range'      => array( '%' => array( 'min' => 10, 'max' => 80, 'step' => 1 ) ),
+				'default'    => array( 'unit' => '%', 'size' => 30 ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-pivot-label-width: {{SIZE}}{{UNIT}};',
+				),
+				'condition'  => array( 'pivot_label_position' => 'inline' ),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'pivot_label_typography',
+				'label'    => esc_html__( 'Label Typography', 'kdna-tables' ),
+				'selector' => '{{WRAPPER}} [data-responsive-mode="pivot_rows"] .kdna-table__cell::before, {{WRAPPER}} [data-responsive-mode="pivot_rows"] .kdna-comparison__cell--value::before',
+			)
+		);
+
+		$this->add_control(
+			'pivot_label_color',
+			array(
+				'label'     => esc_html__( 'Label Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}}' => '--kdna-pivot-label-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'pivot_row_spacing',
+			array(
+				'label'      => esc_html__( 'Row Spacing', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 80, 'step' => 1 ) ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-pivot-row-spacing: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			array(
+				'name'           => 'pivot_divider_border',
+				'label'          => esc_html__( 'Row Divider', 'kdna-tables' ),
+				'selector'       => '{{WRAPPER}} [data-responsive-mode="pivot_rows"] .kdna-table tbody tr, {{WRAPPER}} [data-responsive-mode="pivot_rows"] .kdna-comparison tbody tr',
+				'fields_options' => array(
+					'border' => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-bottom-style: {{VALUE}};',
+						),
+					),
+					'width'  => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-bottom-width: {{TOP}}{{UNIT}};',
+						),
+					),
+					'color'  => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-bottom-color: {{VALUE}};',
+						),
+					),
+				),
+			)
+		);
+
+		$this->end_controls_section();
+
+		// ─── Section: Column Picker Mode ──────────────────────────────────
+		$this->start_controls_section(
+			'section_responsive_style_picker',
+			array(
+				'label'     => esc_html__( 'Column Picker Mode', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array(
+					'table_type!'     => '',
+					'responsive_mode' => 'column_picker',
+				),
+			)
+		);
+
+		$this->add_control(
+			'picker_bg',
+			array(
+				'label'     => esc_html__( 'Picker Background', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}}' => '--kdna-picker-bg: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			array(
+				'name'     => 'picker_border',
+				'selector' => '{{WRAPPER}} .kdna-picker',
+			)
+		);
+
+		$this->add_responsive_control(
+			'picker_border_radius',
+			array(
+				'label'      => esc_html__( 'Border Radius', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-picker-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'picker_padding',
+			array(
+				'label'      => esc_html__( 'Picker Padding', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em' ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-picker-padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'picker_label_typography',
+				'label'    => esc_html__( 'Label Typography', 'kdna-tables' ),
+				'selector' => '{{WRAPPER}} .kdna-picker__label',
+			)
+		);
+
+		$this->add_control(
+			'picker_label_color',
+			array(
+				'label'     => esc_html__( 'Label Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}}' => '--kdna-picker-label-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'picker_dropdown_bg',
+			array(
+				'label'     => esc_html__( 'Dropdown Background', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'separator' => 'before',
+				'selectors' => array(
+					'{{WRAPPER}}' => '--kdna-picker-dropdown-bg: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'picker_dropdown_typography',
+				'label'    => esc_html__( 'Dropdown Typography', 'kdna-tables' ),
+				'selector' => '{{WRAPPER}} .kdna-picker__select',
+			)
+		);
+
+		$this->add_control(
+			'picker_dropdown_color',
+			array(
+				'label'     => esc_html__( 'Dropdown Text Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}}' => '--kdna-picker-dropdown-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			array(
+				'name'     => 'picker_dropdown_border',
+				'selector' => '{{WRAPPER}} .kdna-picker__select',
+			)
+		);
+
+		$this->add_control(
+			'picker_chip_bg',
+			array(
+				'label'     => esc_html__( 'Chip Background', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'separator' => 'before',
+				'selectors' => array(
+					'{{WRAPPER}}' => '--kdna-picker-chip-bg: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'picker_chip_color',
+			array(
+				'label'     => esc_html__( 'Chip Text Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}}' => '--kdna-picker-chip-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'picker_chip_radius',
+			array(
+				'label'      => esc_html__( 'Chip Border Radius', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-picker-chip-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
 	/*
 	 * Comparison render helpers. Public where the template files need to
 	 * call them via $this->method().
@@ -3344,8 +3813,48 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			$wrapper_classes[] = 'kdna-table__wrapper--' . sanitize_html_class( $table_type );
 		}
 
+		$responsive_mode       = isset( $settings['responsive_mode'] ) ? $settings['responsive_mode'] : 'card_stack';
+		$responsive_breakpoint = isset( $settings['responsive_breakpoint'] ) ? $settings['responsive_breakpoint'] : 'mobile';
+		$pivot_label_position  = isset( $settings['pivot_label_position'] ) ? $settings['pivot_label_position'] : 'above';
+
+		$picker_config = array();
+		if ( 'comparison' === $table_type && 'column_picker' === $responsive_mode ) {
+			$items_for_picker = array();
+			$items_raw        = isset( $settings['items'] ) && is_array( $settings['items'] ) ? array_values( $settings['items'] ) : array();
+			$items_raw        = array_slice( $items_raw, 0, 6 );
+			foreach ( $items_raw as $i => $item ) {
+				$items_for_picker[] = array(
+					'slot'  => $i + 1,
+					'label' => isset( $item['item_label'] ) ? (string) $item['item_label'] : sprintf( esc_html__( 'Item %d', 'kdna-tables' ), $i + 1 ),
+				);
+			}
+			$defaults = isset( $settings['picker_default_items'] ) && is_array( $settings['picker_default_items'] ) ? $settings['picker_default_items'] : array();
+			$picker_config = array(
+				'items'      => $items_for_picker,
+				'defaults'   => array_values( array_map( 'intval', $defaults ) ),
+				'maxSelect'  => isset( $settings['picker_max_select'] ) ? (int) $settings['picker_max_select'] : 2,
+				'label'      => isset( $settings['picker_label_text'] ) ? (string) $settings['picker_label_text'] : esc_html__( 'Compare', 'kdna-tables' ),
+			);
+		}
+
+		$wrapper_attrs = array(
+			'class'                       => implode( ' ', $wrapper_classes ),
+			'data-table-type'             => $table_type,
+			'data-responsive-mode'        => '' !== $table_type ? $responsive_mode : 'none',
+			'data-responsive-breakpoint'  => '' !== $table_type ? $responsive_breakpoint : 'mobile',
+			'data-pivot-label-position'   => $pivot_label_position,
+		);
+		if ( ! empty( $picker_config ) ) {
+			$wrapper_attrs['data-picker-config'] = wp_json_encode( $picker_config );
+		}
+
+		$attr_string = '';
+		foreach ( $wrapper_attrs as $name => $value ) {
+			$attr_string .= sprintf( ' %s="%s"', esc_attr( $name ), esc_attr( $value ) );
+		}
+
 		?>
-		<div class="<?php echo esc_attr( implode( ' ', $wrapper_classes ) ); ?>" data-table-type="<?php echo esc_attr( $table_type ); ?>">
+		<div<?php echo $attr_string; ?>>
 			<?php
 			if ( '' === $table_type ) {
 				include KDNA_TABLES_PATH . 'templates/render-placeholder.php';

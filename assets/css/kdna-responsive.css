@@ -1,0 +1,523 @@
+/*
+ * KDNA Tables, responsive modes (Card Stack, Pivot Rows, Column Picker).
+ *
+ * Activates via two media queries:
+ * - max-width: 767px matches Elementor's mobile breakpoint
+ * - max-width: 1024px matches the combined tablet + mobile range
+ *
+ * Each mode's rules appear in both queries with a selector restricted
+ * to the appropriate data-responsive-breakpoint value, so a wrapper
+ * with breakpoint=mobile only activates below 767px and a wrapper with
+ * breakpoint=tablet_and_mobile activates anywhere up to 1024px. Themes
+ * that customise Elementor breakpoints can override the literal
+ * pixel values via this stylesheet.
+ */
+
+.kdna-table__wrapper {
+	--kdna-card-bg: #ffffff;
+	--kdna-card-radius: 12px;
+	--kdna-card-padding: 16px;
+	--kdna-card-spacing: 16px;
+	--kdna-pivot-label-color: inherit;
+	--kdna-pivot-label-width: 30%;
+	--kdna-pivot-row-spacing: 16px;
+	--kdna-picker-bg: #ffffff;
+	--kdna-picker-padding: 12px;
+	--kdna-picker-radius: 12px;
+	--kdna-picker-label-color: inherit;
+	--kdna-picker-dropdown-bg: #ffffff;
+	--kdna-picker-dropdown-color: #1f2937;
+	--kdna-picker-chip-bg: #3362dd;
+	--kdna-picker-chip-color: #ffffff;
+	--kdna-picker-chip-radius: 999px;
+}
+
+/* Picker chrome (always present in DOM when JS handler runs, but kept
+ * hidden until a column-picker breakpoint is active). */
+.kdna-picker {
+	display: none;
+	margin-bottom: 12px;
+	padding: var(--kdna-picker-padding);
+	background: var(--kdna-picker-bg);
+	border-radius: var(--kdna-picker-radius);
+}
+
+.kdna-picker__label {
+	display: block;
+	margin-bottom: 8px;
+	color: var(--kdna-picker-label-color, inherit);
+	font-weight: 600;
+}
+
+.kdna-picker__chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.kdna-picker__chips:empty {
+	display: none;
+}
+
+.kdna-picker__chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 10px;
+	background: var(--kdna-picker-chip-bg);
+	color: var(--kdna-picker-chip-color);
+	border-radius: var(--kdna-picker-chip-radius);
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.4;
+}
+
+.kdna-picker__chip-remove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	height: 14px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+	font-size: 14px;
+	line-height: 1;
+}
+
+.kdna-picker__select {
+	width: 100%;
+	padding: 8px 10px;
+	background: var(--kdna-picker-dropdown-bg);
+	color: var(--kdna-picker-dropdown-color);
+	border: 1px solid #d5dadf;
+	border-radius: 8px;
+	font-size: 14px;
+}
+
+/* When a JS-driven column-picker hides a column, every cell of that
+ * column receives the --col-hidden modifier. */
+.kdna-comparison__cell--col-hidden,
+.kdna-table__cell--col-hidden {
+	display: none !important;
+}
+
+/* ─── Mobile breakpoint (≤ 767px) ─────────────────────────────────── */
+
+@media (max-width: 767px) {
+	/* ── Card Stack, Comparison ── */
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison {
+		display: grid;
+		grid-template-columns: 1fr;
+		grid-auto-rows: auto;
+		gap: var(--kdna-card-spacing);
+		background: transparent;
+		table-layout: auto;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison thead,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison thead,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison tbody,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison tbody,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison tr,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison tr {
+		display: contents;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__cell--head-label,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--head-label,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison tbody .kdna-comparison__cell--label,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison tbody .kdna-comparison__cell--label {
+		display: none;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__cell,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell {
+		display: block;
+		grid-column: 1;
+		grid-row: var(--kdna-card-row, auto);
+		background: var(--kdna-card-bg);
+		padding: var(--kdna-card-padding);
+		border-bottom: 0;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison thead .kdna-comparison__cell--item,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison thead .kdna-comparison__cell--item {
+		background: var(--kdna-comparison-header-bg);
+		color: var(--kdna-comparison-header-color);
+		border-top-left-radius: var(--kdna-card-radius);
+		border-top-right-radius: var(--kdna-card-radius);
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__cell--value,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--value {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		text-align: left;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__cell--value::before,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--value::before {
+		content: attr(data-feature-label);
+		flex: 1 1 auto;
+		font-weight: 600;
+		color: var(--kdna-comparison-label-color);
+	}
+
+	/* ── Card Stack, General ── */
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general {
+		display: block;
+		background: transparent;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general colgroup,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general colgroup,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general thead,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general thead {
+		display: none;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general tbody,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tbody {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--kdna-card-spacing);
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general tr,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
+		display: block;
+		background: var(--kdna-card-bg);
+		padding: var(--kdna-card-padding);
+		border-radius: var(--kdna-card-radius);
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 8px 0;
+		border: 0;
+		text-align: left;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell::before,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
+		content: attr(data-column-label);
+		flex: 0 0 auto;
+		font-weight: 700;
+		margin-right: 12px;
+		color: var(--kdna-pivot-label-color);
+	}
+
+	/* ── Pivot Rows, Comparison ── */
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-comparison thead,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison thead {
+		display: none;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-comparison tbody,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison tbody,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-comparison tr,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison tr {
+		display: block;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__row--body,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__row--body {
+		display: grid;
+		grid-template-columns: repeat(var(--kdna-items-count, 3), minmax(0, 1fr));
+		gap: 8px;
+		padding-bottom: var(--kdna-pivot-row-spacing);
+		margin-bottom: var(--kdna-pivot-row-spacing);
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__cell--label,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--label {
+		grid-column: 1 / -1;
+		background: transparent;
+		text-align: left;
+		color: var(--kdna-pivot-label-color, inherit);
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__cell--value,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--value {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		padding: 12px 8px;
+		background: var(--kdna-card-bg);
+		border-radius: 8px;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__cell--value::before,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--value::before {
+		content: attr(data-item-label);
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		opacity: 0.7;
+	}
+
+	/* ── Pivot Rows, General, label above ── */
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general tbody,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tbody,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general tr,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
+		display: block;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general colgroup,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general colgroup,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general thead,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general thead {
+		display: none;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general tr,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
+		padding-bottom: var(--kdna-pivot-row-spacing);
+		margin-bottom: var(--kdna-pivot-row-spacing);
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
+		display: block;
+		border: 0;
+		padding: 6px 0;
+	}
+
+	.kdna-table__wrapper[data-pivot-label-position="above"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell::before,
+	.kdna-table__wrapper[data-pivot-label-position="above"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
+		content: attr(data-column-label);
+		display: block;
+		font-weight: 700;
+		color: var(--kdna-pivot-label-color, inherit);
+		margin-bottom: 2px;
+	}
+
+	.kdna-table__wrapper[data-pivot-label-position="inline"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell,
+	.kdna-table__wrapper[data-pivot-label-position="inline"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
+		display: grid;
+		grid-template-columns: var(--kdna-pivot-label-width, 30%) 1fr;
+		gap: 12px;
+		align-items: baseline;
+	}
+
+	.kdna-table__wrapper[data-pivot-label-position="inline"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell::before,
+	.kdna-table__wrapper[data-pivot-label-position="inline"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
+		content: attr(data-column-label);
+		font-weight: 700;
+		color: var(--kdna-pivot-label-color, inherit);
+	}
+
+	/* ── Column Picker ── */
+	.kdna-table__wrapper[data-responsive-mode="column_picker"][data-responsive-breakpoint="mobile"] .kdna-picker,
+	.kdna-table__wrapper[data-responsive-mode="column_picker"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-picker {
+		display: block;
+	}
+}
+
+/* ─── Tablet-and-mobile breakpoint (768 to 1024px) ────────────────── */
+
+@media (min-width: 768px) and (max-width: 1024px) {
+	/* ── Card Stack, Comparison ── */
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison {
+		display: grid;
+		grid-template-columns: 1fr;
+		grid-auto-rows: auto;
+		gap: var(--kdna-card-spacing);
+		background: transparent;
+		table-layout: auto;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison thead,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison tbody,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison tr {
+		display: contents;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--head-label,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison tbody .kdna-comparison__cell--label {
+		display: none;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell {
+		display: block;
+		grid-column: 1;
+		grid-row: var(--kdna-card-row, auto);
+		background: var(--kdna-card-bg);
+		padding: var(--kdna-card-padding);
+		border-bottom: 0;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison thead .kdna-comparison__cell--item {
+		background: var(--kdna-comparison-header-bg);
+		color: var(--kdna-comparison-header-color);
+		border-top-left-radius: var(--kdna-card-radius);
+		border-top-right-radius: var(--kdna-card-radius);
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--value {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		text-align: left;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--value::before {
+		content: attr(data-feature-label);
+		flex: 1 1 auto;
+		font-weight: 600;
+		color: var(--kdna-comparison-label-color);
+	}
+
+	/* ── Card Stack, General ── */
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general {
+		display: block;
+		background: transparent;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general colgroup,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general thead {
+		display: none;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tbody {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--kdna-card-spacing);
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
+		display: block;
+		background: var(--kdna-card-bg);
+		padding: var(--kdna-card-padding);
+		border-radius: var(--kdna-card-radius);
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 8px 0;
+		border: 0;
+		text-align: left;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
+		content: attr(data-column-label);
+		flex: 0 0 auto;
+		font-weight: 700;
+		margin-right: 12px;
+		color: var(--kdna-pivot-label-color);
+	}
+
+	/* ── Pivot Rows, Comparison ── */
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison thead {
+		display: none;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison tbody,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison tr {
+		display: block;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__row--body {
+		display: grid;
+		grid-template-columns: repeat(var(--kdna-items-count, 3), minmax(0, 1fr));
+		gap: 8px;
+		padding-bottom: var(--kdna-pivot-row-spacing);
+		margin-bottom: var(--kdna-pivot-row-spacing);
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--label {
+		grid-column: 1 / -1;
+		background: transparent;
+		text-align: left;
+		color: var(--kdna-pivot-label-color, inherit);
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--value {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		padding: 12px 8px;
+		background: var(--kdna-card-bg);
+		border-radius: 8px;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--value::before {
+		content: attr(data-item-label);
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		opacity: 0.7;
+	}
+
+	/* ── Pivot Rows, General ── */
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tbody,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
+		display: block;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general colgroup,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general thead {
+		display: none;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
+		padding-bottom: var(--kdna-pivot-row-spacing);
+		margin-bottom: var(--kdna-pivot-row-spacing);
+	}
+
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
+		display: block;
+		border: 0;
+		padding: 6px 0;
+	}
+
+	.kdna-table__wrapper[data-pivot-label-position="above"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
+		content: attr(data-column-label);
+		display: block;
+		font-weight: 700;
+		color: var(--kdna-pivot-label-color, inherit);
+		margin-bottom: 2px;
+	}
+
+	.kdna-table__wrapper[data-pivot-label-position="inline"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
+		display: grid;
+		grid-template-columns: var(--kdna-pivot-label-width, 30%) 1fr;
+		gap: 12px;
+		align-items: baseline;
+	}
+
+	.kdna-table__wrapper[data-pivot-label-position="inline"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
+		content: attr(data-column-label);
+		font-weight: 700;
+		color: var(--kdna-pivot-label-color, inherit);
+	}
+
+	/* ── Column Picker ── */
+	.kdna-table__wrapper[data-responsive-mode="column_picker"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-picker {
+		display: block;
+	}
+}

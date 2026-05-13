@@ -34,6 +34,7 @@ require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-plugin.php';
 add_action( 'elementor/elements/categories_registered', array( 'KDNA_Tables_Plugin', 'register_category' ) );
 add_action( 'elementor/widgets/register', array( 'KDNA_Tables_Plugin', 'register_widgets' ) );
 add_action( 'elementor/frontend/after_register_styles', array( 'KDNA_Tables_Plugin', 'register_frontend_styles' ) );
+add_action( 'elementor/frontend/after_register_scripts', array( 'KDNA_Tables_Plugin', 'register_frontend_scripts' ) );
 add_action( 'elementor/editor/after_enqueue_styles', array( 'KDNA_Tables_Plugin', 'enqueue_editor_styles' ) );
 add_action( 'elementor/editor/after_enqueue_scripts', array( 'KDNA_Tables_Plugin', 'enqueue_editor_scripts' ) );
 add_action( 'init', array( 'KDNA_Tables_Plugin', 'load_textdomain' ) );

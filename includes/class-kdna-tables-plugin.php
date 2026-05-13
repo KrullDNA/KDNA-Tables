@@ -12,11 +12,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class KDNA_Tables_Plugin {
 
-	const FRONTEND_STYLE_HANDLE   = 'kdna-tables';
-	const COMPARISON_STYLE_HANDLE = 'kdna-comparison';
-	const EDITOR_STYLE_HANDLE     = 'kdna-tables-editor';
-	const EDITOR_SCRIPT_HANDLE    = 'kdna-tables-editor';
-	const CATEGORY_SLUG           = 'kdna-tables';
+	const FRONTEND_STYLE_HANDLE    = 'kdna-tables';
+	const COMPARISON_STYLE_HANDLE  = 'kdna-comparison';
+	const RESPONSIVE_STYLE_HANDLE  = 'kdna-responsive';
+	const FRONTEND_SCRIPT_HANDLE   = 'kdna-tables';
+	const EDITOR_STYLE_HANDLE      = 'kdna-tables-editor';
+	const EDITOR_SCRIPT_HANDLE     = 'kdna-tables-editor';
+	const CATEGORY_SLUG            = 'kdna-tables';
 
 	public static function load_textdomain() {
 		load_plugin_textdomain(
@@ -65,6 +67,23 @@ class KDNA_Tables_Plugin {
 			array( self::FRONTEND_STYLE_HANDLE ),
 			KDNA_TABLES_VERSION
 		);
+
+		wp_register_style(
+			self::RESPONSIVE_STYLE_HANDLE,
+			KDNA_TABLES_URL . 'assets/css/kdna-responsive.css',
+			array( self::FRONTEND_STYLE_HANDLE ),
+			KDNA_TABLES_VERSION
+		);
+	}
+
+	public static function register_frontend_scripts() {
+		wp_register_script(
+			self::FRONTEND_SCRIPT_HANDLE,
+			KDNA_TABLES_URL . 'assets/js/kdna-tables.js',
+			array( 'jquery', 'elementor-frontend' ),
+			KDNA_TABLES_VERSION,
+			true
+		);
 	}
 
 	public static function enqueue_editor_styles() {
@@ -87,6 +106,13 @@ class KDNA_Tables_Plugin {
 		wp_enqueue_style(
 			self::COMPARISON_STYLE_HANDLE,
 			KDNA_TABLES_URL . 'assets/css/kdna-comparison.css',
+			array( self::FRONTEND_STYLE_HANDLE ),
+			KDNA_TABLES_VERSION
+		);
+
+		wp_enqueue_style(
+			self::RESPONSIVE_STYLE_HANDLE,
+			KDNA_TABLES_URL . 'assets/css/kdna-responsive.css',
 			array( self::FRONTEND_STYLE_HANDLE ),
 			KDNA_TABLES_VERSION
 		);

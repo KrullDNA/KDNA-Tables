@@ -71,8 +71,11 @@ $table_classes = array( 'kdna-comparison' );
 if ( $has_highlight ) {
 	$table_classes[] = 'kdna-comparison--has-highlight';
 }
+
+$feature_count = count( $feature_rows );
+$table_style   = sprintf( '--kdna-items-count: %d; --kdna-feature-count: %d;', (int) $item_count, (int) $feature_count );
 ?>
-<table class="<?php echo esc_attr( implode( ' ', $table_classes ) ); ?>" data-item-count="<?php echo (int) $item_count; ?>">
+<table class="<?php echo esc_attr( implode( ' ', $table_classes ) ); ?>" data-item-count="<?php echo (int) $item_count; ?>" style="<?php echo esc_attr( $table_style ); ?>">
 	<thead>
 		<tr class="kdna-comparison__row kdna-comparison__row--head">
 			<th class="kdna-comparison__cell kdna-comparison__cell--label kdna-comparison__cell--head-label" scope="col">
@@ -106,7 +109,7 @@ if ( $has_highlight ) {
 					$image_html = \Elementor\Group_Control_Image_Size::get_attachment_image_html( $item, 'item_image_size', 'item_image' );
 				}
 				?>
-				<th class="<?php echo esc_attr( implode( ' ', $cell_classes ) ); ?>" scope="col">
+				<th class="<?php echo esc_attr( implode( ' ', $cell_classes ) ); ?>" scope="col" data-slot="<?php echo (int) $slot; ?>" data-item-label="<?php echo esc_attr( isset( $item['item_label'] ) ? $item['item_label'] : '' ); ?>" style="--kdna-card-row: <?php echo (int) ( ( $slot - 1 ) * ( $feature_count + 1 ) + 1 ); ?>;">
 					<div class="<?php echo esc_attr( implode( ' ', $item_classes ) ); ?>">
 						<?php if ( $is_highlighted && '' !== $badge_text ) : ?>
 							<span class="kdna-comparison__badge kdna-comparison__badge--<?php echo esc_attr( $badge_position ); ?>" aria-label="<?php echo esc_attr( $badge_text ); ?>">
@@ -179,8 +182,11 @@ if ( $has_highlight ) {
 					if ( $is_highlighted ) {
 						$cell_classes[] = 'kdna-comparison__cell--highlighted';
 					}
+
+					$item_label_for_cell = isset( $items[ $slot - 1 ]['item_label'] ) ? $items[ $slot - 1 ]['item_label'] : '';
+					$grid_row_for_cell   = ( $slot - 1 ) * ( $feature_count + 1 ) + ( $row_index + 1 ) + 1;
 					?>
-					<td class="<?php echo esc_attr( implode( ' ', $cell_classes ) ); ?>">
+					<td class="<?php echo esc_attr( implode( ' ', $cell_classes ) ); ?>" data-slot="<?php echo (int) $slot; ?>" data-item-label="<?php echo esc_attr( $item_label_for_cell ); ?>" data-feature-label="<?php echo esc_attr( isset( $row['feature_label'] ) ? $row['feature_label'] : '' ); ?>" style="--kdna-card-row: <?php echo (int) $grid_row_for_cell; ?>;">
 						<?php echo $this->kdna_render_comparison_value( $row, $slot, $settings ); ?>
 					</td>
 				<?php endfor; ?>

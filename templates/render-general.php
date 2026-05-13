@@ -76,7 +76,7 @@ if ( $first_row_header && ! empty( $body_rows ) ) {
 						$cell_classes .= ' ' . $modifier;
 					}
 					?>
-					<th scope="col" class="<?php echo esc_attr( $cell_classes ); ?>" style="--kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>;">
+					<th scope="col" class="<?php echo esc_attr( $cell_classes ); ?>" data-column-label="<?php echo esc_attr( isset( $column['column_label'] ) ? $column['column_label'] : '' ); ?>" style="--kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>;">
 						<?php
 						$inner = $this->kdna_render_cell_inner( $cell );
 						echo '' !== $inner ? $inner : '&nbsp;';
@@ -108,7 +108,7 @@ if ( $first_row_header && ! empty( $body_rows ) ) {
 						$cell_classes .= ' kdna-table__cell--row-header';
 					}
 					?>
-					<<?php echo $tag; ?><?php echo $is_row_header ? ' scope="row"' : ''; ?> class="<?php echo esc_attr( $cell_classes ); ?>" style="--kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>;">
+					<<?php echo $tag; ?><?php echo $is_row_header ? ' scope="row"' : ''; ?> class="<?php echo esc_attr( $cell_classes ); ?>" data-column-label="<?php echo esc_attr( isset( $column['column_label'] ) ? $column['column_label'] : '' ); ?>" style="--kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>;">
 						<?php echo $this->kdna_render_cell_inner( $cell ); ?>
 					</<?php echo $tag; ?>>
 				<?php endfor; ?>
