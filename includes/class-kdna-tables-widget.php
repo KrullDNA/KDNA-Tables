@@ -37,17 +37,36 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 	}
 
 	/*
-	 * Style dependencies. v2.0 widget settings are a small set of scalars
-	 * (selected_table_id, sticky, responsive_mode, indicators), so
-	 * get_settings_for_display() is safe to call here, unlike the v1.x
-	 * repeater-heavy settings that crashed sanitize_settings() on null.
-	 * The selected table's type comes from CPT meta, a single cheap query
-	 * gated on widget render.
+	 * Style dependencies.
+	 *
+	 * Recent Elementor builds route both get_settings_for_display() and
+	 * Controls_Stack::get_data('settings') through
+	 * sanitize_settings(array $settings): array, which fatals when the
+	 * stored settings for a given instance happen to be null (very common
+	 * for unmigrated v1.x instances and for newly-spawned widgets in the
+	 * editor preview). We catch the TypeError and fall back to enqueuing
+	 * every handle, matching the v1.x defensive behaviour. The
+	 * conditional-asset optimisation still applies to every healthy v2.0
+	 * instance, which is the common path.
 	 */
 	public function get_style_depends() {
-		$deps = array( KDNA_Tables_Plugin::FRONTEND_STYLE_HANDLE );
+		$all = array(
+			KDNA_Tables_Plugin::FRONTEND_STYLE_HANDLE,
+			KDNA_Tables_Plugin::COMPARISON_STYLE_HANDLE,
+			KDNA_Tables_Plugin::RESPONSIVE_STYLE_HANDLE,
+		);
 
-		$settings = $this->get_settings_for_display();
+		try {
+			$settings = $this->get_settings_for_display();
+		} catch ( \Throwable $e ) {
+			return $all;
+		}
+
+		if ( ! is_array( $settings ) ) {
+			return $all;
+		}
+
+		$deps     = array( KDNA_Tables_Plugin::FRONTEND_STYLE_HANDLE );
 		$table_id = isset( $settings['selected_table_id'] ) ? (int) $settings['selected_table_id'] : 0;
 		if ( $table_id > 0 && class_exists( 'KDNA_Tables_CPT' ) ) {
 			$type = KDNA_Tables_CPT::get_type( $table_id );
@@ -2985,8 +3004,25 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 	}
 
 	protected function render() {
-		$widget_settings = $this->get_settings_for_display();
-		$table_id        = isset( $widget_settings['selected_table_id'] ) ? (int) $widget_settings['selected_table_id'] : 0;
+		// Wrap the settings read in try/catch for the same reason as in
+		// get_style_depends(): Elementor sanitize_settings() fatals on
+		// null. Legacy v1.x instances that haven't migrated yet may have
+		// null stored settings, and we want the page to keep rendering
+		// (and reach the migration notice in the editor) rather than 500.
+		try {
+			$widget_settings = $this->get_settings_for_display();
+		} catch ( \Throwable $e ) {
+			$this->render_wrapped_placeholder(
+				'',
+				esc_html__( 'This widget has unmigrated v1.x data. Open it in the Elementor editor and click Migrate.', 'kdna-tables' )
+			);
+			return;
+		}
+		if ( ! is_array( $widget_settings ) ) {
+			$widget_settings = array();
+		}
+
+		$table_id = isset( $widget_settings['selected_table_id'] ) ? (int) $widget_settings['selected_table_id'] : 0;
 
 		// No table picked yet, bail to the placeholder.
 		if ( $table_id <= 0 ) {
