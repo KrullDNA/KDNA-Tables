@@ -75,27 +75,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 						:placeholder="`<?php echo esc_js( __( 'Column', 'kdna-tables' ) ); ?> ${ colIdx + 1 }`"
 						:aria-label="`<?php echo esc_js( __( 'Column label', 'kdna-tables' ) ); ?> ${ colIdx + 1 }`"
 					/>
-					<div class="kdna-editor__col-toolbar" role="toolbar">
+					<div class="kdna-editor__col-toolbar" role="toolbar" :aria-label="`<?php echo esc_js( __( 'Header alignment', 'kdna-tables' ) ); ?>`">
 						<button
 							type="button"
 							class="kdna-editor__icon-button"
-							:aria-pressed="col.alignment === 'left'"
-							@click="setColumnAlignment(colIdx, 'left')"
-							:aria-label="`<?php echo esc_js( __( 'Align column left', 'kdna-tables' ) ); ?>`"
+							:aria-pressed="col.header_alignment === 'left'"
+							@click="setColumnHeaderAlignment(colIdx, 'left')"
+							:aria-label="`<?php echo esc_js( __( 'Align header left', 'kdna-tables' ) ); ?>`"
 						>L</button>
 						<button
 							type="button"
 							class="kdna-editor__icon-button"
-							:aria-pressed="col.alignment === 'centre'"
-							@click="setColumnAlignment(colIdx, 'centre')"
-							:aria-label="`<?php echo esc_js( __( 'Align column centre', 'kdna-tables' ) ); ?>`"
+							:aria-pressed="col.header_alignment === 'centre'"
+							@click="setColumnHeaderAlignment(colIdx, 'centre')"
+							:aria-label="`<?php echo esc_js( __( 'Align header centre', 'kdna-tables' ) ); ?>`"
 						>C</button>
 						<button
 							type="button"
 							class="kdna-editor__icon-button"
-							:aria-pressed="col.alignment === 'right'"
-							@click="setColumnAlignment(colIdx, 'right')"
-							:aria-label="`<?php echo esc_js( __( 'Align column right', 'kdna-tables' ) ); ?>`"
+							:aria-pressed="col.header_alignment === 'right'"
+							@click="setColumnHeaderAlignment(colIdx, 'right')"
+							:aria-label="`<?php echo esc_js( __( 'Align header right', 'kdna-tables' ) ); ?>`"
 						>R</button>
 
 						<span
@@ -154,6 +154,45 @@ if ( ! defined( 'ABSPATH' ) ) {
 					@click="addColumn()"
 					:title="state.general.columns.length >= maxColumns ? `<?php echo esc_js( __( 'Maximum 10 columns', 'kdna-tables' ) ); ?>` : ''"
 				><?php esc_html_e( '+ Column', 'kdna-tables' ); ?></button>
+			</div>
+
+			<!-- Body alignment row. Sits between the column header strip
+			     and the data rows, with one L/C/R group per column. Writes
+			     to col.alignment, which governs body cells only. Header
+			     alignment lives in the col.header_alignment field and is
+			     edited from the buttons inside each column header above. -->
+			<div class="kdna-editor__row kdna-editor__row--body-align">
+				<div class="kdna-editor__row-head kdna-editor__row-head--align" role="rowheader">
+					<span class="kdna-editor__row-label"><?php esc_html_e( 'Body align', 'kdna-tables' ); ?></span>
+				</div>
+				<template x-for="(col, colIdx) in state.general.columns" :key="`align-${ col.id }`">
+					<div class="kdna-editor__cell kdna-editor__cell--align-toolbar">
+						<div class="kdna-editor__col-toolbar" role="toolbar" :aria-label="`<?php echo esc_js( __( 'Body cell alignment', 'kdna-tables' ) ); ?>`">
+							<button
+								type="button"
+								class="kdna-editor__icon-button"
+								:aria-pressed="col.alignment === 'left'"
+								@click="setColumnAlignment(colIdx, 'left')"
+								:aria-label="`<?php echo esc_js( __( 'Align body cells left', 'kdna-tables' ) ); ?>`"
+							>L</button>
+							<button
+								type="button"
+								class="kdna-editor__icon-button"
+								:aria-pressed="col.alignment === 'centre'"
+								@click="setColumnAlignment(colIdx, 'centre')"
+								:aria-label="`<?php echo esc_js( __( 'Align body cells centre', 'kdna-tables' ) ); ?>`"
+							>C</button>
+							<button
+								type="button"
+								class="kdna-editor__icon-button"
+								:aria-pressed="col.alignment === 'right'"
+								@click="setColumnAlignment(colIdx, 'right')"
+								:aria-label="`<?php echo esc_js( __( 'Align body cells right', 'kdna-tables' ) ); ?>`"
+							>R</button>
+						</div>
+					</div>
+				</template>
+				<div class="kdna-editor__row-spacer" aria-hidden="true"></div>
 			</div>
 
 			<!-- Body rows -->

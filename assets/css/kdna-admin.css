@@ -921,3 +921,30 @@
 	color: var( --kdna-admin-text-soft );
 	margin-top: 4px;
 }
+
+/*
+ * Body alignment row in the general editor. Sits between the column
+ * header strip and the data rows, with one L/C/R group per column.
+ */
+
+.kdna-editor__row--body-align {
+	display: contents;
+}
+
+.kdna-editor__row-head--align {
+	background: var( --kdna-admin-surface );
+	font-size: 11px;
+	color: var( --kdna-admin-text-soft );
+}
+
+.kdna-editor__cell--align-toolbar {
+	background: var( --kdna-admin-surface );
+	padding: 6px 8px;
+	align-items: center;
+	justify-content: center;
+	flex-direction: row;
+}
+
+.kdna-editor__cell--align-toolbar .kdna-editor__col-toolbar {
+	flex-wrap: nowrap;
+}

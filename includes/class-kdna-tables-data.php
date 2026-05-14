@@ -89,11 +89,15 @@ class KDNA_Tables_Data {
 				// so px-width columns gracefully fall back to auto-sized
 				// rather than being misrendered as percent.
 				$emit_size = ( '%' === $width_unit ) ? $width : 0.0;
+				// Header alignment is optional, empty in meta means "use the
+				// table default" which render-general.php resolves to centre.
+				$header_align_raw = isset( $col['header_alignment'] ) ? (string) $col['header_alignment'] : '';
 				$columns[] = array(
-					'_id'              => isset( $col['id'] ) ? (string) $col['id'] : '',
-					'column_label'     => isset( $col['label'] ) ? (string) $col['label'] : '',
-					'column_alignment' => self::legacy_alignment( $col['alignment'] ?? 'left', 'left' ),
-					'column_width'     => array(
+					'_id'                     => isset( $col['id'] ) ? (string) $col['id'] : '',
+					'column_label'            => isset( $col['label'] ) ? (string) $col['label'] : '',
+					'column_alignment'        => self::legacy_alignment( $col['alignment'] ?? 'left', 'left' ),
+					'column_header_alignment' => '' === $header_align_raw ? '' : self::legacy_alignment( $header_align_raw, 'center' ),
+					'column_width'            => array(
 						'size' => $emit_size,
 						'unit' => $width_unit,
 					),
