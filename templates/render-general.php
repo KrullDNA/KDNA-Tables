@@ -66,6 +66,26 @@ if ( $first_row_header && ! empty( $body_rows ) ) {
 }
 
 $sticky = ! empty( $settings['__sticky_first_column'] );
+
+// Card-stack on mobile lays the table out as one card per column,
+// with the column heading at the top of each card and that column's
+// body cells stacked underneath. Each cell carries a --kdna-card-row
+// value the responsive CSS uses to place it in the right grid row.
+$body_row_count = count( $body_rows );
+$rows_per_card  = $body_row_count + 1; // header cell + body rows
+
+// Row-label injection for the per-column card layout: when the user
+// has the first column as the row-label column, each body cell of
+// subsequent cards needs to know "which row" it represents so the
+// label can be shown alongside the value.
+$row_labels = array();
+if ( $first_col_header ) {
+	foreach ( $body_rows as $body_row ) {
+		$row_cells = isset( $body_row['cells'] ) && is_array( $body_row['cells'] ) ? array_values( $body_row['cells'] ) : array();
+		$first     = isset( $row_cells[0] ) ? $row_cells[0] : array();
+		$row_labels[] = isset( $first['cell_text'] ) ? (string) $first['cell_text'] : '';
+	}
+}
 ?>
 <?php if ( $sticky ) : ?><div class="kdna-table__scroll"><?php endif; ?>
 <table class="kdna-table kdna-table--general">
@@ -112,7 +132,7 @@ $sticky = ! empty( $settings['__sticky_first_column'] );
 						$cell_classes .= ' ' . $modifier;
 					}
 					?>
-					<th scope="col" class="<?php echo esc_attr( $cell_classes ); ?>" data-column-label="<?php echo esc_attr( isset( $column['column_label'] ) ? $column['column_label'] : '' ); ?>" style="text-align: <?php echo esc_attr( $align ); ?>; --kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>;">
+					<th scope="col" class="<?php echo esc_attr( $cell_classes ); ?>" data-column-label="<?php echo esc_attr( isset( $column['column_label'] ) ? $column['column_label'] : '' ); ?>" style="text-align: <?php echo esc_attr( $align ); ?>; --kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>; --kdna-card-row: <?php echo (int) ( $c * $rows_per_card + 1 ); ?>;">
 						<?php
 						$inner = $this->kdna_render_cell_inner( $cell );
 						echo '' !== $inner ? $inner : '&nbsp;';
@@ -144,7 +164,11 @@ $sticky = ! empty( $settings['__sticky_first_column'] );
 						$cell_classes .= ' kdna-table__cell--row-header';
 					}
 					?>
-					<<?php echo $tag; ?><?php echo $is_row_header ? ' scope="row"' : ''; ?> class="<?php echo esc_attr( $cell_classes ); ?>" data-column-label="<?php echo esc_attr( isset( $column['column_label'] ) ? $column['column_label'] : '' ); ?>" style="text-align: <?php echo esc_attr( $align ); ?>; --kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>;">
+					<?php
+					$grid_row_for_cell = $c * $rows_per_card + $row_index + 2;
+					$row_label_for_card = isset( $row_labels[ $row_index ] ) ? (string) $row_labels[ $row_index ] : '';
+					?>
+					<<?php echo $tag; ?><?php echo $is_row_header ? ' scope="row"' : ''; ?> class="<?php echo esc_attr( $cell_classes ); ?>" data-column-label="<?php echo esc_attr( isset( $column['column_label'] ) ? $column['column_label'] : '' ); ?>"<?php if ( $first_col_header && '' !== $row_label_for_card ) : ?> data-row-label="<?php echo esc_attr( $row_label_for_card ); ?>"<?php endif; ?> style="text-align: <?php echo esc_attr( $align ); ?>; --kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>; --kdna-card-row: <?php echo (int) $grid_row_for_cell; ?>;">
 						<?php echo $this->kdna_render_cell_inner( $cell ); ?>
 					</<?php echo $tag; ?>>
 				<?php endfor; ?>
