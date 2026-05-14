@@ -244,11 +244,18 @@ class KDNA_Tables_CPT {
 			? $col['width_unit']
 			: '%';
 		return array(
-			'id'         => self::sanitize_id( $col['id'] ?? '', 'col' ),
-			'label'      => sanitize_text_field( (string) ( $col['label'] ?? '' ) ),
-			'alignment'  => self::sanitize_alignment( $col['alignment'] ?? 'left', false ),
-			'width'      => max( 0, (float) ( $col['width'] ?? 0 ) ),
-			'width_unit' => $width_unit,
+			'id'               => self::sanitize_id( $col['id'] ?? '', 'col' ),
+			'label'            => sanitize_text_field( (string) ( $col['label'] ?? '' ) ),
+			// Body cell alignment for the column. Defaults to left for
+			// backward compat with tables saved before header_alignment
+			// existed.
+			'alignment'        => self::sanitize_alignment( $col['alignment'] ?? 'left', false ),
+			// Heading cell alignment. allow_empty=true so the renderer
+			// can fall back to the global header default (centre) when
+			// the user hasn't picked anything yet.
+			'header_alignment' => self::sanitize_alignment( $col['header_alignment'] ?? '', true ),
+			'width'            => max( 0, (float) ( $col['width'] ?? 0 ) ),
+			'width_unit'       => $width_unit,
 		);
 	}
 

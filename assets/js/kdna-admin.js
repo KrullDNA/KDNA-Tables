@@ -155,7 +155,8 @@
 		return {
 			id: uid( 'col' ),
 			label: 'Column ' + ( seedIdx || 1 ),
-			alignment: 'left',
+			alignment: 'left',          // body cell alignment
+			header_alignment: '',       // empty = inherit default (centre)
 			width: 0,
 			width_unit: '%'
 		};
@@ -219,6 +220,7 @@
 						id: col.id || uid( 'col' ),
 						label: typeof col.label === 'string' ? col.label : 'Column ' + ( idx + 1 ),
 						alignment: col.alignment || 'left',
+						header_alignment: typeof col.header_alignment === 'string' ? col.header_alignment : '',
 						width: Number( col.width || 0 ),
 						width_unit: col.width_unit === 'px' ? 'px' : '%'
 					};
@@ -389,6 +391,16 @@
 					return;
 				}
 				col.alignment = value;
+			},
+
+			setColumnHeaderAlignment: function ( idx, value ) {
+				var col = this.state.general.columns[ idx ];
+				if ( ! col ) {
+					return;
+				}
+				// Re-clicking the active value clears the override so the
+				// column header reverts to the default (centre).
+				col.header_alignment = ( col.header_alignment === value ) ? '' : value;
 			},
 
 			setColumnWidth: function ( idx, value ) {
@@ -1151,10 +1163,17 @@
 	}
 
 	function previewAlignFromColumn( col, isHeader ) {
-		// Header cells default to centre. Body cells follow the column's
-		// L/C/R alignment. A per-cell alignment override (not synthesized
-		// from column labels) is handled by the caller via the cell arg.
-		if ( isHeader ) { return 'center'; }
+		// Body cells follow col.alignment (L/C/R buttons in the body
+		// alignment row). Header cells follow col.header_alignment from
+		// the top L/C/R buttons, falling back to centre when unset.
+		if ( isHeader ) {
+			var col_header = col && col.header_alignment ? col.header_alignment : '';
+			if ( col_header === 'centre' ) { return 'center'; }
+			if ( col_header === 'left' || col_header === 'center' || col_header === 'right' ) {
+				return col_header;
+			}
+			return 'center';
+		}
 		var col_align = col && col.alignment ? col.alignment : 'left';
 		if ( col_align === 'centre' ) { return 'center'; }
 		if ( col_align === 'left' || col_align === 'center' || col_align === 'right' ) {

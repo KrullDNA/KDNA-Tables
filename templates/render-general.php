@@ -93,12 +93,16 @@ $sticky = ! empty( $settings['__sticky_first_column'] );
 				<?php for ( $c = 0; $c < $column_count; $c++ ) :
 					$column        = $columns[ $c ];
 					$cell          = isset( $head_cells[ $c ] ) ? $head_cells[ $c ] : array();
-					// Heading cells default to centre alignment. The column's
-					// L/C/R control governs the BODY cells only. A per-cell
-					// alignment override on the header cell still wins.
+					// Heading cells follow:
+					//   1. per-cell alignment override if set (advanced)
+					//   2. per-column header alignment (top L/C/R toolbar)
+					//   3. fall back to centre when neither is set
 					$cell_override = isset( $cell['cell_alignment_override'] ) ? (string) $cell['cell_alignment_override'] : 'inherit';
+					$col_header    = isset( $column['column_header_alignment'] ) ? (string) $column['column_header_alignment'] : '';
 					if ( in_array( $cell_override, array( 'left', 'center', 'right' ), true ) ) {
 						$align = $cell_override;
+					} elseif ( in_array( $col_header, array( 'left', 'center', 'right' ), true ) ) {
+						$align = $col_header;
 					} else {
 						$align = 'center';
 					}
