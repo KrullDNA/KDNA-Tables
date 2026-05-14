@@ -338,6 +338,14 @@
 	background: var( --kdna-admin-surface );
 }
 
+/* Trailing per-row spacer that fills the +Column grid slot so body rows
+ * supply the same number of grid items as the header (corner + N + add).
+ * Without this, CSS Grid pulls the next row's first cell up into the
+ * empty slot, wrapping the matrix incorrectly. */
+.kdna-editor__row-spacer {
+	background: var( --kdna-admin-surface );
+}
+
 .kdna-editor__row-head {
 	display: flex;
 	flex-direction: column;
