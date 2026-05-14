@@ -1150,6 +1150,28 @@
 		return parts.join( ' ' );
 	}
 
+	function previewAlignFromColumn( col, isHeader ) {
+		// Header cells default to centre. Body cells follow the column's
+		// L/C/R alignment. A per-cell alignment override (not synthesized
+		// from column labels) is handled by the caller via the cell arg.
+		if ( isHeader ) { return 'center'; }
+		var col_align = col && col.alignment ? col.alignment : 'left';
+		if ( col_align === 'centre' ) { return 'center'; }
+		if ( col_align === 'left' || col_align === 'center' || col_align === 'right' ) {
+			return col_align;
+		}
+		return 'left';
+	}
+
+	function previewAlignForCell( col, cell, isHeader ) {
+		var override = cell && cell.alignment ? cell.alignment : '';
+		if ( override === 'centre' ) { return 'center'; }
+		if ( override === 'left' || override === 'center' || override === 'right' ) {
+			return override;
+		}
+		return previewAlignFromColumn( col, isHeader );
+	}
+
 	function buildGeneralPreviewHtml( state ) {
 		var data = state.general || {};
 		var cols = data.columns || [];
@@ -1163,12 +1185,26 @@
 			return html;
 		}
 		var bodyRows = rows.slice();
+		var headCells = null;
 		if ( data.first_row_is_header && bodyRows.length ) {
-			var headRow = bodyRows.shift();
+			headCells = ( bodyRows.shift().cells ) || [];
+		} else {
+			// No row-based header: synthesise one from column labels if any
+			// are set. Matches the front-end render template behaviour.
+			var anyLabel = false;
+			var synth = cols.map( function ( col ) {
+				var label = ( col.label || '' ).trim();
+				if ( label !== '' ) { anyLabel = true; }
+				return { content_types: [ 'text' ], text: label, alignment: '' };
+			} );
+			if ( anyLabel ) { headCells = synth; }
+		}
+		if ( headCells ) {
 			html += '<thead><tr>';
 			cols.forEach( function ( col, idx ) {
-				var cell = ( headRow.cells || [] )[ idx ] || {};
-				html += '<th>' + ( cellPiecesHtml( cell, false ) || '&nbsp;' ) + '</th>';
+				var cell  = headCells[ idx ] || {};
+				var align = previewAlignForCell( col, cell, true );
+				html += '<th style="text-align:' + align + ';">' + ( cellPiecesHtml( cell, false ) || escapeHtml( col.label || '' ) || '&nbsp;' ) + '</th>';
 			} );
 			html += '</tr></thead>';
 		}
@@ -1176,9 +1212,10 @@
 		bodyRows.forEach( function ( row ) {
 			html += '<tr>';
 			cols.forEach( function ( col, idx ) {
-				var cell = ( row.cells || [] )[ idx ] || {};
-				var tag  = ( idx === 0 && data.first_column_is_header ) ? 'th' : 'td';
-				html += '<' + tag + '>' + ( cellPiecesHtml( cell, false ) || '&nbsp;' ) + '</' + tag + '>';
+				var cell  = ( row.cells || [] )[ idx ] || {};
+				var tag   = ( idx === 0 && data.first_column_is_header ) ? 'th' : 'td';
+				var align = previewAlignForCell( col, cell, false );
+				html += '<' + tag + ' style="text-align:' + align + ';">' + ( cellPiecesHtml( cell, false ) || '&nbsp;' ) + '</' + tag + '>';
 			} );
 			html += '</tr>';
 		} );

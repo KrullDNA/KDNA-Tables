@@ -323,6 +323,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 							</div>
 						</div>
 					</template>
+					<!-- Spacer that occupies the trailing +Column grid slot.
+					     Without this, each body row supplies row-head + N cells
+					     (= N+1 items) into a grid templated for N+2 columns,
+					     and CSS Grid pulls the next row's first item up into
+					     the empty trailing slot. -->
+					<div class="kdna-editor__row-spacer" aria-hidden="true"></div>
 				</div>
 			</template>
 

@@ -41,7 +41,28 @@ $head_row  = null;
 $body_rows = $rows;
 
 if ( $first_row_header && ! empty( $body_rows ) ) {
-	$head_row  = array_shift( $body_rows );
+	$head_row = array_shift( $body_rows );
+} else {
+	// No row-based header. Fall back to the column labels so the table
+	// still has a semantic <thead> when at least one column is named.
+	// Each synthesized head cell is a plain text cell that carries the
+	// column's label; the per-column alignment still cascades through
+	// kdna_resolve_cell_alignment because the column is passed alongside.
+	$any_label   = false;
+	$synth_cells = array();
+	foreach ( $columns as $column ) {
+		$label = isset( $column['column_label'] ) ? trim( (string) $column['column_label'] ) : '';
+		if ( '' !== $label ) {
+			$any_label = true;
+		}
+		$synth_cells[] = array(
+			'cell_type' => 'text',
+			'cell_text' => $label,
+		);
+	}
+	if ( $any_label ) {
+		$head_row = array( 'cells' => $synth_cells );
+	}
 }
 
 $sticky = ! empty( $settings['__sticky_first_column'] );
@@ -72,14 +93,22 @@ $sticky = ! empty( $settings['__sticky_first_column'] );
 				<?php for ( $c = 0; $c < $column_count; $c++ ) :
 					$column        = $columns[ $c ];
 					$cell          = isset( $head_cells[ $c ] ) ? $head_cells[ $c ] : array();
-					$align         = $this->kdna_resolve_cell_alignment( $cell, $column );
+					// Heading cells default to centre alignment. The column's
+					// L/C/R control governs the BODY cells only. A per-cell
+					// alignment override on the header cell still wins.
+					$cell_override = isset( $cell['cell_alignment_override'] ) ? (string) $cell['cell_alignment_override'] : 'inherit';
+					if ( in_array( $cell_override, array( 'left', 'center', 'right' ), true ) ) {
+						$align = $cell_override;
+					} else {
+						$align = 'center';
+					}
 					$modifier      = $this->kdna_cell_modifier_class( $cell );
 					$cell_classes  = 'kdna-table__cell kdna-table__cell--header';
 					if ( '' !== $modifier ) {
 						$cell_classes .= ' ' . $modifier;
 					}
 					?>
-					<th scope="col" class="<?php echo esc_attr( $cell_classes ); ?>" data-column-label="<?php echo esc_attr( isset( $column['column_label'] ) ? $column['column_label'] : '' ); ?>" style="--kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>;">
+					<th scope="col" class="<?php echo esc_attr( $cell_classes ); ?>" data-column-label="<?php echo esc_attr( isset( $column['column_label'] ) ? $column['column_label'] : '' ); ?>" style="text-align: <?php echo esc_attr( $align ); ?>; --kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>;">
 						<?php
 						$inner = $this->kdna_render_cell_inner( $cell );
 						echo '' !== $inner ? $inner : '&nbsp;';
@@ -111,7 +140,7 @@ $sticky = ! empty( $settings['__sticky_first_column'] );
 						$cell_classes .= ' kdna-table__cell--row-header';
 					}
 					?>
-					<<?php echo $tag; ?><?php echo $is_row_header ? ' scope="row"' : ''; ?> class="<?php echo esc_attr( $cell_classes ); ?>" data-column-label="<?php echo esc_attr( isset( $column['column_label'] ) ? $column['column_label'] : '' ); ?>" style="--kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>;">
+					<<?php echo $tag; ?><?php echo $is_row_header ? ' scope="row"' : ''; ?> class="<?php echo esc_attr( $cell_classes ); ?>" data-column-label="<?php echo esc_attr( isset( $column['column_label'] ) ? $column['column_label'] : '' ); ?>" style="text-align: <?php echo esc_attr( $align ); ?>; --kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>;">
 						<?php echo $this->kdna_render_cell_inner( $cell ); ?>
 					</<?php echo $tag; ?>>
 				<?php endfor; ?>
