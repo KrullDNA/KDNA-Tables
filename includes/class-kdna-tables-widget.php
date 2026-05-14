@@ -1242,12 +1242,21 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		// border-right on every cell, so the line shows between adjacent
 		// columns. The companion control below cancels border-right on the
 		// last cell of every row so the rightmost edge stays clean.
+		$this->add_control(
+			'column_divider_heading',
+			array(
+				'label'     => esc_html__( 'Vertical Column Dividers', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
+				'description' => esc_html__( 'Vertical lines between columns. Set Border Type to None to remove them.', 'kdna-tables' ),
+			)
+		);
+
 		$this->add_group_control(
 			\Elementor\Group_Control_Border::get_type(),
 			array(
 				'name'           => 'column_divider_border',
 				'label'          => esc_html__( 'Column Divider', 'kdna-tables' ),
-				'separator'      => 'before',
 				'selector'       => '{{WRAPPER}} .kdna-comparison .kdna-comparison__cell',
 				'fields_options' => array(
 					'border' => array(
@@ -1690,11 +1699,21 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'row_divider_heading',
+			array(
+				'label'       => esc_html__( 'Horizontal Row Dividers', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::HEADING,
+				'separator'   => 'before',
+				'description' => esc_html__( 'Horizontal lines between feature rows. Set Border Type to None to remove them.', 'kdna-tables' ),
+			)
+		);
+
 		$this->add_group_control(
 			\Elementor\Group_Control_Border::get_type(),
 			array(
 				'name'           => 'row_divider_border',
-				'label'          => esc_html__( 'Row Divider Border', 'kdna-tables' ),
+				'label'          => esc_html__( 'Row Divider', 'kdna-tables' ),
 				'selector'       => '{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell',
 				'fields_options' => array(
 					'border' => array(
