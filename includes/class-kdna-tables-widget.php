@@ -1238,6 +1238,56 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			)
 		);
 
+		// Column divider: opt-in vertical line between columns. Writes to
+		// border-right on every cell, so the line shows between adjacent
+		// columns. The companion control below cancels border-right on the
+		// last cell of every row so the rightmost edge stays clean.
+		$this->add_control(
+			'column_divider_heading',
+			array(
+				'label'     => esc_html__( 'Vertical Column Dividers', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
+				'description' => esc_html__( 'Vertical lines between columns. Set Border Type to None to remove them.', 'kdna-tables' ),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			array(
+				'name'           => 'column_divider_border',
+				'label'          => esc_html__( 'Column Divider', 'kdna-tables' ),
+				'selector'       => '{{WRAPPER}} .kdna-comparison .kdna-comparison__cell',
+				'fields_options' => array(
+					'border' => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-right-style: {{VALUE}};',
+						),
+					),
+					'width'  => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-right-width: {{TOP}}{{UNIT}};',
+						),
+					),
+					'color'  => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-right-color: {{VALUE}};',
+						),
+					),
+				),
+			)
+		);
+		$this->add_control(
+			'column_divider_strip_outer',
+			array(
+				'type'      => \Elementor\Controls_Manager::HIDDEN,
+				'default'   => 'yes',
+				'selectors' => array(
+					'{{WRAPPER}} .kdna-comparison .kdna-comparison__row > :last-child' => 'border-right: 0;',
+				),
+			)
+		);
+
 		$this->end_controls_section();
 
 		// ─── Section: Items Header Row ────────────────────────────────────
@@ -1649,11 +1699,21 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'row_divider_heading',
+			array(
+				'label'       => esc_html__( 'Horizontal Row Dividers', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::HEADING,
+				'separator'   => 'before',
+				'description' => esc_html__( 'Horizontal lines between feature rows. Set Border Type to None to remove them.', 'kdna-tables' ),
+			)
+		);
+
 		$this->add_group_control(
 			\Elementor\Group_Control_Border::get_type(),
 			array(
 				'name'           => 'row_divider_border',
-				'label'          => esc_html__( 'Row Divider Border', 'kdna-tables' ),
+				'label'          => esc_html__( 'Row Divider', 'kdna-tables' ),
 				'selector'       => '{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell',
 				'fields_options' => array(
 					'border' => array(
@@ -1671,47 +1731,6 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 							'{{SELECTOR}}' => 'border-bottom-color: {{VALUE}};',
 						),
 					),
-				),
-			)
-		);
-
-		// Column divider: opt-in vertical line between columns. Writes to
-		// border-right so the last column doesn't get an extra outer line;
-		// the rightmost cell's border-right is cancelled below.
-		$this->add_group_control(
-			\Elementor\Group_Control_Border::get_type(),
-			array(
-				'name'           => 'column_divider_border',
-				'label'          => esc_html__( 'Column Divider Border', 'kdna-tables' ),
-				'selector'       => '{{WRAPPER}} .kdna-comparison .kdna-comparison__cell',
-				'fields_options' => array(
-					'border' => array(
-						'selectors' => array(
-							'{{SELECTOR}}' => 'border-right-style: {{VALUE}};',
-						),
-					),
-					'width'  => array(
-						'selectors' => array(
-							'{{SELECTOR}}' => 'border-right-width: {{TOP}}{{UNIT}};',
-						),
-					),
-					'color'  => array(
-						'selectors' => array(
-							'{{SELECTOR}}' => 'border-right-color: {{VALUE}};',
-						),
-					),
-				),
-			)
-		);
-		// Cancel the right border on the last cell of every row so the
-		// vertical lines only show BETWEEN columns, not on the outer edge.
-		$this->add_control(
-			'column_divider_strip_outer',
-			array(
-				'type'      => \Elementor\Controls_Manager::HIDDEN,
-				'default'   => 'yes',
-				'selectors' => array(
-					'{{WRAPPER}} .kdna-comparison .kdna-comparison__row > :last-child' => 'border-right: 0;',
 				),
 			)
 		);

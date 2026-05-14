@@ -20,7 +20,7 @@
 	--kdna-card-bg: #ffffff;
 	--kdna-card-radius: 12px;
 	--kdna-card-padding: 16px;
-	--kdna-card-spacing: 16px;
+	--kdna-card-spacing: 0;
 	--kdna-pivot-label-color: inherit;
 	--kdna-pivot-label-width: 30%;
 	--kdna-pivot-row-spacing: 16px;
