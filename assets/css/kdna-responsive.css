@@ -131,13 +131,6 @@
 		display: contents;
 	}
 
-	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__cell--head-label,
-	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--head-label,
-	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison tbody .kdna-comparison__cell--label,
-	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison tbody .kdna-comparison__cell--label {
-		display: none;
-	}
-
 	/* Body cells (NOT header): card background only, no header bg override.
 	 * Header cells inherit the user's cmp_header_bg from the desktop
 	 * selector. Targeting tbody specifically avoids stomping that. */
@@ -149,6 +142,18 @@
 		grid-row: var(--kdna-card-row, auto);
 		padding: var(--kdna-card-padding);
 		border-bottom: 0;
+	}
+
+	/* Hide the empty corner <th> cell above the feature-label column and
+	 * the per-row feature-label cells. They're collapsed in card stack
+	 * because each value cell injects its label via ::before instead.
+	 * Keep this rule AFTER the display:flex rule above so it wins; it
+	 * shares specificity but appears later in the cascade. */
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__cell--head-label,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--head-label,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison tbody .kdna-comparison__cell--label,
+	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison tbody .kdna-comparison__cell--label {
+		display: none;
 	}
 
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison tbody .kdna-comparison__cell,
