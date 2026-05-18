@@ -173,6 +173,17 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			)
 		);
 
+		// Mirror of the picked table's item count (0-6). The editor JS
+		// updates this via AJAX so the per-column style controls can hide
+		// slots that the picked table does not have.
+		$this->add_control(
+			'selected_table_item_count',
+			array(
+				'type'    => \Elementor\Controls_Manager::HIDDEN,
+				'default' => '0',
+			)
+		);
+
 		$this->end_controls_section();
 	}
 
@@ -1390,12 +1401,20 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			'cmp_columns_intro',
 			array(
 				'type'            => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'             => esc_html__( 'Background and border radius for each column. Settings for columns beyond the picked table\'s item count are ignored.', 'kdna-tables' ),
+				'raw'             => esc_html__( 'Background, text colour, and border radius for each column. Only the columns the picked table actually has are shown.', 'kdna-tables' ),
 				'content_classes' => 'elementor-descriptor',
 			)
 		);
 
 		for ( $slot = 1; $slot <= 6; $slot++ ) {
+			// Show this slot only when the picked table has at least $slot
+			// items. The first slot is always available because a comparison
+			// table requires at least two items, but rather than special-case
+			// it we still gate it on count >= 1 for symmetry.
+			$slot_condition = array(
+				'selected_table_item_count' => array_map( 'strval', range( $slot, 6 ) ),
+			);
+
 			$this->add_control(
 				'cmp_col_' . $slot . '_heading',
 				array(
@@ -1403,6 +1422,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 					'label'     => sprintf( esc_html__( 'Column %d', 'kdna-tables' ), $slot ),
 					'type'      => \Elementor\Controls_Manager::HEADING,
 					'separator' => 'before',
+					'condition' => $slot_condition,
 				)
 			);
 
@@ -1412,8 +1432,23 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 					'label'     => esc_html__( 'Background', 'kdna-tables' ),
 					'type'      => \Elementor\Controls_Manager::COLOR,
 					'selectors' => array(
-						'{{WRAPPER}} .kdna-comparison .kdna-comparison__cell--item-' . $slot => 'background-color: {{VALUE}};',
+						'{{WRAPPER}} .kdna-comparison thead .kdna-comparison__cell--item-' . $slot => 'background-color: {{VALUE}};',
+						'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--item-' . $slot => 'background-color: {{VALUE}};',
 					),
+					'condition' => $slot_condition,
+				)
+			);
+
+			$this->add_control(
+				'cmp_col_' . $slot . '_text_color',
+				array(
+					'label'     => esc_html__( 'Text Colour', 'kdna-tables' ),
+					'type'      => \Elementor\Controls_Manager::COLOR,
+					'description' => esc_html__( 'Overrides header and body text colours for this column.', 'kdna-tables' ),
+					'selectors' => array(
+						'{{WRAPPER}} .kdna-comparison .kdna-comparison__cell--item-' . $slot . ', {{WRAPPER}} .kdna-comparison .kdna-comparison__cell--item-' . $slot . ' .kdna-comparison__item-label, {{WRAPPER}} .kdna-comparison .kdna-comparison__cell--item-' . $slot . ' .kdna-comparison__item-sublabel, {{WRAPPER}} .kdna-comparison .kdna-comparison__cell--item-' . $slot . ' .kdna-table__cell-text' => 'color: {{VALUE}};',
+					),
+					'condition' => $slot_condition,
 				)
 			);
 
@@ -1427,6 +1462,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 						'{{WRAPPER}} .kdna-comparison thead .kdna-comparison__cell--item-' . $slot => 'border-top-left-radius: {{TOP}}{{UNIT}}; border-top-right-radius: {{RIGHT}}{{UNIT}};',
 						'{{WRAPPER}} .kdna-comparison tbody tr:last-child > .kdna-comparison__cell--item-' . $slot => 'border-bottom-right-radius: {{BOTTOM}}{{UNIT}}; border-bottom-left-radius: {{LEFT}}{{UNIT}};',
 					),
+					'condition'  => $slot_condition,
 				)
 			);
 		}
@@ -2315,6 +2351,21 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		$cmp_cell_icon_sel = '{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--value .kdna-table__cell-icon';
 
 		$this->add_control(
+			'cmp_cell_icon_position',
+			array(
+				'label'   => esc_html__( 'Icon Position', 'kdna-tables' ),
+				'type'    => \Elementor\Controls_Manager::SELECT,
+				'default' => 'inherit',
+				'options' => array(
+					'inherit' => esc_html__( 'Per cell (use editor setting)', 'kdna-tables' ),
+					'before'  => esc_html__( 'Before text', 'kdna-tables' ),
+					'after'   => esc_html__( 'After text', 'kdna-tables' ),
+				),
+				'description' => esc_html__( 'Overrides the icon/text order chosen in the table editor for every mixed cell.', 'kdna-tables' ),
+			)
+		);
+
+		$this->add_control(
 			'cmp_cell_icon_color',
 			array(
 				'label'     => esc_html__( 'Icon Colour', 'kdna-tables' ),
@@ -3164,13 +3215,26 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		}
 
 		if ( 'custom' === $indicator ) {
+			$arrangement = $feature_row[ 'cell_' . $slot . '_arrangement' ] ?? 'icon-text';
+			$cell_type   = $feature_row[ 'cell_' . $slot . '_custom_type' ] ?? 'text';
+
+			// Widget-level override: when set, swap icon/text order globally
+			// for every mixed cell. Only applies to two-piece icon+text mixes
+			// to avoid mangling three-piece arrangements that include image.
+			$position_override = isset( $settings['cmp_cell_icon_position'] ) ? (string) $settings['cmp_cell_icon_position'] : 'inherit';
+			if ( 'mixed' === $cell_type && in_array( $position_override, array( 'before', 'after' ), true ) ) {
+				if ( 'icon-text' === $arrangement || 'text-icon' === $arrangement ) {
+					$arrangement = ( 'before' === $position_override ) ? 'icon-text' : 'text-icon';
+				}
+			}
+
 			$normalized = array(
-				'cell_type'        => $feature_row[ 'cell_' . $slot . '_custom_type' ] ?? 'text',
+				'cell_type'        => $cell_type,
 				'cell_text'        => $feature_row[ 'cell_' . $slot . '_text' ] ?? '',
 				'cell_icon'        => $feature_row[ 'cell_' . $slot . '_icon' ] ?? array(),
 				'cell_image'       => $feature_row[ 'cell_' . $slot . '_image' ] ?? array(),
 				'cell_image_size'  => $feature_row[ 'cell_' . $slot . '_image_size' ] ?? 'medium',
-				'cell_arrangement' => $feature_row[ 'cell_' . $slot . '_arrangement' ] ?? 'icon-text',
+				'cell_arrangement' => $arrangement,
 			);
 			return $this->kdna_render_cell_inner( $normalized );
 		}
