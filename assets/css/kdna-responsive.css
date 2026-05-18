@@ -205,7 +205,11 @@
 		content: attr(data-feature-label);
 		flex: 1 1 auto;
 		font-weight: 600;
-		color: var(--kdna-comparison-label-color);
+		/* Inherit from the value cell so a per-column Text Colour set on
+		 * the parent cell is honoured. Otherwise the label sits in the
+		 * default dark label colour and disappears against a dark column
+		 * background. */
+		color: inherit;
 	}
 
 	/* ── Card Stack, General ──
