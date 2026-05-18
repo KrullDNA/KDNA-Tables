@@ -76,7 +76,10 @@
 
 .kdna-comparison {
 	width: 100%;
-	border-collapse: collapse;
+	/* Use separate so per-column border-radius applied to corner cells
+	 * is honoured. border-spacing: 0 keeps the visual layout identical to
+	 * the previous collapse model. */
+	border-collapse: separate;
 	border-spacing: 0;
 	color: var(--kdna-comparison-body-color);
 	background: var(--kdna-comparison-bg);

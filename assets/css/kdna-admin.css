@@ -514,7 +514,10 @@
 }
 
 .kdna-editor__cell:hover .kdna-editor__piece-remove,
-.kdna-editor__cell.is-focused .kdna-editor__piece-remove {
+.kdna-editor__cell.is-focused .kdna-editor__piece-remove,
+.kdna-comparison-editor__feature-cell:hover .kdna-editor__piece-remove,
+.kdna-editor__cell-preview:hover .kdna-editor__piece-remove,
+.kdna-editor__cell-preview:focus-within .kdna-editor__piece-remove {
 	opacity: 1;
 }
 
