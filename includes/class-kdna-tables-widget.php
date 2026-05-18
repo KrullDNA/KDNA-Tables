@@ -1401,8 +1401,25 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			'cmp_columns_intro',
 			array(
 				'type'            => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'             => esc_html__( 'Background, text colour, and border radius for each column. Only the columns the picked table actually has are shown.', 'kdna-tables' ),
+				'raw'             => esc_html__( 'Background, text colour, border radius, row dividers, and spacing for each column. Per-column divider settings override the global Horizontal Row Dividers (Feature Rows section).', 'kdna-tables' ),
 				'content_classes' => 'elementor-descriptor',
+			)
+		);
+
+		$this->add_responsive_control(
+			'cmp_column_spacing',
+			array(
+				'label'       => esc_html__( 'Spacing Between Columns', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::SLIDER,
+				'size_units'  => array( 'px' ),
+				'range'       => array(
+					'px' => array( 'min' => 0, 'max' => 60, 'step' => 1 ),
+				),
+				'default'     => array( 'unit' => 'px', 'size' => 0 ),
+				'selectors'   => array(
+					'{{WRAPPER}} .kdna-comparison' => 'border-spacing: {{SIZE}}{{UNIT}} 0;',
+				),
+				'description' => esc_html__( 'Horizontal gap between columns. Combine with per-column Background + Border Radius for the card-per-column look.', 'kdna-tables' ),
 			)
 		);
 
@@ -1472,6 +1489,60 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 						'{{WRAPPER}} .kdna-comparison tbody tr:last-child > .kdna-comparison__cell--item-' . $slot => 'border-bottom-right-radius: {{BOTTOM}}{{UNIT}}; border-bottom-left-radius: {{LEFT}}{{UNIT}};',
 					),
 					'condition'  => $slot_condition,
+				)
+			);
+
+			// Per-column row divider. The chained `.cell.cell--item-N` raises
+			// the selector to 0-3-1, beating the global Horizontal Row Dividers
+			// rule (0-2-1) regardless of section emission order.
+			$col_divider_sel = '{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell.kdna-comparison__cell--item-' . $slot;
+
+			$this->add_control(
+				'cmp_col_' . $slot . '_divider_style',
+				array(
+					'label'     => esc_html__( 'Row Divider Style', 'kdna-tables' ),
+					'type'      => \Elementor\Controls_Manager::SELECT,
+					'options'   => array(
+						''       => esc_html__( 'Inherit from global', 'kdna-tables' ),
+						'none'   => esc_html__( 'None', 'kdna-tables' ),
+						'solid'  => esc_html__( 'Solid', 'kdna-tables' ),
+						'dashed' => esc_html__( 'Dashed', 'kdna-tables' ),
+						'dotted' => esc_html__( 'Dotted', 'kdna-tables' ),
+						'double' => esc_html__( 'Double', 'kdna-tables' ),
+					),
+					'default'   => '',
+					'selectors' => array(
+						$col_divider_sel => 'border-bottom-style: {{VALUE}};',
+					),
+					'condition' => $slot_condition,
+				)
+			);
+
+			$this->add_responsive_control(
+				'cmp_col_' . $slot . '_divider_width',
+				array(
+					'label'      => esc_html__( 'Row Divider Width', 'kdna-tables' ),
+					'type'       => \Elementor\Controls_Manager::SLIDER,
+					'size_units' => array( 'px' ),
+					'range'      => array(
+						'px' => array( 'min' => 0, 'max' => 10, 'step' => 1 ),
+					),
+					'selectors'  => array(
+						$col_divider_sel => 'border-bottom-width: {{SIZE}}{{UNIT}};',
+					),
+					'condition'  => $slot_condition,
+				)
+			);
+
+			$this->add_control(
+				'cmp_col_' . $slot . '_divider_color',
+				array(
+					'label'     => esc_html__( 'Row Divider Colour', 'kdna-tables' ),
+					'type'      => \Elementor\Controls_Manager::COLOR,
+					'selectors' => array(
+						$col_divider_sel => 'border-bottom-color: {{VALUE}};',
+					),
+					'condition' => $slot_condition,
 				)
 			);
 		}
@@ -1810,33 +1881,67 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'label'       => esc_html__( 'Horizontal Row Dividers', 'kdna-tables' ),
 				'type'        => \Elementor\Controls_Manager::HEADING,
 				'separator'   => 'before',
-				'description' => esc_html__( 'Horizontal lines between feature rows. Set Border Type to None to remove them.', 'kdna-tables' ),
+				'description' => esc_html__( 'Horizontal lines between feature rows. Set Style to None to remove them. Per-column dividers in the Column Styling section override these.', 'kdna-tables' ),
 			)
 		);
 
-		$this->add_group_control(
-			\Elementor\Group_Control_Border::get_type(),
+		// Explicit style/width/colour controls instead of Group_Control_Border.
+		// The group's "None" option only suppressed style — width and colour
+		// still emitted, so the base 1px border-bottom from the CSS file kept
+		// rendering. With explicit controls and selectors_dictionary, picking
+		// None forces both width: 0 and style: none in the same rule.
+		$this->add_control(
+			'row_divider_style',
 			array(
-				'name'           => 'row_divider_border',
-				'label'          => esc_html__( 'Row Divider', 'kdna-tables' ),
-				'selector'       => '{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell',
-				'fields_options' => array(
-					'border' => array(
-						'selectors' => array(
-							'{{SELECTOR}}' => 'border-bottom-style: {{VALUE}};',
-						),
-					),
-					'width'  => array(
-						'selectors' => array(
-							'{{SELECTOR}}' => 'border-bottom-width: {{TOP}}{{UNIT}};',
-						),
-					),
-					'color'  => array(
-						'selectors' => array(
-							'{{SELECTOR}}' => 'border-bottom-color: {{VALUE}};',
-						),
-					),
+				'label'                => esc_html__( 'Style', 'kdna-tables' ),
+				'type'                 => \Elementor\Controls_Manager::SELECT,
+				'options'              => array(
+					''       => esc_html__( 'Default', 'kdna-tables' ),
+					'none'   => esc_html__( 'None', 'kdna-tables' ),
+					'solid'  => esc_html__( 'Solid', 'kdna-tables' ),
+					'dashed' => esc_html__( 'Dashed', 'kdna-tables' ),
+					'dotted' => esc_html__( 'Dotted', 'kdna-tables' ),
+					'double' => esc_html__( 'Double', 'kdna-tables' ),
 				),
+				'default'              => '',
+				'selectors_dictionary' => array(
+					'none'   => 'border-bottom: 0 none;',
+					'solid'  => 'border-bottom-style: solid;',
+					'dashed' => 'border-bottom-style: dashed;',
+					'dotted' => 'border-bottom-style: dotted;',
+					'double' => 'border-bottom-style: double;',
+				),
+				'selectors'            => array(
+					'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell' => '{{VALUE}}',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'row_divider_width',
+			array(
+				'label'      => esc_html__( 'Width', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array(
+					'px' => array( 'min' => 0, 'max' => 10, 'step' => 1 ),
+				),
+				'selectors'  => array(
+					'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell' => 'border-bottom-width: {{SIZE}}{{UNIT}};',
+				),
+				'condition'  => array( 'row_divider_style!' => array( '', 'none' ) ),
+			)
+		);
+
+		$this->add_control(
+			'row_divider_color',
+			array(
+				'label'     => esc_html__( 'Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell' => 'border-bottom-color: {{VALUE}};',
+				),
+				'condition' => array( 'row_divider_style!' => array( '', 'none' ) ),
 			)
 		);
 
