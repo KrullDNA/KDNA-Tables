@@ -2329,6 +2329,9 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				),
 				'selectors' => array(
 					'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--value' => 'text-align: {{VALUE}};',
+					// High-specificity variant so the card_stack/pivot_rows
+					// mobile rules (0-5-0) cannot pin the alignment.
+					'{{WRAPPER}} .kdna-table__wrapper[data-responsive-mode][data-responsive-breakpoint] .kdna-comparison tbody .kdna-comparison__cell--value' => 'text-align: {{VALUE}};',
 				),
 			)
 		);

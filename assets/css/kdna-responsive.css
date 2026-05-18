@@ -179,7 +179,12 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
-		text-align: left;
+		/* Values sit at the right edge of the card (space-between pushes
+		 * the label left, value right). text-align: right makes WRAPPED
+		 * lines stay flush to that right edge instead of collapsing back
+		 * to the left of the inline-block. The Cell Value Text Alignment
+		 * Style control can override. */
+		text-align: right;
 	}
 
 	/* CTA cells in card stack don't carry an explicit --kdna-card-row, so
