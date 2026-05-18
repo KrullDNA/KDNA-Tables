@@ -37,12 +37,13 @@
 			return;
 		}
 		if ( Object.prototype.hasOwnProperty.call( typeCache, tableId ) ) {
-			callback( typeCache[ tableId ] );
+			var cached = typeCache[ tableId ];
+			callback( cached.type || '', cached.itemCount || 0 );
 			return;
 		}
 		var cfg = adminConfig();
 		if ( ! cfg || ! cfg.ajaxUrl || ! cfg.nonce ) {
-			callback( '' );
+			callback( '', 0 );
 			return;
 		}
 		$.ajax( {
@@ -56,13 +57,19 @@
 			}
 		} ).done( function ( response ) {
 			var type = '';
-			if ( response && response.success && response.data && typeof response.data.type === 'string' ) {
-				type = response.data.type;
+			var itemCount = 0;
+			if ( response && response.success && response.data ) {
+				if ( typeof response.data.type === 'string' ) {
+					type = response.data.type;
+				}
+				if ( typeof response.data.item_count === 'number' ) {
+					itemCount = response.data.item_count;
+				}
 			}
-			typeCache[ tableId ] = type;
-			callback( type );
+			typeCache[ tableId ] = { type: type, itemCount: itemCount };
+			callback( type, itemCount );
 		} ).fail( function () {
-			callback( '' );
+			callback( '', 0 );
 		} );
 	}
 
@@ -81,9 +88,13 @@
 
 		var sync = function () {
 			var tableId = settings.get( 'selected_table_id' );
-			fetchTableType( tableId, function ( type ) {
+			fetchTableType( tableId, function ( type, itemCount ) {
 				if ( type !== settings.get( 'selected_table_type' ) ) {
 					settings.set( 'selected_table_type', type, { silent: false } );
+				}
+				var countStr = String( Math.max( 0, Math.min( 6, itemCount || 0 ) ) );
+				if ( countStr !== settings.get( 'selected_table_item_count' ) ) {
+					settings.set( 'selected_table_item_count', countStr, { silent: false } );
 				}
 			} );
 		};

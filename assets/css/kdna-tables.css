@@ -142,7 +142,6 @@
 
 /* ─── Cell content pieces ─────────────────────────────────────────── */
 
-.kdna-table__cell-text,
 .kdna-table__cell-icon,
 .kdna-table__cell-image {
 	display: inline-flex;
@@ -151,7 +150,13 @@
 }
 
 .kdna-table__cell-text {
+	/* inline-block (not inline-flex) so wrapped lines honour the cell's
+	 * text-align. inline-flex would only align the box itself and leave
+	 * wrapped lines stuck to the left of the flex container. */
+	display: inline-block;
+	vertical-align: middle;
 	line-height: 1.5;
+	text-align: inherit;
 }
 
 .kdna-table__cell-text + .kdna-table__cell-icon,
@@ -175,6 +180,14 @@
 	width: 1em;
 	height: 1em;
 	display: inline-block;
+	/* SVG glyphs default to fill:#000 and ignore CSS color. Bind fill to
+	 * currentColor so the Icon Colour control flows through. */
+	fill: currentColor;
+}
+
+.kdna-table__cell-icon svg path,
+.kdna-table__cell-icon i::before {
+	fill: currentColor;
 }
 
 .kdna-table__cell-image img {

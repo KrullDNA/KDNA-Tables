@@ -57,10 +57,17 @@ class KDNA_Tables_Admin {
 		}
 		$table_id = isset( $_POST['table_id'] ) ? absint( $_POST['table_id'] ) : 0;
 		if ( $table_id <= 0 ) {
-			wp_send_json_success( array( 'type' => '' ) );
+			wp_send_json_success( array( 'type' => '', 'item_count' => 0 ) );
 		}
-		$type = KDNA_Tables_CPT::get_type( $table_id );
-		wp_send_json_success( array( 'type' => $type ) );
+		$type       = KDNA_Tables_CPT::get_type( $table_id );
+		$item_count = 0;
+		if ( 'comparison' === $type ) {
+			$data = get_post_meta( $table_id, KDNA_Tables_CPT::META_COMPARISON, true );
+			if ( is_array( $data ) && ! empty( $data['items'] ) && is_array( $data['items'] ) ) {
+				$item_count = count( $data['items'] );
+			}
+		}
+		wp_send_json_success( array( 'type' => $type, 'item_count' => $item_count ) );
 	}
 
 	public static function localize_editor_script() {
