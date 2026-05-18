@@ -1434,6 +1434,12 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 					'selectors' => array(
 						'{{WRAPPER}} .kdna-comparison thead .kdna-comparison__cell--item-' . $slot => 'background-color: {{VALUE}};',
 						'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--item-' . $slot => 'background-color: {{VALUE}};',
+						// Beat the responsive card_stack/pivot_rows tbody bg
+						// rule (specificity 0-5-1) so per-column backgrounds
+						// still apply on mobile. The extra attribute hooks
+						// raise this selector to 0-6-1.
+						'{{WRAPPER}} .kdna-table__wrapper[data-responsive-mode][data-responsive-breakpoint] .kdna-comparison thead .kdna-comparison__cell--item-' . $slot => 'background-color: {{VALUE}};',
+						'{{WRAPPER}} .kdna-table__wrapper[data-responsive-mode][data-responsive-breakpoint] .kdna-comparison tbody .kdna-comparison__cell--item-' . $slot => 'background-color: {{VALUE}};',
 					),
 					'condition' => $slot_condition,
 				)
@@ -1447,6 +1453,9 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 					'description' => esc_html__( 'Overrides header and body text colours for this column.', 'kdna-tables' ),
 					'selectors' => array(
 						'{{WRAPPER}} .kdna-comparison .kdna-comparison__cell--item-' . $slot . ', {{WRAPPER}} .kdna-comparison .kdna-comparison__cell--item-' . $slot . ' .kdna-comparison__item-label, {{WRAPPER}} .kdna-comparison .kdna-comparison__cell--item-' . $slot . ' .kdna-comparison__item-sublabel, {{WRAPPER}} .kdna-comparison .kdna-comparison__cell--item-' . $slot . ' .kdna-table__cell-text' => 'color: {{VALUE}};',
+						// High-specificity variant so card_stack/pivot_rows
+						// mobile rules cannot mask the column text colour.
+						'{{WRAPPER}} .kdna-table__wrapper[data-responsive-mode][data-responsive-breakpoint] .kdna-comparison .kdna-comparison__cell--item-' . $slot => 'color: {{VALUE}};',
 					),
 					'condition' => $slot_condition,
 				)
