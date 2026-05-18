@@ -1373,6 +1373,66 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 
 		$this->end_controls_section();
 
+		// ─── Section: Column Styling ──────────────────────────────────────
+		// Per-column background and border radius. The data model caps items
+		// at six, so we register six slots; controls left empty emit no CSS
+		// and have no effect, so unused slots are inert.
+		$this->start_controls_section(
+			'section_comparison_style_columns',
+			array(
+				'label'     => esc_html__( 'Column Styling', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => $cmp_condition,
+			)
+		);
+
+		$this->add_control(
+			'cmp_columns_intro',
+			array(
+				'type'            => \Elementor\Controls_Manager::RAW_HTML,
+				'raw'             => esc_html__( 'Background and border radius for each column. Settings for columns beyond the picked table\'s item count are ignored.', 'kdna-tables' ),
+				'content_classes' => 'elementor-descriptor',
+			)
+		);
+
+		for ( $slot = 1; $slot <= 6; $slot++ ) {
+			$this->add_control(
+				'cmp_col_' . $slot . '_heading',
+				array(
+					/* translators: %d: column number. */
+					'label'     => sprintf( esc_html__( 'Column %d', 'kdna-tables' ), $slot ),
+					'type'      => \Elementor\Controls_Manager::HEADING,
+					'separator' => 'before',
+				)
+			);
+
+			$this->add_control(
+				'cmp_col_' . $slot . '_bg',
+				array(
+					'label'     => esc_html__( 'Background', 'kdna-tables' ),
+					'type'      => \Elementor\Controls_Manager::COLOR,
+					'selectors' => array(
+						'{{WRAPPER}} .kdna-comparison .kdna-comparison__cell--item-' . $slot => 'background-color: {{VALUE}};',
+					),
+				)
+			);
+
+			$this->add_responsive_control(
+				'cmp_col_' . $slot . '_radius',
+				array(
+					'label'      => esc_html__( 'Border Radius', 'kdna-tables' ),
+					'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+					'size_units' => array( 'px', '%' ),
+					'selectors'  => array(
+						'{{WRAPPER}} .kdna-comparison thead .kdna-comparison__cell--item-' . $slot => 'border-top-left-radius: {{TOP}}{{UNIT}}; border-top-right-radius: {{RIGHT}}{{UNIT}};',
+						'{{WRAPPER}} .kdna-comparison tbody tr:last-child > .kdna-comparison__cell--item-' . $slot => 'border-bottom-right-radius: {{BOTTOM}}{{UNIT}}; border-bottom-left-radius: {{LEFT}}{{UNIT}};',
+					),
+				)
+			);
+		}
+
+		$this->end_controls_section();
+
 		// ─── Section: Item Card ───────────────────────────────────────────
 		$this->start_controls_section(
 			'section_comparison_style_item_card',
@@ -2234,6 +2294,67 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'name'     => 'value_text_shadow',
 				'label'    => esc_html__( 'Text Shadow', 'kdna-tables' ),
 				'selector' => '{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--value',
+			)
+		);
+
+		$this->end_controls_section();
+
+		// ─── Section: Cell Icon (Mixed) ───────────────────────────────────
+		// Styles the icon that appears beside text in a Custom feature cell
+		// (cell_type = mixed, arrangement icon-text / text-icon). Position
+		// stays per-cell; this section governs colour, size, and gap.
+		$this->start_controls_section(
+			'section_comparison_style_cell_icon',
+			array(
+				'label'     => esc_html__( 'Cell Icon (Mixed)', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => $cmp_condition,
+			)
+		);
+
+		$cmp_cell_icon_sel = '{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--value .kdna-table__cell-icon';
+
+		$this->add_control(
+			'cmp_cell_icon_color',
+			array(
+				'label'     => esc_html__( 'Icon Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					$cmp_cell_icon_sel => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'cmp_cell_icon_size',
+			array(
+				'label'      => esc_html__( 'Icon Size', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', 'em' ),
+				'range'      => array(
+					'px' => array( 'min' => 8, 'max' => 96, 'step' => 1 ),
+					'em' => array( 'min' => 0.5, 'max' => 6, 'step' => 0.1 ),
+				),
+				'selectors'  => array(
+					$cmp_cell_icon_sel => 'font-size: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'cmp_cell_icon_spacing',
+			array(
+				'label'       => esc_html__( 'Spacing from Text', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::SLIDER,
+				'size_units'  => array( 'px' ),
+				'range'       => array(
+					'px' => array( 'min' => 0, 'max' => 40, 'step' => 1 ),
+				),
+				'selectors'   => array(
+					'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--value .kdna-table__cell-text + .kdna-table__cell-icon' => 'margin-left: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--value .kdna-table__cell-icon + .kdna-table__cell-text' => 'margin-left: {{SIZE}}{{UNIT}};',
+				),
+				'description' => esc_html__( 'Gap between the icon and the adjacent text in a mixed cell.', 'kdna-tables' ),
 			)
 		);
 
