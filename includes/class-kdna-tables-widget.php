@@ -1478,28 +1478,12 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			)
 		);
 
-		$this->add_responsive_control(
-			'features_heading_align',
+		$this->add_control(
+			'features_heading_align_note',
 			array(
-				'label'     => esc_html__( 'Alignment', 'kdna-tables' ),
-				'type'      => \Elementor\Controls_Manager::CHOOSE,
-				'options'   => array(
-					'left'   => array(
-						'title' => esc_html__( 'Left', 'kdna-tables' ),
-						'icon'  => 'eicon-text-align-left',
-					),
-					'center' => array(
-						'title' => esc_html__( 'Centre', 'kdna-tables' ),
-						'icon'  => 'eicon-text-align-center',
-					),
-					'right'  => array(
-						'title' => esc_html__( 'Right', 'kdna-tables' ),
-						'icon'  => 'eicon-text-align-right',
-					),
-				),
-				'selectors' => array(
-					$features_heading_cell_sel => 'text-align: {{VALUE}};',
-				),
+				'type'            => \Elementor\Controls_Manager::RAW_HTML,
+				'raw'             => esc_html__( 'Text alignment follows the Feature Label Column → Label Alignment setting.', 'kdna-tables' ),
+				'content_classes' => 'elementor-descriptor',
 			)
 		);
 
@@ -2215,7 +2199,10 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				),
 				'default'   => 'left',
 				'selectors' => array(
-					'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--label' => 'text-align: {{VALUE}};',
+					// Apply to both body label cells AND the corner cell so
+					// the Features Heading (when set) follows the same
+					// alignment as the row labels in this column.
+					'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--label, {{WRAPPER}} .kdna-comparison thead .kdna-comparison__cell--head-label' => 'text-align: {{VALUE}};',
 				),
 			)
 		);

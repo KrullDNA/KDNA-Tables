@@ -306,6 +306,7 @@ class KDNA_Tables_Data {
 			'tooltip_position',
 			'cta_icon',
 			'cta_icon_position',
+			'features_heading_text',
 		);
 		foreach ( $comparison_passthrough as $key ) {
 			if ( array_key_exists( $key, $ws ) ) {
