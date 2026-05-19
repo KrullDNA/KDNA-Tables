@@ -93,16 +93,25 @@
 
 .kdna-comparison th,
 .kdna-comparison td {
-	/* Neutralise theme/block-editor injected borders on every side so the
-	 * only horizontal lines users see come from the explicit thead/tbody
-	 * border-bottom rules below. Themes like Hello Elementor add
-	 * border-top: 1px solid #eee which, with border-collapse: separate,
-	 * stacks against the previous cell's border-bottom and produces a
-	 * 2px-looking double line that no Style control can reach. */
-	border-top: 0;
-	border-bottom: 0;
-	border-left: 0;
-	border-right: 0;
+	/* Neutralise theme/block-editor injected borders on the top, left and
+	 * right of every cell. Themes like Hello Elementor and core block CSS
+	 * set border-top: 1px solid #eee via selectors like
+	 * `.entry-content table th` (specificity 0-1-2) which beats a plain
+	 * `.kdna-comparison th` reset; !important is the only reliable hammer
+	 * here. border-bottom is intentionally NOT reset — that's the
+	 * "horizontal divider" surface that the Style controls own. */
+	border-top: 0 !important;
+	border-left: 0 !important;
+	border-right: 0 !important;
+}
+
+/* Same reset on the table/thead/tbody/tr scaffolding so a stray
+ * `tr { border-top: 1px solid }` from a theme cannot leak through either. */
+.kdna-comparison,
+.kdna-comparison thead,
+.kdna-comparison tbody,
+.kdna-comparison tr {
+	border: 0 !important;
 }
 
 .kdna-comparison__col--label {
