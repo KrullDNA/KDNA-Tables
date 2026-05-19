@@ -3141,6 +3141,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'type'       => \Elementor\Controls_Manager::SLIDER,
 				'size_units' => array( 'px' ),
 				'range'      => array( 'px' => array( 'min' => 0, 'max' => 80, 'step' => 1 ) ),
+				'default'    => array( 'unit' => 'px', 'size' => 16 ),
 				'selectors'  => array(
 					'{{WRAPPER}}' => '--kdna-card-spacing: {{SIZE}}{{UNIT}};',
 				),
