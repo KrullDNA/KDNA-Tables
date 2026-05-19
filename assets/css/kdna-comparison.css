@@ -136,6 +136,11 @@
 
 .kdna-comparison thead .kdna-comparison__cell--head-label {
 	width: 1%;
+	/* <th> browser default is text-align: center; <td> defaults to left.
+	 * The body label cells (<td>) end up left-aligned, so explicitly
+	 * default the corner cell to left so it matches them when the user
+	 * has not picked a Label Alignment. The control still overrides. */
+	text-align: left;
 }
 
 .kdna-comparison__features-heading {
