@@ -215,6 +215,10 @@
 		 * default dark label colour and disappears against a dark column
 		 * background. */
 		color: inherit;
+		/* The cell sets text-align: right so wrapped value text stays
+		 * flush right. The feature label is the opposite half of the row
+		 * and reads better wrapping to the left, so override here. */
+		text-align: left;
 	}
 
 	/* ── Card Stack, General ──
