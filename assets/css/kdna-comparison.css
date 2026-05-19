@@ -138,6 +138,13 @@
 	width: 1%;
 }
 
+.kdna-comparison__features-heading {
+	display: inline-block;
+	font-weight: 700;
+	line-height: 1.3;
+	color: inherit;
+}
+
 .kdna-comparison__item {
 	position: relative;
 	display: flex;

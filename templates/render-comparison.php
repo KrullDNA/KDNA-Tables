@@ -86,8 +86,15 @@ $sticky        = ! empty( $settings['__sticky_first_column'] );
 	</colgroup>
 	<thead>
 		<tr class="kdna-comparison__row kdna-comparison__row--head">
+			<?php
+			$features_heading = isset( $settings['features_heading_text'] ) ? trim( (string) $settings['features_heading_text'] ) : '';
+			?>
 			<th class="kdna-comparison__cell kdna-comparison__cell--label kdna-comparison__cell--head-label" scope="col">
-				<span class="kdna-table__sr-only"><?php esc_html_e( 'Feature', 'kdna-tables' ); ?></span>
+				<?php if ( '' !== $features_heading ) : ?>
+					<span class="kdna-comparison__features-heading"><?php echo esc_html( $features_heading ); ?></span>
+				<?php else : ?>
+					<span class="kdna-table__sr-only"><?php esc_html_e( 'Feature', 'kdna-tables' ); ?></span>
+				<?php endif; ?>
 			</th>
 			<?php
 			foreach ( $items as $i => $item ) :
