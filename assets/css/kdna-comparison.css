@@ -93,6 +93,14 @@
 
 .kdna-comparison th,
 .kdna-comparison td {
+	/* Neutralise theme/block-editor injected borders on every side so the
+	 * only horizontal lines users see come from the explicit thead/tbody
+	 * border-bottom rules below. Themes like Hello Elementor add
+	 * border-top: 1px solid #eee which, with border-collapse: separate,
+	 * stacks against the previous cell's border-bottom and produces a
+	 * 2px-looking double line that no Style control can reach. */
+	border-top: 0;
+	border-bottom: 0;
 	border-left: 0;
 	border-right: 0;
 }
@@ -110,6 +118,11 @@
 	vertical-align: bottom;
 	text-align: center;
 	position: relative;
+	/* The "header divider" — the single horizontal line between the items
+	 * header row and the first feature row. Global and per-column Row
+	 * Divider controls write to this same border, so Style: None removes
+	 * it and a per-column Colour applies to its slice of the divider. */
+	border-bottom: 1px solid var(--kdna-comparison-border-color);
 }
 
 .kdna-comparison thead .kdna-comparison__cell--head-label {

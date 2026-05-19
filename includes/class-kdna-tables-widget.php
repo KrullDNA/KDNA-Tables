@@ -1494,8 +1494,10 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 
 			// Per-column row divider. The chained `.cell.cell--item-N` raises
 			// the selector to 0-3-1, beating the global Horizontal Row Dividers
-			// rule (0-2-1) regardless of section emission order.
-			$col_divider_sel = '{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell.kdna-comparison__cell--item-' . $slot;
+			// rule (0-2-1) regardless of section emission order. Includes the
+			// thead cell so the header divider's slice picks up the per-column
+			// colour/width too.
+			$col_divider_sel = '{{WRAPPER}} .kdna-comparison thead .kdna-comparison__cell.kdna-comparison__cell--item-' . $slot . ', {{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell.kdna-comparison__cell--item-' . $slot;
 
 			$this->add_control(
 				'cmp_col_' . $slot . '_divider_style',
@@ -1912,7 +1914,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 					'double' => 'border-bottom-style: double;',
 				),
 				'selectors'            => array(
-					'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell' => '{{VALUE}}',
+					'{{WRAPPER}} .kdna-comparison thead .kdna-comparison__cell, {{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell' => '{{VALUE}}',
 				),
 			)
 		);
@@ -1927,7 +1929,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 					'px' => array( 'min' => 0, 'max' => 10, 'step' => 1 ),
 				),
 				'selectors'  => array(
-					'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell' => 'border-bottom-width: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .kdna-comparison thead .kdna-comparison__cell, {{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell' => 'border-bottom-width: {{SIZE}}{{UNIT}};',
 				),
 				'condition'  => array( 'row_divider_style!' => array( '', 'none' ) ),
 			)
@@ -1939,7 +1941,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'label'     => esc_html__( 'Colour', 'kdna-tables' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
 				'selectors' => array(
-					'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell' => 'border-bottom-color: {{VALUE}};',
+					'{{WRAPPER}} .kdna-comparison thead .kdna-comparison__cell, {{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell' => 'border-bottom-color: {{VALUE}};',
 				),
 				'condition' => array( 'row_divider_style!' => array( '', 'none' ) ),
 			)
