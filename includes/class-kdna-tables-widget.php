@@ -1131,6 +1131,31 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 
 		$this->end_controls_section();
 
+		// ─── Section: Features Heading ────────────────────────────────────
+		// Optional label for the top-left corner cell (the empty <th> above
+		// the feature labels column). Leave blank to keep the cell empty.
+		$this->start_controls_section(
+			'section_comparison_features_heading',
+			array(
+				'label'     => esc_html__( 'Features Heading', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_CONTENT,
+				'condition' => $comparison_condition,
+			)
+		);
+
+		$this->add_control(
+			'features_heading_text',
+			array(
+				'label'       => esc_html__( 'Heading Text', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::TEXT,
+				'default'     => '',
+				'placeholder' => esc_html__( 'e.g. Feature / Inclusion', 'kdna-tables' ),
+				'description' => esc_html__( 'Shown in the top-left corner cell above the feature labels. Leave blank to keep the cell empty.', 'kdna-tables' ),
+			)
+		);
+
+		$this->end_controls_section();
+
 	}
 
 	protected function register_comparison_style_controls() {
@@ -1378,6 +1403,102 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'default'   => 'bottom',
 				'selectors' => array(
 					'{{WRAPPER}} .kdna-comparison thead .kdna-comparison__cell' => 'vertical-align: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+
+		// ─── Section: Features Heading ────────────────────────────────────
+		// Styles the corner cell heading set in Content > Features Heading.
+		// Conditioned on the heading being non-empty so the section stays
+		// hidden until the user actually adds text.
+		$features_heading_sel = '{{WRAPPER}} .kdna-comparison__features-heading';
+		$features_heading_cell_sel = '{{WRAPPER}} .kdna-comparison thead .kdna-comparison__cell--head-label';
+
+		$this->start_controls_section(
+			'section_comparison_style_features_heading',
+			array(
+				'label'     => esc_html__( 'Features Heading', 'kdna-tables' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array_merge( $cmp_condition, array( 'features_heading_text!' => '' ) ),
+			)
+		);
+
+		$this->add_control(
+			'features_heading_color',
+			array(
+				'label'     => esc_html__( 'Text Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					$features_heading_sel => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'features_heading_typography',
+				'selector' => $features_heading_sel,
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			array(
+				'name'     => 'features_heading_bg',
+				'label'    => esc_html__( 'Cell Background', 'kdna-tables' ),
+				'types'    => array( 'classic', 'gradient' ),
+				'selector' => $features_heading_cell_sel,
+			)
+		);
+
+		$this->add_responsive_control(
+			'features_heading_padding',
+			array(
+				'label'      => esc_html__( 'Cell Padding', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em' ),
+				'selectors'  => array(
+					$features_heading_cell_sel => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'features_heading_radius',
+			array(
+				'label'      => esc_html__( 'Cell Border Radius', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%' ),
+				'selectors'  => array(
+					$features_heading_cell_sel => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'features_heading_align',
+			array(
+				'label'     => esc_html__( 'Alignment', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::CHOOSE,
+				'options'   => array(
+					'left'   => array(
+						'title' => esc_html__( 'Left', 'kdna-tables' ),
+						'icon'  => 'eicon-text-align-left',
+					),
+					'center' => array(
+						'title' => esc_html__( 'Centre', 'kdna-tables' ),
+						'icon'  => 'eicon-text-align-center',
+					),
+					'right'  => array(
+						'title' => esc_html__( 'Right', 'kdna-tables' ),
+						'icon'  => 'eicon-text-align-right',
+					),
+				),
+				'selectors' => array(
+					$features_heading_cell_sel => 'text-align: {{VALUE}};',
 				),
 			)
 		);
