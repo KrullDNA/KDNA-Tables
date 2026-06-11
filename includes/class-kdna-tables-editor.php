@@ -298,11 +298,17 @@ class KDNA_Tables_Editor {
 		foreach ( $columns as $i => $col ) {
 			$col            = is_array( $col ) ? $col : array();
 			$out['columns'][] = array(
-				'id'         => isset( $col['id'] ) ? (string) $col['id'] : 'col_' . ( $i + 1 ),
-				'label'      => isset( $col['label'] ) ? (string) $col['label'] : '',
-				'alignment'  => isset( $col['alignment'] ) ? (string) $col['alignment'] : 'left',
-				'width'      => isset( $col['width'] ) ? (float) $col['width'] : 0,
-				'width_unit' => isset( $col['width_unit'] ) ? (string) $col['width_unit'] : '%',
+				'id'               => isset( $col['id'] ) ? (string) $col['id'] : 'col_' . ( $i + 1 ),
+				'label'            => isset( $col['label'] ) ? (string) $col['label'] : '',
+				'alignment'        => isset( $col['alignment'] ) ? (string) $col['alignment'] : 'left',
+				// Editor used to drop header_alignment when hydrating state.
+				// On reload the L/C/R toolbar showed no active state, and the
+				// next save round-tripped an empty value through sanitize so
+				// the column header reverted to the default centre. Carry it
+				// through here so it survives reload+save cycles.
+				'header_alignment' => isset( $col['header_alignment'] ) ? (string) $col['header_alignment'] : '',
+				'width'            => isset( $col['width'] ) ? (float) $col['width'] : 0,
+				'width_unit'       => isset( $col['width_unit'] ) ? (string) $col['width_unit'] : '%',
 			);
 		}
 

@@ -600,8 +600,12 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 						),
 					),
 					'width'  => array(
+						// The control is the "Bottom Edge Border" so read the
+						// BOTTOM value from the width dimensions input, not TOP.
+						// Reading TOP made entering 0/0/1/0 (a 1px bottom edge)
+						// resolve to border-bottom-width: 0 and no line drew.
 						'selectors' => array(
-							'{{SELECTOR}}' => 'border-bottom-width: {{TOP}}{{UNIT}};',
+							'{{SELECTOR}}' => 'border-bottom-width: {{BOTTOM}}{{UNIT}};',
 						),
 					),
 					'color'  => array(
@@ -688,8 +692,11 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 						),
 					),
 					'width'  => array(
+						// "Right Edge Border" — read the RIGHT value from the
+						// width dimensions input, not TOP. See header_border for
+						// the equivalent fix on the header bottom edge.
 						'selectors' => array(
-							'{{SELECTOR}}' => 'border-right-width: {{TOP}}{{UNIT}};',
+							'{{SELECTOR}}' => 'border-right-width: {{RIGHT}}{{UNIT}};',
 						),
 					),
 					'color'  => array(
@@ -823,6 +830,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		);
 
 		foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+			$side_placeholder = strtoupper( $side );
 			$this->add_group_control(
 				\Elementor\Group_Control_Border::get_type(),
 				array(
@@ -837,8 +845,12 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 							),
 						),
 						'width'  => array(
+							// Each per-side control reads the matching axis from
+							// the width dimensions input. Reading TOP for every
+							// side meant the Right/Bottom/Left controls picked
+							// up a stray 0 from the top input and never drew.
 							'selectors' => array(
-								'{{SELECTOR}}' => 'border-' . $side . '-width: {{TOP}}{{UNIT}};',
+								'{{SELECTOR}}' => 'border-' . $side . '-width: {{' . $side_placeholder . '}}{{UNIT}};',
 							),
 						),
 						'color'  => array(
@@ -1301,8 +1313,10 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 						),
 					),
 					'width'  => array(
+						// "Column Divider" is a right-edge border; read RIGHT
+						// from the width dimensions input.
 						'selectors' => array(
-							'{{SELECTOR}}' => 'border-right-width: {{TOP}}{{UNIT}};',
+							'{{SELECTOR}}' => 'border-right-width: {{RIGHT}}{{UNIT}};',
 						),
 					),
 					'color'  => array(
@@ -3256,8 +3270,10 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 						),
 					),
 					'width'  => array(
+						// "Row Divider" is a bottom-edge border; read BOTTOM
+						// from the width dimensions input.
 						'selectors' => array(
-							'{{SELECTOR}}' => 'border-bottom-width: {{TOP}}{{UNIT}};',
+							'{{SELECTOR}}' => 'border-bottom-width: {{BOTTOM}}{{UNIT}};',
 						),
 					),
 					'color'  => array(
