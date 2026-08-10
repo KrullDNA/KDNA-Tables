@@ -16,6 +16,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 
+	/**
+	 * Selector for the first-column body cells of a general table.
+	 *
+	 * Carries one class more than the Body Cells odd/even row selectors
+	 * ({{WRAPPER}} .kdna-table--general tbody .kdna-table__row--odd >
+	 * .kdna-table__cell) so First Column background and colour win the
+	 * cascade against them rather than losing on specificity.
+	 */
+	const FIRST_COL_SELECTOR = '{{WRAPPER}} .kdna-table--general tbody .kdna-table__row > .kdna-table__cell.kdna-table__cell--first-col';
+
 	public function get_name() {
 		return 'kdna-table';
 	}
@@ -318,6 +328,87 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 	}
 
 
+	/**
+	 * Register a Style/Width/Colour trio for one set of rule lines.
+	 *
+	 * Each trio writes to CSS variables rather than to border properties
+	 * directly, so kdna-tables.css owns which edge of which cell the line
+	 * lands on and the controls only ever say what it looks like. That is
+	 * what keeps the general table free of an outer frame: no control can
+	 * put a border on a cell that has no neighbour.
+	 *
+	 * Style defaults to '' so nothing is written and the stylesheet
+	 * default applies — which for the header vertical lines and the first
+	 * column's right edge means inheriting the Body Cells vertical line
+	 * through a var() fallback chain. Width and Colour are deliberately
+	 * default-less for the same reason. Choosing None writes
+	 * border-style: none and the line disappears.
+	 *
+	 * Note that Elementor emits CSS for a control even while `condition`
+	 * hides it, so Width and Colour keep emitting when Style is None.
+	 * That is harmless: border-style: none wins regardless of width.
+	 *
+	 * @param string $prefix        Control name prefix.
+	 * @param string $var_prefix    CSS variable prefix, without the -style
+	 *                              / -width / -color suffix.
+	 * @param string $default_label Label for the "leave it alone" option.
+	 * @param string $description   Description shown under the Style control.
+	 */
+	private function register_line_controls( $prefix, $var_prefix, $default_label, $description = '' ) {
+		$this->add_control(
+			$prefix . '_style',
+			array(
+				'label'       => esc_html__( 'Style', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::SELECT,
+				'default'     => '',
+				'options'     => array(
+					''       => $default_label,
+					'solid'  => esc_html__( 'Solid', 'kdna-tables' ),
+					'dashed' => esc_html__( 'Dashed', 'kdna-tables' ),
+					'dotted' => esc_html__( 'Dotted', 'kdna-tables' ),
+					'double' => esc_html__( 'Double', 'kdna-tables' ),
+					'none'   => esc_html__( 'None (hidden)', 'kdna-tables' ),
+				),
+				'selectors'   => array(
+					'{{WRAPPER}}' => $var_prefix . '-style: {{VALUE}};',
+				),
+				'description' => $description,
+			)
+		);
+
+		$this->add_responsive_control(
+			$prefix . '_width',
+			array(
+				'label'      => esc_html__( 'Width', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array(
+					'px' => array( 'min' => 0, 'max' => 20, 'step' => 1 ),
+				),
+				'selectors'  => array(
+					'{{WRAPPER}}' => $var_prefix . '-width: {{SIZE}}{{UNIT}};',
+				),
+				'condition'  => array(
+					$prefix . '_style!' => 'none',
+				),
+			)
+		);
+
+		$this->add_control(
+			$prefix . '_color',
+			array(
+				'label'     => esc_html__( 'Colour', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}}' => $var_prefix . '-color: {{VALUE}};',
+				),
+				'condition' => array(
+					$prefix . '_style!' => 'none',
+				),
+			)
+		);
+	}
+
 	protected function register_general_style_controls() {
 		$general_condition = array( 'selected_table_type' => 'general' );
 
@@ -587,46 +678,51 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			)
 		);
 
-		$this->add_group_control(
-			\Elementor\Group_Control_Border::get_type(),
+		$this->add_control(
+			'header_divider_heading',
 			array(
-				'name'           => 'header_border',
-				'label'          => esc_html__( 'Bottom Edge Border', 'kdna-tables' ),
-				'selector'       => '{{WRAPPER}} .kdna-table--general thead .kdna-table__cell',
-				'fields_options' => array(
-					'border' => array(
-						'selectors' => array(
-							'{{SELECTOR}}' => 'border-bottom-style: {{VALUE}};',
-						),
-					),
-					'width'  => array(
-						// The control is the "Bottom Edge Border" so read the
-						// BOTTOM value from the width dimensions input, not TOP.
-						// Reading TOP made entering 0/0/1/0 (a 1px bottom edge)
-						// resolve to border-bottom-width: 0 and no line drew.
-						'selectors' => array(
-							'{{SELECTOR}}' => 'border-bottom-width: {{BOTTOM}}{{UNIT}};',
-						),
-					),
-					'color'  => array(
-						'selectors' => array(
-							'{{SELECTOR}}' => 'border-bottom-color: {{VALUE}};',
-						),
-					),
-				),
+				'label'     => esc_html__( 'Bottom Divider', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
 			)
+		);
+
+		$this->register_line_controls(
+			'header_divider',
+			'--kdna-table-header-divider',
+			esc_html__( 'Default (solid)', 'kdna-tables' ),
+			esc_html__( 'The single line under the header row. None removes it.', 'kdna-tables' )
+		);
+
+		$this->add_control(
+			'header_v_lines_heading',
+			array(
+				'label'     => esc_html__( 'Vertical Lines', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
+		$this->register_line_controls(
+			'header_v_line',
+			'--kdna-table-header-v-line',
+			esc_html__( 'Match Body Cells', 'kdna-tables' ),
+			esc_html__( 'Lines between the header cells. None removes them; left unset they follow the Body Cells vertical lines.', 'kdna-tables' )
 		);
 
 		$this->end_controls_section();
 
 		// ─── Section: First Column ────────────────────────────────────────
 		/*
-		 * "First column" styles apply when the selected table marks its
-		 * first column as a header. Whether that flag is set lives in the
-		 * CPT now and is not mirrored back into widget settings, so the
-		 * section is gated on selected table type alone. Styles take no
-		 * effect when the selected table does not use a header column,
-		 * which is harmless.
+		 * These styles target .kdna-table__cell--first-col, which every
+		 * first-column body cell carries regardless of whether the table
+		 * marks that column as a header. Earlier builds targeted
+		 * .kdna-table__cell--row-header instead, so the whole section did
+		 * nothing unless the "first column is header" flag happened to be
+		 * on in the table content — and even then the background lost the
+		 * cascade to the odd/even row rules. The selectors below carry one
+		 * more class than the Body Cells row-background selectors so they
+		 * win outright.
 		 */
 		$this->start_controls_section(
 			'section_general_style_first_col',
@@ -643,7 +739,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'label'     => esc_html__( 'Background Colour', 'kdna-tables' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
 				'selectors' => array(
-					'{{WRAPPER}}' => '--kdna-table-first-col-bg: {{VALUE}};',
+					self::FIRST_COL_SELECTOR => 'background-color: {{VALUE}};',
 				),
 			)
 		);
@@ -654,7 +750,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'label'     => esc_html__( 'Text Colour', 'kdna-tables' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
 				'selectors' => array(
-					'{{WRAPPER}}' => '--kdna-table-first-col-color: {{VALUE}};',
+					self::FIRST_COL_SELECTOR => 'color: {{VALUE}};',
 				),
 			)
 		);
@@ -663,7 +759,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			\Elementor\Group_Control_Typography::get_type(),
 			array(
 				'name'     => 'first_col_typography',
-				'selector' => '{{WRAPPER}} .kdna-table--general .kdna-table__cell--row-header',
+				'selector' => self::FIRST_COL_SELECTOR,
 			)
 		);
 
@@ -674,38 +770,25 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
 				'size_units' => array( 'px', 'em' ),
 				'selectors'  => array(
-					'{{WRAPPER}} .kdna-table--general .kdna-table__cell--row-header' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+					self::FIRST_COL_SELECTOR => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
 				),
 			)
 		);
 
-		$this->add_group_control(
-			\Elementor\Group_Control_Border::get_type(),
+		$this->add_control(
+			'first_col_edge_heading',
 			array(
-				'name'           => 'first_col_separator_border',
-				'label'          => esc_html__( 'Right Edge Border', 'kdna-tables' ),
-				'selector'       => '{{WRAPPER}} .kdna-table--general .kdna-table__cell--row-header',
-				'fields_options' => array(
-					'border' => array(
-						'selectors' => array(
-							'{{SELECTOR}}' => 'border-right-style: {{VALUE}};',
-						),
-					),
-					'width'  => array(
-						// "Right Edge Border" — read the RIGHT value from the
-						// width dimensions input, not TOP. See header_border for
-						// the equivalent fix on the header bottom edge.
-						'selectors' => array(
-							'{{SELECTOR}}' => 'border-right-width: {{RIGHT}}{{UNIT}};',
-						),
-					),
-					'color'  => array(
-						'selectors' => array(
-							'{{SELECTOR}}' => 'border-right-color: {{VALUE}};',
-						),
-					),
-				),
+				'label'     => esc_html__( 'Right Edge Line', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
 			)
+		);
+
+		$this->register_line_controls(
+			'first_col_edge',
+			'--kdna-table-first-col-edge',
+			esc_html__( 'Match Body Cells', 'kdna-tables' ),
+			esc_html__( 'The line to the right of the first column. None removes just that line; left unset it follows the Body Cells vertical lines.', 'kdna-tables' )
 		);
 
 		$this->end_controls_section();
@@ -805,66 +888,43 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			)
 		);
 
+		/*
+		 * Rule lines are split by axis instead of the old per-side border
+		 * group. The general table never draws an outer frame — that is
+		 * the Table Wrapper border's job — so these only paint between
+		 * cells, and each axis can be removed on its own with None.
+		 */
 		$this->add_control(
-			'cell_border_per_side',
+			'body_h_lines_heading',
 			array(
-				'label'        => esc_html__( 'Border Per Side', 'kdna-tables' ),
-				'type'         => \Elementor\Controls_Manager::SWITCHER,
-				'label_on'     => esc_html__( 'On', 'kdna-tables' ),
-				'label_off'    => esc_html__( 'Off', 'kdna-tables' ),
-				'return_value' => 'yes',
-				'default'      => '',
-				'separator'    => 'before',
+				'label'     => esc_html__( 'Horizontal Lines', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
 			)
 		);
 
-		$this->add_group_control(
-			\Elementor\Group_Control_Border::get_type(),
+		$this->register_line_controls(
+			'body_h_line',
+			'--kdna-table-h-line',
+			esc_html__( 'Default (solid)', 'kdna-tables' ),
+			esc_html__( 'Lines between body rows. None removes them.', 'kdna-tables' )
+		);
+
+		$this->add_control(
+			'body_v_lines_heading',
 			array(
-				'name'      => 'cell_border',
-				'selector'  => '{{WRAPPER}} .kdna-table--general .kdna-table__cell',
-				'condition' => array(
-					'cell_border_per_side!' => 'yes',
-				),
+				'label'     => esc_html__( 'Vertical Lines', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
 			)
 		);
 
-		foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
-			$side_placeholder = strtoupper( $side );
-			$this->add_group_control(
-				\Elementor\Group_Control_Border::get_type(),
-				array(
-					'name'           => 'cell_border_' . $side,
-					/* translators: %s: side of the cell border (top, right, bottom, left). */
-					'label'          => sprintf( esc_html__( '%s Border', 'kdna-tables' ), ucfirst( $side ) ),
-					'selector'       => '{{WRAPPER}} .kdna-table--general .kdna-table__cell',
-					'fields_options' => array(
-						'border' => array(
-							'selectors' => array(
-								'{{SELECTOR}}' => 'border-' . $side . '-style: {{VALUE}};',
-							),
-						),
-						'width'  => array(
-							// Each per-side control reads the matching axis from
-							// the width dimensions input. Reading TOP for every
-							// side meant the Right/Bottom/Left controls picked
-							// up a stray 0 from the top input and never drew.
-							'selectors' => array(
-								'{{SELECTOR}}' => 'border-' . $side . '-width: {{' . $side_placeholder . '}}{{UNIT}};',
-							),
-						),
-						'color'  => array(
-							'selectors' => array(
-								'{{SELECTOR}}' => 'border-' . $side . '-color: {{VALUE}};',
-							),
-						),
-					),
-					'condition'      => array(
-						'cell_border_per_side' => 'yes',
-					),
-				)
-			);
-		}
+		$this->register_line_controls(
+			'body_v_line',
+			'--kdna-table-v-line',
+			esc_html__( 'Default (solid)', 'kdna-tables' ),
+			esc_html__( 'Lines between columns. None removes them.', 'kdna-tables' )
+		);
 
 		$this->add_control(
 			'row_hover_bg',

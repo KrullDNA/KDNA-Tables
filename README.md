@@ -104,10 +104,17 @@ A clean, fully styleable table for any tabular content. Up to ten columns.
 - Rows with cells. Each cell renders as text, icon, image, or any
   combination, with arrangement order and per-cell alignment override
   (data).
-- Style controls for the wrapper, header row, first column (when used as
-  a header), body cells (including per-side cell borders and alternating
-  row backgrounds), cell content (icon and image), and table layout
-  (border-collapse, border-spacing). (Widget.)
+- Style controls for the wrapper, header row, first column, body cells
+  (alternating row backgrounds and the rule lines), cell content (icon
+  and image), and table layout (border-collapse, border-spacing).
+  (Widget.)
+- Rule lines are split by axis and location, each with its own Style /
+  Width / Colour and a **None** option that removes just that set:
+  Body Cells → Horizontal Lines (between rows) and Vertical Lines
+  (between columns); Header Row → Bottom Divider and Vertical Lines;
+  First Column → Right Edge Line. The table itself never draws an outer
+  frame — the Table Wrapper border owns the outside edge — so no
+  combination of these can produce a stray line at the top of the table.
 
 ### Comparison Table
 
@@ -175,9 +182,24 @@ wrapper. Theme stylesheets or per-instance Custom CSS (via the
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `--kdna-table-bg` | `transparent` | Table wrapper background |
-| `--kdna-table-border-color` | `#e5e7eb` | Cell border colour |
-| `--kdna-table-border-width` | `1px` | Cell border width |
+| `--kdna-table-border-color` | `#e5e7eb` | Legacy border colour, kept for custom CSS |
+| `--kdna-table-border-width` | `1px` | Legacy border width, kept for custom CSS |
 | `--kdna-table-border-radius` | `12px` | Outer wrapper radius |
+| `--kdna-table-h-line-style` | `solid` | Horizontal line between body rows (`none` hides) |
+| `--kdna-table-h-line-width` | `1px` | Horizontal line width |
+| `--kdna-table-h-line-color` | `#e5e7eb` | Horizontal line colour |
+| `--kdna-table-v-line-style` | `solid` | Vertical line between columns (`none` hides) |
+| `--kdna-table-v-line-width` | `1px` | Vertical line width |
+| `--kdna-table-v-line-color` | `#e5e7eb` | Vertical line colour |
+| `--kdna-table-header-divider-style` | `solid` | Line under the header row (`none` hides) |
+| `--kdna-table-header-divider-width` | `1px` | Header divider width |
+| `--kdna-table-header-divider-color` | `#e5e7eb` | Header divider colour |
+| `--kdna-table-header-v-line-style` | falls back to `--kdna-table-v-line-style` | Vertical lines between header cells |
+| `--kdna-table-header-v-line-width` | falls back to `--kdna-table-v-line-width` | Header vertical line width |
+| `--kdna-table-header-v-line-color` | falls back to `--kdna-table-v-line-color` | Header vertical line colour |
+| `--kdna-table-first-col-edge-style` | falls back to `--kdna-table-v-line-style` | Line to the right of the first column |
+| `--kdna-table-first-col-edge-width` | falls back to `--kdna-table-v-line-width` | First column right edge width |
+| `--kdna-table-first-col-edge-color` | falls back to `--kdna-table-v-line-color` | First column right edge colour |
 | `--kdna-table-header-bg` | `#000000` | Header row background |
 | `--kdna-table-header-color` | `#ffffff` | Header row text colour |
 | `--kdna-table-header-padding` | `14px 16px` | Header cell padding |
@@ -185,9 +207,7 @@ wrapper. Theme stylesheets or per-instance Custom CSS (via the
 | `--kdna-table-body-bg-even` | `#f7f7f8` | Body even-row background |
 | `--kdna-table-body-color` | `#1f2937` | Body text colour |
 | `--kdna-table-body-padding` | `12px 16px` | Body cell padding |
-| `--kdna-table-first-col-bg` | `transparent` | First column background (when used as header) |
-| `--kdna-table-first-col-color` | `inherit` | First column text colour |
-| `--kdna-table-first-col-weight` | `700` | First column font weight |
+| `--kdna-table-first-col-weight` | `700` | First column font weight (row-header columns only) |
 | `--kdna-table-icon-color` | `#3362dd` | Cell icon colour |
 | `--kdna-table-icon-size` | `1.25em` | Cell icon size |
 | `--kdna-table-cell-gap` | `8px` | Gap between cell pieces (icon, text, image) |

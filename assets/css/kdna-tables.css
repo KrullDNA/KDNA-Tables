@@ -19,6 +19,19 @@
 	--kdna-table-border-color: #e5e7eb;
 	--kdna-table-border-width: 1px;
 	--kdna-table-border-radius: 12px;
+	/* Inner rule lines. The general table never draws an outer frame of
+	 * its own — the Table Wrapper border owns the outside edge — so these
+	 * only ever paint BETWEEN cells. Style: none removes a set of lines
+	 * without touching the others. */
+	--kdna-table-h-line-style: solid;
+	--kdna-table-h-line-width: 1px;
+	--kdna-table-h-line-color: #e5e7eb;
+	--kdna-table-v-line-style: solid;
+	--kdna-table-v-line-width: 1px;
+	--kdna-table-v-line-color: #e5e7eb;
+	--kdna-table-header-divider-style: solid;
+	--kdna-table-header-divider-width: 1px;
+	--kdna-table-header-divider-color: #e5e7eb;
 	--kdna-table-header-bg: #000000;
 	--kdna-table-header-color: #ffffff;
 	--kdna-table-header-padding: 14px 16px;
@@ -26,8 +39,6 @@
 	--kdna-table-body-bg-even: #f7f7f8;
 	--kdna-table-body-color: #1f2937;
 	--kdna-table-body-padding: 12px 16px;
-	--kdna-table-first-col-bg: transparent;
-	--kdna-table-first-col-color: inherit;
 	--kdna-table-first-col-weight: 700;
 	--kdna-table-icon-color: #3362dd;
 	--kdna-table-icon-size: 1.25em;
@@ -111,11 +122,76 @@
 
 .kdna-table__cell {
 	padding: var(--kdna-table-body-padding);
-	border: var(--kdna-table-border-width) solid var(--kdna-table-border-color);
 	vertical-align: middle;
 	text-align: var(--kdna-table-cell-text-align, left);
 	transition: background-color var(--kdna-table-row-hover-transition, 200ms) ease,
 		color var(--kdna-table-row-hover-transition, 200ms) ease;
+}
+
+/* ─── General table rule lines ─────────────────────────────────────
+ * The general table paints inner lines only: a cell never carries a
+ * border on the table's outer edge. Everything below is expressed as
+ * "the right/bottom edge of a cell that has a neighbour", so the table
+ * has no frame of its own and the Table Wrapper border is the single
+ * control for the outside.
+ *
+ * The resets are !important because themes like Hello Elementor and the
+ * block editor set cell borders through selectors such as
+ * `.entry-content table td` (0-1-2), which a plain reset here cannot
+ * beat. Only the edges we never draw are reset, so the line rules below
+ * stay !important-free and remain overridable.
+ */
+
+.kdna-table--general,
+.kdna-table--general thead,
+.kdna-table--general tbody,
+.kdna-table--general tr {
+	border: 0 !important;
+}
+
+.kdna-table--general th,
+.kdna-table--general td {
+	/* Top and left are always the neighbour's (or the table's) edge. */
+	border-top: 0 !important;
+	border-left: 0 !important;
+}
+
+.kdna-table--general .kdna-table__cell:last-child {
+	border-right: 0 !important;
+}
+
+.kdna-table--general tbody .kdna-table__row:last-child > .kdna-table__cell {
+	border-bottom: 0 !important;
+}
+
+/* Header row: the divider under it, and the lines between header cells.
+ * The header vertical line falls back to the body vertical line so the
+ * two read as one grid until the header is styled separately. */
+
+.kdna-table--general thead .kdna-table__cell {
+	border-bottom: var(--kdna-table-header-divider-width) var(--kdna-table-header-divider-style) var(--kdna-table-header-divider-color);
+}
+
+.kdna-table--general thead .kdna-table__cell:not(:last-child) {
+	border-right: var(--kdna-table-header-v-line-width, var(--kdna-table-v-line-width)) var(--kdna-table-header-v-line-style, var(--kdna-table-v-line-style)) var(--kdna-table-header-v-line-color, var(--kdna-table-v-line-color));
+}
+
+/* Body: horizontal lines between rows, vertical lines between columns. */
+
+.kdna-table--general tbody .kdna-table__row:not(:last-child) > .kdna-table__cell {
+	border-bottom: var(--kdna-table-h-line-width) var(--kdna-table-h-line-style) var(--kdna-table-h-line-color);
+}
+
+.kdna-table--general tbody .kdna-table__cell:not(:last-child) {
+	border-right: var(--kdna-table-v-line-width) var(--kdna-table-v-line-style) var(--kdna-table-v-line-color);
+}
+
+/* The first column's right edge can be styled on its own; unset, it is
+ * simply the body vertical line. Higher specificity than the rule above
+ * so the First Column controls win on that one cell. */
+
+.kdna-table--general tbody .kdna-table__row > .kdna-table__cell--first-col:not(:last-child) {
+	border-right: var(--kdna-table-first-col-edge-width, var(--kdna-table-v-line-width)) var(--kdna-table-first-col-edge-style, var(--kdna-table-v-line-style)) var(--kdna-table-first-col-edge-color, var(--kdna-table-v-line-color));
 }
 
 .kdna-table thead .kdna-table__cell,
@@ -134,9 +210,15 @@
 	background: var(--kdna-table-body-bg-even);
 }
 
+/* Row-header cells (first column marked as a header in the table
+ * content) stay bold by default. Colour, background, padding and
+ * typography are NOT set here: they come from the First Column Style
+ * controls, which target .kdna-table__cell--first-col — a class every
+ * first-column body cell carries, header column or not. Declaring
+ * background here would also lose to the odd/even row rules above,
+ * which is why the First Column background never used to show. */
+
 .kdna-table .kdna-table__cell--row-header {
-	background: var(--kdna-table-first-col-bg);
-	color: var(--kdna-table-first-col-color);
 	font-weight: var(--kdna-table-first-col-weight);
 }
 
