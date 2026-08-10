@@ -609,7 +609,12 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'name'     => 'header_bg',
 				'label'    => esc_html__( 'Background', 'kdna-tables' ),
 				'types'    => array( 'classic', 'gradient' ),
-				'selector' => '{{WRAPPER}} .kdna-table--general thead .kdna-table__cell',
+				// Also paints the column headings Pivot Rows injects on
+				// mobile. The real <thead> is hidden in that mode, so those
+				// injected labels ARE the header row there and follow it
+				// rather than silently losing its background. The Pivot Rows
+				// Mode section can override them on their own.
+				'selector' => '{{WRAPPER}} .kdna-table--general thead .kdna-table__cell, {{WRAPPER}} [data-responsive-mode="pivot_rows"] .kdna-table--general .kdna-table__cell::before',
 			)
 		);
 
@@ -2616,12 +2621,14 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 						'icon'  => 'eicon-text-align-right',
 					),
 				),
-				'selectors' => array(
+				'selectors'   => array(
+					// Desktop selector only. The high-specificity variant that
+					// used to sit alongside it pinned this alignment through
+					// card_stack and pivot_rows as well; those modes now always
+					// centre, so it would fight them.
 					'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--value' => 'text-align: {{VALUE}};',
-					// High-specificity variant so the card_stack/pivot_rows
-					// mobile rules (0-5-0) cannot pin the alignment.
-					'{{WRAPPER}} .kdna-table__wrapper[data-responsive-mode][data-responsive-breakpoint] .kdna-comparison tbody .kdna-comparison__cell--value' => 'text-align: {{VALUE}};',
 				),
+				'description' => esc_html__( 'Applies to the desktop layout. Responsive modes centre their cells.', 'kdna-tables' ),
 			)
 		);
 
@@ -3284,11 +3291,27 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			)
 		);
 
+		/*
+		 * In Pivot Rows the real <thead> is hidden and every cell injects
+		 * its column label instead, so that label is the column heading at
+		 * this breakpoint. It inherits the Header Row background and text
+		 * colour by default; the controls below restyle it for mobile
+		 * without touching the desktop header.
+		 */
+		$this->add_control(
+			'pivot_label_heading',
+			array(
+				'label'     => esc_html__( 'Column Headings', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
 		$this->add_group_control(
 			\Elementor\Group_Control_Typography::get_type(),
 			array(
 				'name'     => 'pivot_label_typography',
-				'label'    => esc_html__( 'Label Typography', 'kdna-tables' ),
+				'label'    => esc_html__( 'Typography', 'kdna-tables' ),
 				'selector' => '{{WRAPPER}} [data-responsive-mode="pivot_rows"] .kdna-table__cell::before, {{WRAPPER}} [data-responsive-mode="pivot_rows"] .kdna-comparison__cell--value::before',
 			)
 		);
@@ -3296,11 +3319,65 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		$this->add_control(
 			'pivot_label_color',
 			array(
-				'label'     => esc_html__( 'Label Colour', 'kdna-tables' ),
-				'type'      => \Elementor\Controls_Manager::COLOR,
-				'selectors' => array(
+				'label'       => esc_html__( 'Text Colour', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::COLOR,
+				'selectors'   => array(
 					'{{WRAPPER}}' => '--kdna-pivot-label-color: {{VALUE}};',
 				),
+				'description' => esc_html__( 'Unset, headings use the Header Row text colour.', 'kdna-tables' ),
+			)
+		);
+
+		$this->add_control(
+			'pivot_heading_bg',
+			array(
+				'label'       => esc_html__( 'Background Colour', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::COLOR,
+				'selectors'   => array(
+					// One class more than the Header Row Background control's
+					// pivot selector, so setting this overrides the header
+					// background for the mobile headings only.
+					'{{WRAPPER}} .kdna-table__wrapper[data-responsive-mode="pivot_rows"] .kdna-table--general .kdna-table__cell::before' => 'background: {{VALUE}};',
+				),
+				'description' => esc_html__( 'Unset, headings use the Header Row background.', 'kdna-tables' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'pivot_heading_padding',
+			array(
+				'label'      => esc_html__( 'Padding', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em' ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-pivot-heading-padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'pivot_heading_radius',
+			array(
+				'label'      => esc_html__( 'Border Radius', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-pivot-heading-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'pivot_heading_spacing',
+			array(
+				'label'      => esc_html__( 'Spacing Below Heading', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40, 'step' => 1 ) ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-pivot-heading-spacing: {{SIZE}}{{UNIT}};',
+				),
+				'condition'  => array( 'pivot_label_position' => 'above' ),
 			)
 		);
 

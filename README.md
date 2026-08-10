@@ -139,6 +139,13 @@ feature rows.
 Each widget instance picks one of four responsive modes. The breakpoint at
 which the mode activates is configurable (Mobile only, Tablet and Mobile).
 
+Every mode except None centres its cell text at its breakpoint, whatever
+the column, per-cell or Style-tab alignment says for desktop. Left and
+right alignment belongs to the desktop column grid; once the table has
+reflowed into cards or stacked rows there is nothing left for it to line
+up against. None keeps the desktop layout, so it keeps the desktop
+alignment.
+
 - **None.** The table stays in its desktop layout at every viewport.
 - **Card Stack.** The comparison table reflows so each item column becomes
   a vertical card showing all feature rows as stacked label/value pairs.
@@ -148,7 +155,11 @@ which the mode activates is configurable (Mobile only, Tablet and Mobile).
   comparison table the feature label sits at the top with a horizontal
   set of mini cards (one per item) below it. For the general table each
   cell shows the column label above or inline with the value (selectable
-  per widget).
+  per widget). That label is the column heading at this breakpoint — the
+  real header row is hidden — so it carries the Header Row background and
+  text colour by default, and the Pivot Rows Mode section restyles it for
+  mobile (background, typography, colour, padding, radius, spacing)
+  without touching the desktop header.
 - **Column Picker.** The comparison table hides all item columns by
   default and shows a picker above the table. The picker lets the user
   select up to two items and reveals only those columns. Picker UI is
@@ -274,9 +285,12 @@ wrapper. Theme stylesheets or per-instance Custom CSS (via the
 | `--kdna-card-radius` | `12px` | Card stack card radius |
 | `--kdna-card-padding` | `16px` | Card stack card padding |
 | `--kdna-card-spacing` | `16px` | Gap between stacked cards |
-| `--kdna-pivot-label-color` | `inherit` | Pivot rows label colour |
+| `--kdna-pivot-label-color` | undeclared | Pivot rows label colour. Unset, the general table's column headings take `--kdna-table-header-color` and the comparison item labels inherit |
 | `--kdna-pivot-label-width` | `30%` | Pivot rows inline label width |
 | `--kdna-pivot-row-spacing` | `16px` | Pivot rows row spacing |
+| `--kdna-pivot-heading-padding` | `0` | Pivot rows column heading padding |
+| `--kdna-pivot-heading-radius` | `0` | Pivot rows column heading radius |
+| `--kdna-pivot-heading-spacing` | `2px` | Gap under a pivot rows column heading |
 | `--kdna-picker-bg` | `#ffffff` | Column picker background |
 | `--kdna-picker-padding` | `12px` | Column picker padding |
 | `--kdna-picker-radius` | `12px` | Column picker radius |
