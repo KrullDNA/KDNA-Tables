@@ -160,6 +160,14 @@ if ( $first_col_header ) {
 					if ( '' !== $modifier ) {
 						$cell_classes .= ' ' . $modifier;
 					}
+					// Every first-column body cell carries --first-col, whether or
+					// not the table marks that column as a header. The First Column
+					// Style controls hang off this class, so they apply to any
+					// general table rather than silently doing nothing when the
+					// "first column is header" flag happens to be off.
+					if ( 0 === $c ) {
+						$cell_classes .= ' kdna-table__cell--first-col';
+					}
 					if ( $is_row_header ) {
 						$cell_classes .= ' kdna-table__cell--row-header';
 					}
