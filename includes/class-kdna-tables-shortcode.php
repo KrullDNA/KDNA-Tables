@@ -232,9 +232,10 @@ class KDNA_Tables_Shortcode {
 			$wrapper_attrs['data-picker-config'] = wp_json_encode( $picker_config );
 		}
 
-		$style_attribute = KDNA_Tables_Style_Resolver::to_style_attribute(
-			KDNA_Tables_Style_Resolver::resolve( $style_id )
-		);
+		// The cached entry point: this runs once per shortcode on the page,
+		// so a page listing several tables would otherwise pay the full
+		// resolve for each of them.
+		$style_attribute = KDNA_Tables_Style_Resolver::style_attribute_for( $style_id );
 		if ( '' !== $style_attribute ) {
 			$wrapper_attrs['style'] = $style_attribute;
 		}

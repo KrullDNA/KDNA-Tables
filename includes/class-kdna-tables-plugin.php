@@ -16,14 +16,19 @@ require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-admin.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-editor.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-migration.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-shortcode.php';
-// Shortcode Style Engine. Definitions only at this stage: nothing hooks,
-// enqueues or renders until the shortcode starts consuming the resolver.
+// Shortcode Style Engine.
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-style-schema.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-style-resolver.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-style-admin.php';
 
 KDNA_Tables_CPT::init();
 KDNA_Tables_Shortcode::init();
+/*
+ * Cache invalidation for writes this plugin did not make: WP-CLI, an
+ * importer, another plugin touching the option or the meta. The settings
+ * page invalidates directly after its own saves.
+ */
+KDNA_Tables_Style_Resolver::register_invalidation();
 /*
  * Not inside is_admin(): the settings page's REST route has to register
  * on rest_api_init, and a /wp-json/ request is not an admin request. The

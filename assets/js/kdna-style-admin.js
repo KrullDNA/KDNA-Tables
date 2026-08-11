@@ -1146,6 +1146,154 @@
 				SIDES.forEach( function ( side ) { value[ side ] = edited; } );
 			},
 
+			/* ── Presets and reset ───────────────────────────────────
+			 * Global settings page only. A preset is the whole global
+			 * layer, so there is nothing coherent to export or import
+			 * from a single table's overrides.
+			 */
+
+			importOpen: false,
+			importText: '',
+			importing: false,
+			discarded: [],
+
+			/**
+			 * Download the SAVED styles as a preset.
+			 *
+			 * Fetched from the server rather than serialised from the
+			 * form, so what lands in the file is what the site actually
+			 * renders with. If there are unsaved edits the user is told,
+			 * rather than having them silently folded in or silently left
+			 * out.
+			 */
+			exportPreset: function () {
+				var self = this;
+
+				if ( this.dirty ) {
+					this.status = this.strings.exportDirty || 'Save first.';
+					this.statusClass = 'is-warning';
+					return;
+				}
+
+				window.fetch( seed.exportUrl, {
+					method: 'GET',
+					credentials: 'same-origin',
+					headers: { 'X-WP-Nonce': seed.nonce }
+				} ).then( function ( response ) {
+					return response.json();
+				} ).then( function ( preset ) {
+					var blob = new window.Blob(
+						[ JSON.stringify( preset, null, '\t' ) ],
+						{ type: 'application/json' }
+					);
+					var url = window.URL.createObjectURL( blob );
+					var link = document.createElement( 'a' );
+					link.href = url;
+					link.download = 'kdna-tables-styles.json';
+					document.body.appendChild( link );
+					link.click();
+					document.body.removeChild( link );
+					// Revoking immediately can cancel the download in some
+					// browsers, so it waits for the click to have been
+					// acted on.
+					window.setTimeout( function () { window.URL.revokeObjectURL( url ); }, 1000 );
+
+					self.status = self.strings.exported || 'Preset downloaded';
+					self.statusClass = 'is-ok';
+				} ).catch( function () {
+					self.status = self.strings.failed || 'Could not save';
+					self.statusClass = 'is-error';
+				} );
+			},
+
+			/** Read a chosen file into the textarea, so both paths are one. */
+			readPresetFile: function ( event ) {
+				var file = event.target.files && event.target.files[ 0 ];
+				if ( ! file ) { return; }
+
+				var self = this;
+				var reader = new window.FileReader();
+				reader.onload = function () {
+					self.importText = String( reader.result || '' );
+				};
+				reader.readAsText( file );
+			},
+
+			importPreset: function () {
+				if ( this.importing || ! this.importText.trim() ) { return; }
+				if ( ! window.confirm( this.strings.importConfirm || 'Replace every global style?' ) ) { return; }
+
+				var self = this;
+				this.importing = true;
+				this.discarded = [];
+				this.status = this.strings.importing || 'Importing…';
+				this.statusClass = '';
+
+				window.fetch( seed.importUrl, {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-WP-Nonce': seed.nonce
+					},
+					body: JSON.stringify( { preset: this.importText } )
+				} ).then( function ( response ) {
+					return response.json().then( function ( body ) {
+						return { ok: response.ok, body: body };
+					} );
+				} ).then( function ( result ) {
+					self.importing = false;
+
+					if ( ! result.ok || ! result.body || ! result.body.saved ) {
+						self.status = ( result.body && result.body.message )
+							? result.body.message
+							: ( self.strings.importFailed || 'Could not import that preset.' );
+						self.statusClass = 'is-error';
+						return;
+					}
+
+					// Re-seed from what was stored, exactly as save() does,
+					// so the form shows the result of the import rather
+					// than the file's contents.
+					self.values = shapeAll( self.schema, result.body.values || {} );
+					self._baseline = JSON.stringify( collapseAll( self.schema, self.values ) );
+					self.dirty = false;
+					self.overridden = self.initialOverrides();
+
+					self.discarded = result.body.discarded || [];
+					self.importOpen = self.discarded.length > 0;
+					self.importText = '';
+
+					self.status = ( self.strings.imported || 'Imported' ) +
+						' — ' + result.body.imported + '/' + result.body.offered;
+					self.statusClass = self.discarded.length ? 'is-warning' : 'is-ok';
+
+					self.paintPreview();
+				} ).catch( function () {
+					self.importing = false;
+					self.status = self.strings.importFailed || 'Could not import that preset.';
+					self.statusClass = 'is-error';
+				} );
+			},
+
+			/**
+			 * Clear every global style back to the plugin defaults.
+			 *
+			 * An empty stored set IS the plugin defaults: the resolver
+			 * falls through to the schema for anything absent. So this
+			 * saves nothing rather than saving a copy of the defaults,
+			 * which also means a later change to a schema default reaches
+			 * a site that has been reset.
+			 */
+			resetGlobals: function () {
+				if ( ! window.confirm( this.strings.resetAll || 'Reset every global style?' ) ) { return; }
+
+				this.values = shapeAll( this.schema, {} );
+				this.overridden = {};
+				this.discarded = [];
+				this.save();
+			},
+
 			/* ── Saving ──────────────────────────────────────────────── */
 
 			save: function () {

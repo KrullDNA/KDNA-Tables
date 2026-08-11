@@ -8,7 +8,7 @@ same table can be styled differently in different widget instances on
 different pages.
 
 - **Plugin slug:** kdna-tables
-- **Version:** 2.0.0
+- **Version:** 3.0.0
 - **Widget:** KDNA Table (Elementor category: KDNA Tables)
 - **Shortcode:** `[kdna_table id="123"]` (non-Elementor contexts)
 - **Custom post type:** `kdna_table` (admin only, not public)
@@ -46,15 +46,44 @@ tab to apply per-instance colours, typography, borders, responsive mode,
 sticky column, and so on.
 
 **Without Elementor (classic editor, theme template, Gutenberg shortcode
-block):** Use the shortcode
+block, JetEngine or ACF field, widget, term description):** Use the
+shortcode
 
 ```
 [kdna_table id="123"]
 ```
 
-The shortcode renders the table at desktop layout with default cell
-indicator icons and no per-instance styling. Frontend CSS auto-enqueues on
-the first shortcode render on a page.
+Since 3.0.0 the shortcode has full styling parity with the widget. It is
+styled from **KDNA Tables → Shortcode Styles**, which sets the global
+defaults every shortcode renders with, and each table can override those
+on its own edit screen. See [Shortcode Styles](#shortcode-styles).
+
+### Shortcode attributes
+
+| Attribute | Values | Default | What it does |
+| --- | --- | --- | --- |
+| `id` | table post id | — | **Required.** The table to render. An id that is not a published `kdna_table` renders nothing. |
+| `responsive` | `none`, `card_stack`, `pivot_rows`, `column_picker` | `card_stack` | Layout below the breakpoint. See [Responsive Modes](#responsive-modes). |
+| `breakpoint` | `mobile`, `tablet_and_mobile` | `mobile` | Where the responsive mode starts applying. `mobile` is ≤767px; `tablet_and_mobile` is ≤1024px. |
+| `sticky` | `yes`, `no` | `no` | Pins the first column to the left edge of a horizontal scroller. |
+| `style_id` | table post id | — | Borrow another table's style overrides instead of using this table's own. Useful for keeping a set of tables visually identical. |
+
+Every attribute is validated against an allow-list, and anything
+unrecognised falls back to its default rather than failing — a shortcode
+is hand-typed, and a typo should not blank the table. `yes`, `y`, `true`,
+`1` and `on` are all accepted for `sticky`.
+
+```
+[kdna_table id="123" responsive="pivot_rows" breakpoint="tablet_and_mobile" sticky="yes"]
+```
+
+Frontend CSS is enqueued in the header on every page by default. That is
+deliberate: `has_shortcode()` only ever reads `post_content`, so a
+shortcode inside a JetEngine meta field, an ACF field, a page-builder
+template or a term description is invisible to it — and those are the
+contexts this path exists for. The fallback when the shortcode is found
+late is a footer enqueue, which paints the table unstyled first. See
+[Asset Loading](#asset-loading) for how to turn the eager load off.
 
 ## Migration from v1.x
 
@@ -270,6 +299,72 @@ being spread across Header Row, First Column and Body Cells.
 | Pivot Rows Mode → Label Position | A layout switch, not a style value: the stylesheet keys it off a `data-pivot-label-position` attribute the shortcode does not take. The shortcode always uses the Above position. |
 | Column Picker Mode → all 13 controls | The column picker hides and shows columns by their `data-slot` attribute, which only the comparison render emits, and its script only initialises inside Elementor. A general-table shortcode in `column_picker` mode renders normally with no picker, so the chrome has nothing to style. The stylesheet already carries the `--kdna-picker-*` variables for when that changes. |
 | Cell Content → Icon Colour (hover) on the comparison indicators | Comparison-only, and comparison styling is out of scope for this build. |
+
+### The settings page
+
+**KDNA Tables → Shortcode Styles** is one screen holding the whole global
+layer. The controls are grouped into ten sections down the left, matching
+the widget's Style tab but for two deliberate regroupings: the caption
+gets its own section rather than sitting inside Table Wrapper, and all
+five sets of rule lines are gathered into one Rule Lines section rather
+than being spread across three.
+
+Every control has three states. **Set** means it writes a value. **Unset**
+— blank, or `— Default —` in a select — means inherit, and the layer
+beneath shows through. Each field shows the value it would inherit as
+placeholder text, so blank reads as *"1px, unless I say otherwise"*
+rather than as *"nothing"*. A responsive control renders one input bound
+to whichever breakpoint its switcher has selected, with a dot on any
+breakpoint that already carries a value. Typography, border and
+background collapse to a single row carrying a live summary of what is
+set inside them.
+
+Above the controls sit the preset tools and the live preview:
+
+| Action | What it does |
+| --- | --- |
+| **Export preset** | Downloads the **saved** global styles as `kdna-tables-styles.json`. If there are unsaved edits it says so rather than folding them in — a preset nobody can reproduce is not a preset. |
+| **Import preset** | Paste a preset or choose an exported file. Import **replaces** rather than merges, so the same preset produces the same result on any site. Anything the schema does not accept is dropped and named, with a reason, instead of failing silently. A bare map of control keys is accepted as well as a full export. |
+| **Reset all global styles to plugin defaults** | Confirms, then clears the stored set. An empty stored set *is* the plugin defaults, because the resolver falls through to the schema — which also means a later change to a schema default reaches a site that has been reset. Tables with their own overrides keep them. |
+
+Saving is a REST call, not a form post: `kdna-tables/v1/styles`, behind
+`manage_options` and an explicit `wp_rest` nonce check. The page re-seeds
+itself from what was actually stored rather than from what was typed, so
+anything the sanitiser rejected disappears from the form instead of
+sitting there looking saved.
+
+### Caching
+
+The resolver runs once per shortcode on a page, walking seventy-odd
+control definitions, merging three layers leaf by leaf and formatting a
+hundred-odd CSS values. The result only changes when someone saves, so
+the finished style attribute is cached in a transient per table.
+
+Invalidation is by **generation counter**: the counter is part of every
+transient key, so saving the globals — which can affect any table — moves
+it on and invalidates every table at once, with no LIKE sweep across the
+options table and nothing to miss on a site using an object cache. A
+per-table save deletes just that table's key, since one table's overrides
+cannot change what another resolves to.
+
+Writes this plugin did not make are covered too: `update_option` on the
+global key and `updated_post_meta` on `_kdna_table_style_overrides` both
+invalidate, so WP-CLI, an importer or another plugin cannot leave a site
+rendering a stale string with no way to clear it from the admin.
+
+Because the variables are written into the markup, a page cache keeps the
+old styling until the page regenerates. Saving therefore calls
+`rocket_clean_domain()` and `rocket_clean_minify()` when WP Rocket is
+present — both behind `function_exists`, since a fatal there would take
+down the save that had just succeeded — and fires
+`kdna_tables_styles_changed` for anything else.
+
+| Filter | Default | Purpose |
+| --- | --- | --- |
+| `kdna_tables_cache_styles` | `true` | Turn the transient cache off, for debugging a site whose styles look stale. |
+| `kdna_tables_flush_page_cache` | `true` | Stop a style save flushing page caches. |
+| `kdna_tables_style_properties` | — | Filter the resolved properties before they are rendered. Receives the property map and the table id. |
+| `kdna_tables_styles_changed` | — | Action fired after a style save, for other page caches. |
 
 ### Live preview
 
@@ -499,6 +594,55 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 - UK English throughout code, labels, and documentation.
 
 ## Changelog
+
+### 3.0.0
+
+**The Shortcode Style Engine.** `[kdna_table]` gains full styling parity
+with the Elementor widget, plus responsive modes the shortcode could not
+previously reach.
+
+- **Shortcode Styles settings page** (KDNA Tables → Shortcode Styles):
+  71 controls writing 117 CSS custom properties, covering the wrapper,
+  caption, header row, first column, body cells, all five sets of rule
+  lines, cell content, both responsive modes and the sticky column.
+- **Per-table overrides.** Every table gets a Styles panel on its own
+  edit screen. Each control inherits from the global defaults until
+  explicitly overridden, with per-control revert, per-section reset and a
+  whole-table reset.
+- **Live preview** on the settings page: any published table rendered in
+  a same-origin iframe at 1200px, 900px or 390px, repainting as controls
+  are edited. The iframe is what makes the responsive modes previewable —
+  only a real 390px viewport fires the mobile media query.
+- **Presets.** Export the global styles as JSON, import them back.
+  Import replaces rather than merges, and names anything it discarded.
+- **Reset all global styles to plugin defaults**, with confirmation.
+- **Caching.** The resolved style attribute is cached per table in a
+  transient, invalidated by a generation counter on a global save and by
+  key on a per-table save. WP Rocket's cache is flushed on save when its
+  API is present.
+- New shortcode attributes: `responsive`, `breakpoint`, `sticky`,
+  `style_id`.
+- Fixed a fatal error when the shortcode was rendered with Elementor
+  deactivated. The shortcode now degrades to rendering nothing instead of
+  taking the page down.
+
+### 2.3.1
+
+- Responsive modes: text is centred at every breakpoint the mode applies
+  to, regardless of the desktop alignment set in the backend.
+- Pivot Rows: the column heading row is back, with its own background,
+  padding, typography, radius and spacing controls.
+
+### 2.3.0
+
+- General tables no longer draw an outer frame. The Table Wrapper border
+  owns the outside edge, so no combination of rule-line settings can
+  produce a stray line at the top of the table.
+- First Column style controls now target general tables correctly.
+- Rule lines split by axis and location, each with its own Style / Width
+  / Colour and a **None** option: Body Cells → Horizontal Lines and
+  Vertical Lines, Header Row → Bottom Divider and Vertical Lines, First
+  Column → Right Edge Line.
 
 ### 2.0.0
 

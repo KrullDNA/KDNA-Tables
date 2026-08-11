@@ -64,8 +64,38 @@ class KDNA_Tables_Style_Resolver {
 	 */
 	const MAX_VALUE_LENGTH = 200;
 
-	/** Per-request memo, table id => properties. Stage 10 adds a transient. */
+	/**
+	 * Generation counter, part of every transient key.
+	 *
+	 * Bumping this invalidates every cached table at once. The alternative
+	 * — deleting the transients one by one when the global option changes
+	 * — means either knowing every table id or running a LIKE query across
+	 * the options table, and on a site with object caching enabled there
+	 * are no rows to sweep at all. A counter in the key sidesteps both:
+	 * the old entries are simply never asked for again, and expire on
+	 * their own.
+	 */
+	const GENERATION_OPTION = 'kdna_tables_style_generation';
+
+	/** Transient key prefix. */
+	const CACHE_PREFIX = 'kdna_style_';
+
+	/**
+	 * How long a cached style attribute lives: a week, as a literal
+	 * rather than as WEEK_IN_SECONDS, because a class constant defined
+	 * from another constant is resolved when the class is loaded and
+	 * would tie this file to WordPress having booted first.
+	 *
+	 * The TTL is a backstop, not the invalidation mechanism — saving
+	 * moves the generation on immediately.
+	 */
+	const CACHE_TTL = 604800;
+
+	/** Per-request memo, table id => properties. */
 	private static $memo = array();
+
+	/** Per-request memo of the rendered attribute, table id => string. */
+	private static $attribute_memo = array();
 
 	/**
 	 * Resolved CSS custom properties for a table.
@@ -159,17 +189,149 @@ class KDNA_Tables_Style_Resolver {
 		return implode( ' ', $declarations );
 	}
 
+	/* ─── Caching ───────────────────────────────────────────────────── */
+
 	/**
-	 * Drop the memo. Called after a save, and by tests.
+	 * The style attribute for a table, cached.
+	 *
+	 * This is the render path's entry point, and the reason the cache
+	 * exists: resolve() walks seventy-odd control definitions, merges
+	 * three layers leaf by leaf and formats a hundred-odd CSS values, and
+	 * it does that once per shortcode. A page listing eight tables pays
+	 * for it eight times, for a result that only changes when someone
+	 * saves.
+	 *
+	 * The string is cached rather than the array because the string is
+	 * what the render needs: caching the array would still leave
+	 * to_style_attribute()'s per-property validation to run every time.
+	 *
+	 * @param int $table_id Table post id, 0 for the global set.
+	 * @return string Style attribute value, unescaped.
+	 */
+	public static function style_attribute_for( $table_id = 0 ) {
+		$table_id = (int) $table_id;
+
+		if ( isset( self::$attribute_memo[ $table_id ] ) ) {
+			return self::$attribute_memo[ $table_id ];
+		}
+
+		$key    = self::cache_key( $table_id );
+		$cached = get_transient( $key );
+
+		// A cached empty string is legitimate — every control on inherit
+		// with no schema defaults would produce one — so the miss is
+		// tested against false, not against emptiness.
+		if ( is_string( $cached ) ) {
+			self::$attribute_memo[ $table_id ] = $cached;
+			return $cached;
+		}
+
+		$attribute = self::to_style_attribute( self::resolve( $table_id ) );
+
+		if ( self::caching_enabled() ) {
+			set_transient( $key, $attribute, self::CACHE_TTL );
+		}
+
+		self::$attribute_memo[ $table_id ] = $attribute;
+
+		return $attribute;
+	}
+
+	/**
+	 * Whether resolved styles are cached at all.
+	 *
+	 * On by default. The filter is for debugging a site where the styles
+	 * look stale, which is the one situation where being able to turn a
+	 * cache off without editing code is worth having.
+	 */
+	private static function caching_enabled() {
+		/**
+		 * Filter whether resolved style attributes are cached.
+		 *
+		 * @param bool $enabled Default true.
+		 */
+		return (bool) apply_filters( 'kdna_tables_cache_styles', true );
+	}
+
+	private static function cache_key( $table_id ) {
+		return self::CACHE_PREFIX . self::generation() . '_' . (int) $table_id;
+	}
+
+	private static function generation() {
+		return (int) get_option( self::GENERATION_OPTION, 1 );
+	}
+
+	/**
+	 * Invalidate everything, by moving the generation on.
+	 *
+	 * Called when the global defaults change, which can affect any table.
+	 */
+	public static function invalidate_all() {
+		update_option( self::GENERATION_OPTION, self::generation() + 1 );
+		self::flush_cache();
+	}
+
+	/**
+	 * Invalidate one table, whose overrides changed.
+	 *
+	 * The global set is left alone: a per-table override cannot affect
+	 * what any other table resolves to.
+	 */
+	public static function invalidate_table( $table_id ) {
+		$table_id = (int) $table_id;
+		delete_transient( self::cache_key( $table_id ) );
+		self::flush_cache( $table_id );
+	}
+
+	/**
+	 * Drop the per-request memo. Called after a save, and by tests.
+	 *
+	 * This is the in-request half only; the transients are addressed by
+	 * invalidate_all() and invalidate_table().
 	 *
 	 * @param int|null $table_id Table to forget, or null for all.
 	 */
 	public static function flush_cache( $table_id = null ) {
 		if ( null === $table_id ) {
-			self::$memo = array();
+			self::$memo           = array();
+			self::$attribute_memo = array();
 			return;
 		}
-		unset( self::$memo[ (int) $table_id ] );
+		$table_id = (int) $table_id;
+		unset( self::$memo[ $table_id ], self::$attribute_memo[ $table_id ] );
+	}
+
+	/**
+	 * Watch for writes this plugin did not make.
+	 *
+	 * The settings page invalidates directly after saving, so these hooks
+	 * are for everything else: WP-CLI, an importer, a migration, another
+	 * plugin writing the option. Without them a site can be left rendering
+	 * a stale cached string with no visible cause and no way to clear it
+	 * from the admin.
+	 */
+	public static function register_invalidation() {
+		add_action( 'update_option_' . self::OPTION_KEY, array( __CLASS__, 'invalidate_all' ) );
+		add_action( 'add_option_' . self::OPTION_KEY, array( __CLASS__, 'invalidate_all' ) );
+		add_action( 'delete_option_' . self::OPTION_KEY, array( __CLASS__, 'invalidate_all' ) );
+
+		foreach ( array( 'updated_post_meta', 'added_post_meta', 'deleted_post_meta' ) as $hook ) {
+			add_action( $hook, array( __CLASS__, 'on_meta_change' ), 10, 3 );
+		}
+	}
+
+	/**
+	 * Invalidate a table whose style meta was written.
+	 *
+	 * @param int    $meta_id  Unused.
+	 * @param int    $post_id  Post the meta belongs to.
+	 * @param string $meta_key Meta key written.
+	 */
+	public static function on_meta_change( $meta_id, $post_id, $meta_key ) {
+		if ( self::META_KEY !== $meta_key ) {
+			return;
+		}
+		self::invalidate_table( $post_id );
 	}
 
 	/* ─── Merging ───────────────────────────────────────────────────── */

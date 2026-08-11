@@ -587,6 +587,82 @@
 	font-style: italic;
 }
 
+/* ── Presets and reset ─────────────────────────────────────────── */
+
+.kdna-style-tools {
+	margin: 16px 0 0;
+}
+
+.kdna-style-tools__row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.kdna-style-tools__row .button .dashicons {
+	margin: 3px 2px 0 -4px;
+	font-size: 16px;
+	line-height: 1;
+	width: 16px;
+	height: 16px;
+}
+
+/* Destructive, so it sits away from the other two and reads differently. */
+.kdna-style-tools__reset {
+	margin-left: auto;
+	color: var(--kdna-admin-danger);
+}
+
+.kdna-style-tools__panel {
+	margin-top: 12px;
+	padding: 14px;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: 6px;
+	background: #fff;
+}
+
+.kdna-style-tools__hint {
+	margin: 0 0 10px;
+	color: var(--kdna-admin-text-soft);
+	font-size: 12px;
+}
+
+.kdna-style-tools__file {
+	display: block;
+	margin-bottom: 10px;
+	font-size: 12px;
+}
+
+.kdna-style-tools__textarea {
+	width: 100%;
+	font-family: Menlo, Consolas, monospace;
+	font-size: 12px;
+}
+
+.kdna-style-tools__actions {
+	margin-top: 10px;
+}
+
+.kdna-style-tools__discarded {
+	margin-top: 12px;
+	padding: 10px 12px;
+	border-left: 3px solid var(--kdna-admin-warning);
+	background: #fcf9e8;
+	font-size: 12px;
+}
+
+.kdna-style-tools__discarded p {
+	margin: 0 0 6px;
+	font-weight: 600;
+}
+
+.kdna-style-tools__discarded ul {
+	margin: 0;
+	padding-left: 16px;
+	list-style: disc;
+}
+
 /* ── Live preview ──────────────────────────────────────────────────
  *
  * The stage is a scroller and the frame inside it has an explicit width,

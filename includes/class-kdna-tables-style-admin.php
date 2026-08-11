@@ -46,7 +46,10 @@ class KDNA_Tables_Style_Admin {
 	const REST_ROUTE_TABLE = '/styles/(?P<id>\d+)';
 	/* Markup for the live preview iframe. */
 	const REST_ROUTE_PREVIEW = '/preview/(?P<id>\d+)';
-	const META_BOX_ID        = 'kdna_table_styles';
+	/* Preset export and import. */
+	const REST_ROUTE_EXPORT = '/styles/export';
+	const REST_ROUTE_IMPORT = '/styles/import';
+	const META_BOX_ID       = 'kdna_table_styles';
 
 	/** How many tables the preview picker lists. */
 	const PREVIEW_TABLE_LIMIT = 100;
@@ -248,6 +251,8 @@ class KDNA_Tables_Style_Admin {
 			'restUrl'   => $is_table
 				? rest_url( self::REST_NAMESPACE . '/styles/' . $table_id )
 				: rest_url( self::REST_NAMESPACE . self::REST_ROUTE ),
+			'exportUrl' => $is_table ? '' : rest_url( self::REST_NAMESPACE . self::REST_ROUTE_EXPORT ),
+			'importUrl' => $is_table ? '' : rest_url( self::REST_NAMESPACE . self::REST_ROUTE_IMPORT ),
 			'nonce'     => wp_create_nonce( 'wp_rest' ),
 			/*
 			 * The preview pane is on the global settings page only. A
@@ -266,6 +271,15 @@ class KDNA_Tables_Style_Admin {
 				'inherit'   => __( 'Inherit', 'kdna-tables' ),
 				'default'   => __( 'the plugin default', 'kdna-tables' ),
 				'confirm'   => __( 'Drop every style override on this table and follow the global defaults again?', 'kdna-tables' ),
+				'resetAll'  => __( 'Reset every global style to the plugin defaults? Tables with their own overrides keep them.', 'kdna-tables' ),
+				'resetDone' => __( 'Reset to plugin defaults', 'kdna-tables' ),
+				'exported'  => __( 'Preset downloaded', 'kdna-tables' ),
+				'exportDirty' => __( 'Save first — the export is of the saved styles, not what is on screen.', 'kdna-tables' ),
+				'importing' => __( 'Importing…', 'kdna-tables' ),
+				'imported'  => __( 'Imported', 'kdna-tables' ),
+				'importFailed' => __( 'Could not import that preset.', 'kdna-tables' ),
+				'importConfirm' => __( 'Importing replaces every global style with the preset. Continue?', 'kdna-tables' ),
+				'discardedIntro' => __( 'These keys were not imported:', 'kdna-tables' ),
 				'loading'   => __( 'Loading preview…', 'kdna-tables' ),
 				'noPreview' => __( 'Publish a table to see it previewed here.', 'kdna-tables' ),
 				'previewFailed' => __( 'Could not load the preview.', 'kdna-tables' ),
@@ -514,6 +528,36 @@ class KDNA_Tables_Style_Admin {
 		);
 
 		/*
+		 * Preset export and import. Registered before the numeric
+		 * per-table route would be reached, though the two cannot collide
+		 * anyway: 'export' does not match \d+.
+		 */
+		register_rest_route(
+			self::REST_NAMESPACE,
+			self::REST_ROUTE_EXPORT,
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( __CLASS__, 'handle_export' ),
+				'permission_callback' => array( __CLASS__, 'permission_check' ),
+			)
+		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			self::REST_ROUTE_IMPORT,
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( __CLASS__, 'handle_import' ),
+				'permission_callback' => array( __CLASS__, 'permission_check' ),
+				'args'                => array(
+					'preset' => array(
+						'required' => true,
+					),
+				),
+			)
+		);
+
+		/*
 		 * Preview markup. Read-only, but behind the same permission
 		 * callback as the two save routes: it renders a table's content,
 		 * including tables that are published but not yet linked from
@@ -599,9 +643,12 @@ class KDNA_Tables_Style_Admin {
 
 		update_option( KDNA_Tables_Style_Resolver::OPTION_KEY, $clean );
 
-		// The resolver memoises per request; a save in the same request
-		// as a render would otherwise serve the old values.
-		KDNA_Tables_Style_Resolver::flush_cache();
+		// Every table can be affected by a change to the globals, so the
+		// whole generation moves on. This also drops the per-request memo,
+		// which a save in the same request as a render would otherwise
+		// leave serving the old values.
+		KDNA_Tables_Style_Resolver::invalidate_all();
+		self::flush_page_caches();
 
 		return rest_ensure_response(
 			array(
@@ -658,7 +705,10 @@ class KDNA_Tables_Style_Admin {
 			update_post_meta( $table_id, KDNA_Tables_Style_Resolver::META_KEY, $clean );
 		}
 
-		KDNA_Tables_Style_Resolver::flush_cache();
+		// One table's overrides cannot change what any other table
+		// resolves to, so only this one is invalidated.
+		KDNA_Tables_Style_Resolver::invalidate_table( $table_id );
+		self::flush_page_caches();
 
 		return rest_ensure_response(
 			array(
@@ -668,26 +718,174 @@ class KDNA_Tables_Style_Admin {
 		);
 	}
 
+	/* ─── Presets ───────────────────────────────────────────────────── */
+
+	/**
+	 * The global defaults as a portable preset.
+	 *
+	 * Exports what is STORED, not what is on screen. A preset that
+	 * silently included unsaved edits would be a preset nobody could
+	 * reproduce; the page says so when there are unsaved changes rather
+	 * than quietly folding them in.
+	 *
+	 * The schema version travels with it so an import into a later build
+	 * can say which keys it no longer recognises instead of guessing.
+	 */
+	public static function handle_export( $request ) {
+		unset( $request );
+
+		return rest_ensure_response(
+			array(
+				'kdna_tables_preset' => true,
+				'plugin_version'     => KDNA_TABLES_VERSION,
+				'exported'           => gmdate( 'c' ),
+				'site'               => home_url(),
+				'values'             => self::stored_values(),
+			)
+		);
+	}
+
+	/**
+	 * Replace the global defaults from a preset.
+	 *
+	 * Import REPLACES rather than merges. Merging would make the result
+	 * depend on what was already there, so importing the same preset onto
+	 * two sites could produce two different tables — which is the one
+	 * thing a preset exists to prevent.
+	 *
+	 * Anything the schema does not accept is dropped and REPORTED. A
+	 * preset from a newer build, or a hand-edited file, should tell the
+	 * user which of their values did not survive rather than appearing to
+	 * work and quietly rendering something else.
+	 */
+	public static function handle_import( $request ) {
+		$payload = $request->get_param( 'preset' );
+
+		// Accept the file's whole contents as a string, since that is what
+		// a paste or a file read produces.
+		if ( is_string( $payload ) ) {
+			$decoded = json_decode( $payload, true );
+			if ( ! is_array( $decoded ) ) {
+				return new WP_Error(
+					'kdna_tables_bad_preset',
+					__( 'That is not valid JSON.', 'kdna-tables' ),
+					array( 'status' => 400 )
+				);
+			}
+			$payload = $decoded;
+		}
+
+		if ( ! is_array( $payload ) ) {
+			return new WP_Error(
+				'kdna_tables_bad_preset',
+				__( 'Expected a preset object.', 'kdna-tables' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// A bare map of control keys is accepted as well as a full export,
+		// so a preset can be hand-written without ceremony.
+		$values = array_key_exists( 'values', $payload ) ? $payload['values'] : $payload;
+
+		if ( ! is_array( $values ) ) {
+			return new WP_Error(
+				'kdna_tables_bad_preset',
+				__( 'The preset carries no style values.', 'kdna-tables' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$discarded = array();
+		$clean     = self::sanitize_values( $values, $discarded );
+
+		update_option( KDNA_Tables_Style_Resolver::OPTION_KEY, $clean );
+		KDNA_Tables_Style_Resolver::invalidate_all();
+		self::flush_page_caches();
+
+		return rest_ensure_response(
+			array(
+				'saved'     => true,
+				'imported'  => count( $clean ),
+				'offered'   => count( $values ),
+				'discarded' => array_values( $discarded ),
+				'values'    => $clean,
+			)
+		);
+	}
+
+	/* ─── Page caches ───────────────────────────────────────────────── */
+
+	/**
+	 * Ask a page cache to drop what it has, after a style change.
+	 *
+	 * The resolved variables are written into the markup as an inline
+	 * style attribute, so a cached page keeps the old styling until it is
+	 * regenerated — the plugin's own transient being fresh does not help
+	 * if nothing re-renders. WP Rocket is handled because it is what this
+	 * site runs; everything else is left to the filter.
+	 */
+	public static function flush_page_caches() {
+		/**
+		 * Filter whether a style save flushes page caches.
+		 *
+		 * @param bool $enabled Default true.
+		 */
+		if ( ! apply_filters( 'kdna_tables_flush_page_cache', true ) ) {
+			return;
+		}
+
+		// Guarded because Rocket may not be installed, may be deactivated,
+		// or may have renamed its helpers between versions. A fatal here
+		// would take down the save that just succeeded.
+		if ( function_exists( 'rocket_clean_domain' ) ) {
+			rocket_clean_domain();
+		}
+
+		if ( function_exists( 'rocket_clean_minify' ) ) {
+			rocket_clean_minify( 'css' );
+		}
+
+		/**
+		 * Fires after a style save, for other page caches to hook.
+		 */
+		do_action( 'kdna_tables_styles_changed' );
+	}
+
 	/* ─── Sanitising ────────────────────────────────────────────────── */
 
 	/**
 	 * Sanitise a whole payload against the schema.
 	 *
-	 * @param array $incoming Raw control key => value.
+	 * @param array      $incoming  Raw control key => value.
+	 * @param array|null $discarded Filled with a report of what was
+	 *                              dropped and why. Import shows this to
+	 *                              the user; the ordinary save ignores it,
+	 *                              because there a dropped value means the
+	 *                              user cleared a control.
 	 * @return array Control key => value, ready to store.
 	 */
-	public static function sanitize_values( array $incoming ) {
-		$schema = KDNA_Tables_Style_Schema::get();
-		$clean  = array();
+	public static function sanitize_values( array $incoming, &$discarded = null ) {
+		$schema    = KDNA_Tables_Style_Schema::get();
+		$clean     = array();
+		$discarded = array();
 
 		foreach ( $incoming as $key => $value ) {
 			// A key with no schema entry is discarded. Schema entries can
 			// be removed between versions; stored values for them are not.
 			if ( ! isset( $schema[ $key ] ) ) {
+				$discarded[] = array(
+					'key'    => (string) $key,
+					'reason' => __( 'not a known control', 'kdna-tables' ),
+				);
 				continue;
 			}
 			$sanitized = self::sanitize_control( $schema[ $key ], $value );
 			if ( null === $sanitized ) {
+				$discarded[] = array(
+					'key'    => (string) $key,
+					'label'  => isset( $schema[ $key ]['label'] ) ? $schema[ $key ]['label'] : (string) $key,
+					'reason' => __( 'no usable value', 'kdna-tables' ),
+				);
 				continue;
 			}
 			$clean[ $key ] = $sanitized;
