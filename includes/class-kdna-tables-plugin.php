@@ -20,9 +20,17 @@ require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-shortcode.php';
 // enqueues or renders until the shortcode starts consuming the resolver.
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-style-schema.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-style-resolver.php';
+require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-style-admin.php';
 
 KDNA_Tables_CPT::init();
 KDNA_Tables_Shortcode::init();
+/*
+ * Not inside is_admin(): the settings page's REST route has to register
+ * on rest_api_init, and a /wp-json/ request is not an admin request. The
+ * admin_menu and admin_enqueue_scripts hooks inside simply never fire
+ * outside the admin.
+ */
+KDNA_Tables_Style_Admin::init();
 if ( is_admin() ) {
 	KDNA_Tables_Admin::init();
 	KDNA_Tables_Editor::init();

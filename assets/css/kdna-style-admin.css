@@ -1,0 +1,305 @@
+/*
+ * KDNA Tables, Shortcode Styles settings page.
+ *
+ * Two columns: a vertical tab list on the left, the control panel on the
+ * right, with a sticky save bar underneath. Uses the same
+ * --kdna-admin-* tokens as the table editor so the two screens read as
+ * one plugin, but declares its own copies because this page does not
+ * load kdna-admin.css.
+ */
+
+.kdna-style-admin {
+	--kdna-admin-surface: #f6f7f7;
+	--kdna-admin-border: #dcdcde;
+	--kdna-admin-border-strong: #c3c4c7;
+	--kdna-admin-text: #1d2327;
+	--kdna-admin-text-soft: #50575e;
+	--kdna-admin-accent: #2271b1;
+	--kdna-admin-accent-soft: rgba( 34, 113, 177, 0.12 );
+	--kdna-admin-ok: #007017;
+	--kdna-admin-warning: #8a6100;
+	--kdna-admin-danger: #b32d2e;
+	--kdna-admin-radius: 8px;
+
+	padding-bottom: 80px;
+}
+
+.kdna-style-admin [x-cloak],
+.kdna-style-admin[x-cloak] {
+	display: none !important;
+}
+
+.kdna-style-admin__intro {
+	max-width: 60em;
+	color: var(--kdna-admin-text-soft);
+}
+
+.kdna-style-admin__body {
+	display: grid;
+	grid-template-columns: 220px minmax(0, 1fr);
+	gap: 20px;
+	align-items: start;
+	margin-top: 16px;
+}
+
+/* ─── Tabs ─────────────────────────────────────────────────────────── */
+
+.kdna-style-tabs {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	position: sticky;
+	top: 46px;
+	background: #fff;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: var(--kdna-admin-radius);
+	padding: 6px;
+}
+
+.kdna-style-tab {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 10px;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--kdna-admin-text);
+	font-size: 13px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.kdna-style-tab:hover {
+	background: var(--kdna-admin-surface);
+}
+
+.kdna-style-tab.is-active {
+	background: var(--kdna-admin-accent-soft);
+	color: var(--kdna-admin-accent);
+	font-weight: 600;
+}
+
+.kdna-style-tab__count {
+	flex: 0 0 auto;
+	min-width: 20px;
+	padding: 1px 6px;
+	border-radius: 999px;
+	background: var(--kdna-admin-surface);
+	color: var(--kdna-admin-text-soft);
+	font-size: 11px;
+	font-weight: 600;
+	text-align: center;
+}
+
+.kdna-style-tab.is-active .kdna-style-tab__count {
+	background: #fff;
+	color: var(--kdna-admin-accent);
+}
+
+/* ─── Panel ────────────────────────────────────────────────────────── */
+
+.kdna-style-panel {
+	background: #fff;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: var(--kdna-admin-radius);
+	padding: 4px 20px 20px;
+	min-height: 320px;
+}
+
+.kdna-style-panel__heading {
+	margin: 16px 0 4px;
+	font-size: 15px;
+}
+
+.kdna-style-panel__empty {
+	color: var(--kdna-admin-text-soft);
+	font-style: italic;
+}
+
+/* ─── Fields ───────────────────────────────────────────────────────── */
+
+.kdna-style-field {
+	padding: 14px 0;
+	border-top: 1px solid var(--kdna-admin-border);
+}
+
+.kdna-style-field--nested {
+	padding: 10px 0;
+}
+
+.kdna-style-field__head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 6px;
+}
+
+.kdna-style-field__label {
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.kdna-style-field__key {
+	font-size: 11px;
+	color: var(--kdna-admin-text-soft);
+	background: var(--kdna-admin-surface);
+	padding: 1px 6px;
+	border-radius: 4px;
+}
+
+.kdna-style-field__reset {
+	margin-left: auto;
+	border: 0;
+	background: none;
+	padding: 0;
+	color: var(--kdna-admin-accent);
+	font-size: 12px;
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+.kdna-style-field__description {
+	margin: 0 0 8px;
+	color: var(--kdna-admin-text-soft);
+	font-size: 12px;
+}
+
+.kdna-style-input {
+	width: 100%;
+	max-width: 320px;
+}
+
+/* Dimensions and sliders: their parts sit in one row. */
+
+.kdna-style-field__parts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.kdna-style-part {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	width: 84px;
+}
+
+.kdna-style-part--unit {
+	width: 96px;
+}
+
+.kdna-style-part__label {
+	font-size: 11px;
+	color: var(--kdna-admin-text-soft);
+}
+
+.kdna-style-part input,
+.kdna-style-part select {
+	width: 100%;
+}
+
+/* Breakpoint rows. */
+
+.kdna-style-device {
+	display: grid;
+	grid-template-columns: 72px minmax(0, 1fr);
+	gap: 10px;
+	align-items: start;
+	padding: 4px 0;
+}
+
+.kdna-style-device__label {
+	padding-top: 4px;
+	font-size: 12px;
+	color: var(--kdna-admin-text-soft);
+}
+
+/* Group controls. */
+
+.kdna-style-group {
+	margin: 0;
+	padding: 8px 14px 14px;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: var(--kdna-admin-radius);
+	background: var(--kdna-admin-surface);
+}
+
+.kdna-style-field + .kdna-style-group,
+.kdna-style-group + .kdna-style-field,
+.kdna-style-group + .kdna-style-group {
+	margin-top: 14px;
+}
+
+.kdna-style-group__legend {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 0 6px;
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.kdna-style-group .kdna-style-field:first-of-type {
+	border-top: 0;
+}
+
+/* ─── Save bar ─────────────────────────────────────────────────────── */
+
+.kdna-style-savebar {
+	position: fixed;
+	left: 160px;
+	right: 0;
+	bottom: 0;
+	z-index: 9;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 20px;
+	background: #fff;
+	border-top: 1px solid var(--kdna-admin-border-strong);
+}
+
+.folded .kdna-style-savebar {
+	left: 36px;
+}
+
+.kdna-style-savebar__status {
+	font-size: 13px;
+}
+
+.kdna-style-savebar__status.is-ok {
+	color: var(--kdna-admin-ok);
+}
+
+.kdna-style-savebar__status.is-warning {
+	color: var(--kdna-admin-warning);
+}
+
+.kdna-style-savebar__status.is-error {
+	color: var(--kdna-admin-danger);
+}
+
+.kdna-style-savebar__dirty {
+	color: var(--kdna-admin-text-soft);
+	font-size: 12px;
+	font-style: italic;
+}
+
+@media screen and (max-width: 782px) {
+	.kdna-style-admin__body {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.kdna-style-tabs {
+		position: static;
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+
+	.kdna-style-savebar {
+		left: 0;
+	}
+}
