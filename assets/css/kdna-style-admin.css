@@ -385,32 +385,98 @@
 	white-space: nowrap;
 }
 
-/* Group controls. */
+/* ─── Groups ───────────────────────────────────────────────────────
+ * A group collapses to a single row. Closed, the row carries a summary
+ * of what is set inside it, which is what keeps a section of sixty
+ * controls readable.
+ */
 
 .kdna-style-group {
-	margin: 0;
-	padding: 8px 14px 14px;
+	margin: 10px 0;
 	border: 1px solid var(--kdna-admin-border);
 	border-radius: var(--kdna-admin-radius);
 	background: var(--kdna-admin-surface);
+	overflow: hidden;
 }
 
-.kdna-style-field + .kdna-style-group,
-.kdna-style-group + .kdna-style-field,
-.kdna-style-group + .kdna-style-group {
-	margin-top: 14px;
-}
-
-.kdna-style-group__legend {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 0 6px;
-	font-weight: 600;
+.kdna-style-group__heading {
+	margin: 0;
 	font-size: 13px;
 }
 
-.kdna-style-group .kdna-style-field:first-of-type {
+.kdna-style-group__toggle {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 10px 12px;
+	border: 0;
+	background: transparent;
+	color: var(--kdna-admin-text);
+	font-size: 13px;
+	font-weight: 600;
+	text-align: left;
+	cursor: pointer;
+}
+
+.kdna-style-group__toggle:hover {
+	background: rgba( 0, 0, 0, 0.03 );
+}
+
+.kdna-style-group__chevron {
+	width: 16px;
+	height: 16px;
+	font-size: 16px;
+	line-height: 1;
+	color: var(--kdna-admin-text-soft);
+	flex: 0 0 auto;
+}
+
+.kdna-style-group__label {
+	flex: 0 0 auto;
+}
+
+/* The summary. Muted while the group is empty, since "Inherit" is
+ * information but not a setting; picked out once something is set. */
+.kdna-style-group__summary {
+	margin-left: auto;
+	padding-left: 12px;
+	overflow: hidden;
+	color: var(--kdna-admin-text-soft);
+	font-family: Menlo, Consolas, monospace;
+	font-size: 11px;
+	font-weight: 400;
+	font-style: italic;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.kdna-style-group__summary.is-set {
+	color: var(--kdna-admin-accent);
+	font-style: normal;
+}
+
+.kdna-style-group.is-open {
+	background: #fff;
+	border-color: var(--kdna-admin-border-strong);
+}
+
+.kdna-style-group.is-open .kdna-style-group__toggle {
+	border-bottom: 1px solid var(--kdna-admin-border);
+	background: var(--kdna-admin-surface);
+}
+
+.kdna-style-group__body {
+	padding: 0 14px 12px;
+}
+
+.kdna-style-group__actions {
+	display: flex;
+	justify-content: flex-end;
+	padding-top: 8px;
+}
+
+.kdna-style-group__body .kdna-style-field:first-of-type {
 	border-top: 0;
 }
 

@@ -116,6 +116,27 @@ class KDNA_Tables_Style_Schema {
 	/** Group control types, whose fields carry the css_var. */
 	const GROUP_TYPES = array( 'typography', 'border', 'background' );
 
+	/**
+	 * Datalist suggestions for a typography font family.
+	 *
+	 * Suggestions, not an allow-list: the field stays free text so a
+	 * site's own Elementor faces — Apotheca, say — can be typed in by
+	 * name. 'inherit' leads the list because clearing a font is the most
+	 * common thing to want from it, and the sanitiser treats that value
+	 * as unset rather than storing a word that means nothing.
+	 */
+	const FONT_SUGGESTIONS = array(
+		'inherit',
+		'Arial, Helvetica, sans-serif',
+		'Georgia, serif',
+		'"Helvetica Neue", Helvetica, Arial, sans-serif',
+		'"Times New Roman", Times, serif',
+		'Tahoma, Geneva, sans-serif',
+		'Verdana, Geneva, sans-serif',
+		'"Courier New", Courier, monospace',
+		'system-ui, sans-serif',
+	);
+
 	/** Built schema, memoised per request. */
 	private static $controls = null;
 
@@ -416,12 +437,13 @@ class KDNA_Tables_Style_Schema {
 						'type'        => 'select',
 						'css_var'     => $var_prefix . '-font-family',
 						'responsive'  => false,
-						// Free text with a datalist at Stage 6, so custom
-						// Elementor faces such as Apotheca can be typed in
-						// by name. The allow-list lives with the renderer.
+						// Free text with suggestions rather than an
+						// allow-list: options stays empty, and the datalist
+						// is built from FONT_SUGGESTIONS.
 						'options'     => array(),
 						'free_text'   => true,
-						'description' => esc_html__( 'Custom fonts can be typed in by name.', 'kdna-tables' ),
+						'suggestions' => self::FONT_SUGGESTIONS,
+						'description' => esc_html__( 'Web-safe stacks are suggested. Custom Elementor fonts, such as Apotheca, can be typed in by name.', 'kdna-tables' ),
 					)
 				),
 				'font_size'       => $field(
@@ -604,10 +626,13 @@ class KDNA_Tables_Style_Schema {
 	/**
 	 * A background group.
 	 *
-	 * Colour only for now. Gradients are a future addition: they need a
-	 * second colour, an angle and a type, and the whole group would have
-	 * to write background-image rather than background-color. Noted here
-	 * so Stage 6 does not quietly grow it.
+	 * Colour only. Gradients are a deliberate future addition, not an
+	 * oversight: they need a second colour, an angle and a type, the group
+	 * would have to write background-image rather than background-color,
+	 * and every rule in kdna-shortcode.css consuming the variable would
+	 * have to accept an image as well as a colour. That is a change to the
+	 * stylesheet's shape, not just another field here, so it is out of
+	 * scope for this build.
 	 */
 	private static function background_group( $label, $section, $css_var, $default ) {
 		return array(

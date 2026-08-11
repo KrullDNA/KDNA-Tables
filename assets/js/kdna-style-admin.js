@@ -204,6 +204,58 @@
 		return '#000000';
 	}
 
+	/* ── Group summaries ──────────────────────────────────────────── */
+
+	/**
+	 * A short, CSS-shaped token for one leaf value: what the field will
+	 * actually contribute, not a prose description of it. Four equal
+	 * dimension sides collapse to one number, because "16px" reads and
+	 * scans better than "16 16 16 16px".
+	 */
+	function leafToken( definition, value ) {
+		if ( leafIsEmpty( definition, value ) ) { return ''; }
+
+		if ( 'dimensions' === definition.type ) {
+			var unit = value.unit || '';
+			var sides = [ 'top', 'right', 'bottom', 'left' ].map( function ( side ) {
+				var part = value[ side ];
+				return ( '' === part || null === part || undefined === part ) ? '0' : String( part );
+			} );
+			var allEqual = sides.every( function ( s ) { return s === sides[ 0 ]; } );
+			return allEqual ? sides[ 0 ] + unit : sides.join( ' ' ) + unit;
+		}
+
+		if ( 'slider' === definition.type ) {
+			return String( value.size ) + ( value.unit || '' );
+		}
+
+		if ( 'number' === definition.type ) {
+			return String( value ) + ( definition.suffix || '' );
+		}
+
+		return String( value );
+	}
+
+	/**
+	 * One field's contribution to its group's summary. A responsive
+	 * field shows the first breakpoint that carries a value, with a +
+	 * when others do too — enough to tell that a breakpoint override
+	 * exists without opening the group to find it.
+	 */
+	function fieldToken( definition, value ) {
+		if ( ! definition.responsive ) {
+			return leafToken( definition, value );
+		}
+
+		var set = DEVICES.filter( function ( device ) {
+			return value && ! leafIsEmpty( definition, value[ device ] );
+		} );
+		if ( ! set.length ) { return ''; }
+
+		var token = leafToken( definition, value[ set[ 0 ] ] );
+		return set.length > 1 ? token + '+' : token;
+	}
+
 	/* ── Component ────────────────────────────────────────────────── */
 
 	function kdnaTablesStyleAdmin() {
@@ -215,6 +267,7 @@
 			section: Object.keys( seed.sections || {} )[ 0 ] || 'wrapper',
 			values: {},
 			device: {},
+			open: {},
 			saving: false,
 			dirty: false,
 			status: '',
@@ -255,6 +308,48 @@
 					if ( definition.responsive ) { map[ key ] = 'desktop'; }
 				} );
 				return map;
+			},
+
+			/* ── Groups ──────────────────────────────────────────────
+			 * Groups start closed. A section with three groups in it is
+			 * seventeen fields open and three rows closed, and all but a
+			 * couple of those fields are normally inherit — so closed is
+			 * the state that keeps the panel readable, and the summary
+			 * is what makes closed safe.
+			 */
+
+			isOpen: function ( key ) {
+				return !! this.open[ key ];
+			},
+
+			toggleGroup: function ( key ) {
+				this.open[ key ] = ! this.open[ key ];
+			},
+
+			/**
+			 * What a closed group shows: every field that holds a value,
+			 * as the value itself. Nothing set reads as Inherit, which is
+			 * the truth about what the group contributes.
+			 */
+			groupSummary: function ( key ) {
+				var definition = this.schema[ key ];
+				if ( ! definition || ! definition.fields ) { return ''; }
+
+				var values = this.values[ key ] || {};
+				var tokens = [];
+
+				Object.keys( definition.fields ).forEach( function ( fieldKey ) {
+					var token = fieldToken( definition.fields[ fieldKey ], values[ fieldKey ] );
+					if ( token ) { tokens.push( token ); }
+				} );
+
+				if ( ! tokens.length ) {
+					return this.strings.inherit || 'Inherit';
+				}
+				if ( tokens.length > 4 ) {
+					return tokens.slice( 0, 4 ).join( ' · ' ) + ' …';
+				}
+				return tokens.join( ' · ' );
 			},
 
 			/* ── Reaching a leaf ─────────────────────────────────────
@@ -445,6 +540,8 @@
 		collapseAll: collapseAll,
 		shapeControl: shapeControl,
 		collapseControl: collapseControl,
-		toSwatch: toSwatch
+		toSwatch: toSwatch,
+		leafToken: leafToken,
+		fieldToken: fieldToken
 	};
 }() );

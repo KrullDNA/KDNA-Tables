@@ -314,24 +314,30 @@ $kdna_render_leaf = static function ( array $definition, $key, $field_key, $resp
 	/* ── Free text, e.g. the typography font family ────────────────
 	 * A text field with a datalist of suggestions rather than an
 	 * allow-list, so a site's own Elementor faces can be typed in by
-	 * name. Stage 6 fills the datalist out.
+	 * name. The suggestions come from the schema entry, which leads them
+	 * with 'inherit' as the way to clear the field.
 	 */
-	$list_id = 'kdna-style-list-' . sanitize_html_class( $key . '-' . $field_key );
+	$suggestions = isset( $definition['suggestions'] ) && is_array( $definition['suggestions'] )
+		? $definition['suggestions']
+		: array();
+	$list_id     = 'kdna-style-list-' . sanitize_html_class( $key . '-' . $field_key );
 	?>
 	<div class="kdna-style-number">
 		<input
 			type="text"
 			class="kdna-style-input"
 			x-model="<?php echo esc_attr( $path ); ?>"
-			list="<?php echo esc_attr( $list_id ); ?>"
+			<?php if ( ! empty( $suggestions ) ) : ?>list="<?php echo esc_attr( $list_id ); ?>"<?php endif; ?>
 			placeholder="<?php esc_attr_e( 'inherit', 'kdna-tables' ); ?>"
 			spellcheck="false"
 		/>
-		<datalist id="<?php echo esc_attr( $list_id ); ?>">
-			<?php foreach ( array( 'Arial', 'Georgia', 'Helvetica', 'Tahoma', 'Times New Roman', 'Verdana' ) as $suggestion ) : ?>
-				<option value="<?php echo esc_attr( $suggestion ); ?>"></option>
-			<?php endforeach; ?>
-		</datalist>
+		<?php if ( ! empty( $suggestions ) ) : ?>
+			<datalist id="<?php echo esc_attr( $list_id ); ?>">
+				<?php foreach ( $suggestions as $suggestion ) : ?>
+					<option value="<?php echo esc_attr( $suggestion ); ?>"></option>
+				<?php endforeach; ?>
+			</datalist>
+		<?php endif; ?>
 		<button
 			type="button"
 			class="kdna-style-clear"
@@ -429,15 +435,67 @@ $kdna_render_field = static function ( array $definition, $key, $field_key, arra
 					<?php else : ?>
 						<?php foreach ( $grouped[ $section_key ] as $control_key => $definition ) : ?>
 							<?php if ( KDNA_Tables_Style_Schema::is_group_type( $definition['type'] ) ) : ?>
-								<fieldset class="kdna-style-group">
-									<legend class="kdna-style-group__legend">
-										<?php echo esc_html( $definition['label'] ); ?>
-										<code class="kdna-style-field__key"><?php echo esc_html( $control_key ); ?></code>
-									</legend>
-									<?php foreach ( $definition['fields'] as $field_key => $field ) : ?>
-										<?php $kdna_render_field( $field, $control_key, $field_key, $devices, $kdna_device_icons, true ); ?>
-									<?php endforeach; ?>
-								</fieldset>
+								<?php
+								/*
+								 * A group collapses to a single row. Closed, it
+								 * shows a live summary of what is set inside it,
+								 * which is what keeps a section of sixty controls
+								 * readable — typography alone is nine fields, and
+								 * eight of them are usually inherit.
+								 *
+								 * Disclosure pattern rather than a fieldset: the
+								 * heading is the toggle, so it needs to be a
+								 * button, and a button is not what a legend is
+								 * for.
+								 */
+								$group_id = 'kdna-style-group-' . sanitize_html_class( $control_key );
+								?>
+								<section class="kdna-style-group" :class="{ 'is-open': isOpen( '<?php echo esc_attr( $control_key ); ?>' ) }">
+									<h3 class="kdna-style-group__heading">
+										<button
+											type="button"
+											class="kdna-style-group__toggle"
+											id="<?php echo esc_attr( $group_id ); ?>-toggle"
+											aria-controls="<?php echo esc_attr( $group_id ); ?>"
+											:aria-expanded="isOpen( '<?php echo esc_attr( $control_key ); ?>' ) ? 'true' : 'false'"
+											@click="toggleGroup( '<?php echo esc_attr( $control_key ); ?>' )"
+										>
+											<span
+												class="dashicons kdna-style-group__chevron"
+												:class="isOpen( '<?php echo esc_attr( $control_key ); ?>' ) ? 'dashicons-arrow-down-alt2' : 'dashicons-arrow-right-alt2'"
+												aria-hidden="true"
+											></span>
+											<span class="kdna-style-group__label"><?php echo esc_html( $definition['label'] ); ?></span>
+											<code class="kdna-style-field__key"><?php echo esc_html( $control_key ); ?></code>
+											<span
+												class="kdna-style-group__summary"
+												:class="{ 'is-set': hasValue( '<?php echo esc_attr( $control_key ); ?>', '' ) }"
+												x-text="groupSummary( '<?php echo esc_attr( $control_key ); ?>' )"
+											></span>
+										</button>
+									</h3>
+
+									<div
+										class="kdna-style-group__body"
+										id="<?php echo esc_attr( $group_id ); ?>"
+										x-show="isOpen( '<?php echo esc_attr( $control_key ); ?>' )"
+										role="group"
+										aria-labelledby="<?php echo esc_attr( $group_id ); ?>-toggle"
+									>
+										<div class="kdna-style-group__actions" x-show="hasValue( '<?php echo esc_attr( $control_key ); ?>', '' )">
+											<button
+												type="button"
+												class="kdna-style-field__reset"
+												@click="resetControl( '<?php echo esc_attr( $control_key ); ?>', '' )"
+												title="<?php esc_attr_e( 'Clear every field in this group back to inherit', 'kdna-tables' ); ?>"
+											><?php esc_html_e( 'Reset group', 'kdna-tables' ); ?></button>
+										</div>
+
+										<?php foreach ( $definition['fields'] as $field_key => $field ) : ?>
+											<?php $kdna_render_field( $field, $control_key, $field_key, $devices, $kdna_device_icons, true ); ?>
+										<?php endforeach; ?>
+									</div>
+								</section>
 							<?php else : ?>
 								<?php $kdna_render_field( $definition, $control_key, '', $devices, $kdna_device_icons ); ?>
 							<?php endif; ?>

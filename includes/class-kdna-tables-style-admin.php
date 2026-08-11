@@ -139,6 +139,7 @@ class KDNA_Tables_Style_Admin {
 				'failed'    => __( 'Could not save', 'kdna-tables' ),
 				'unsaved'   => __( 'Unsaved changes', 'kdna-tables' ),
 				'discarded' => __( 'Some values were not valid and were discarded.', 'kdna-tables' ),
+				'inherit'   => __( 'Inherit', 'kdna-tables' ),
 			),
 		);
 	}
@@ -510,7 +511,14 @@ class KDNA_Tables_Style_Admin {
 		// through text sanitising and the resolver's own output check.
 		if ( ! empty( $definition['free_text'] ) ) {
 			$value = sanitize_text_field( $value );
-			return '' === $value ? null : $value;
+			// 'inherit' is offered in the suggestions as the way to clear
+			// the field. Storing it would be storing a word that means
+			// nothing, so it is treated as unset — which is what the
+			// resolver would do with it anyway, one layer later.
+			if ( '' === $value || 'inherit' === strtolower( $value ) ) {
+				return null;
+			}
+			return $value;
 		}
 
 		return array_key_exists( $value, $options ) ? $value : null;
