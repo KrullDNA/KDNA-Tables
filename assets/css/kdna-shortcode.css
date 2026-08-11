@@ -1,0 +1,1062 @@
+/*
+ * KDNA Tables, shortcode frontend stylesheet.
+ *
+ * Everything the [kdna_table] shortcode needs to render a fully styled,
+ * fully responsive general table, scoped to .kdna-table__wrapper--shortcode
+ * — a class that never appears inside an Elementor widget.
+ *
+ * ── Why this file is self-contained ───────────────────────────────────
+ *
+ * It carries base layout as well as skin, rather than only overriding
+ * kdna-tables.css. Two reasons. kdna-responsive.css is not enqueued on
+ * the shortcode path at all, so the responsive modes have to live here;
+ * and the Stage 9 live preview renders inside an iframe loading this one
+ * stylesheet, so anything missing here would be missing from the
+ * preview. On a real page kdna-tables.css is also present: every
+ * selector below carries the wrapper class, which puts it one class
+ * above its kdna-tables.css counterpart, and Stage 3 registers this file
+ * with kdna-tables as a dependency so it also loads later.
+ *
+ * ── The variable indirection, and the cycle it avoids ─────────────────
+ *
+ * Rules never read a public style variable. They read a private one,
+ * --_x, defined once in the resolution layer at the top of this file as
+ * var(--x, <default>). The two exceptions are not style controls at all
+ * but per-cell values the render writes inline —
+ * --kdna-table-cell-text-align and --kdna-card-row — which have to be
+ * read where they sit, on the cell. Two payoffs: every hard-coded value in the file
+ * lives in that one block rather than scattered through var() fallbacks
+ * in each rule, and a breakpoint is applied by redefining --_x, with the
+ * rules untouched.
+ *
+ * The indirection is also load-bearing. The obvious form,
+ *
+ *   --kdna-table-body-padding: var(--kdna-table-body-padding-tablet,
+ *                                  var(--kdna-table-body-padding));
+ *
+ * does not work: a custom property that references itself — including
+ * from inside its own fallback — is a dependency cycle, so it is invalid
+ * at computed-value time and the declaration is dropped. A wrapper
+ * carrying both a base and a tablet value keeps rendering the base one
+ * below the breakpoint, silently. Reading the public properties into a
+ * separate private one has no cycle, so it does apply.
+ *
+ * ── Breakpoints ───────────────────────────────────────────────────────
+ *
+ * Two queries, max-width 1024px and max-width 767px. Both apply below
+ * 767px, so the mobile remap chains through tablet —
+ * var(--x-mobile, var(--x-tablet, var(--x, <default>))) — otherwise a
+ * table with a tablet value and no mobile value would jump back to its
+ * desktop value on a phone.
+ *
+ * A control left unset at a breakpoint emits no property at all (see
+ * KDNA_Tables_Style_Resolver), which is what lets these chains fall
+ * through. An empty property would not be absent, and the chain would
+ * resolve to an empty value.
+ *
+ * ── What is not variable-driven ───────────────────────────────────────
+ *
+ * Structural declarations — display, position, grid placement, the
+ * box-sizing and theme border resets — are plain values. They are
+ * layout mechanics rather than style, nothing in the settings page
+ * targets them, and the live preview never needs to change them. Every
+ * styleable property reads a variable.
+ *
+ * @package KDNA_Tables
+ */
+
+/* ═══ Resolution layer ══════════════════════════════════════════════
+ * Public variable in, private variable out. This is the only place in
+ * the file with hard-coded values; each is the value the table renders
+ * today, so an unstyled shortcode matches the widget's defaults.
+ *
+ * Two entries deliberately have no fallback:
+ * --_kdna-table-header-text-align and --_kdna-table-body-text-align.
+ * Unset, they are guaranteed-invalid, and the var() reading them in the
+ * cell rule falls through to the cell's own inline
+ * --kdna-table-cell-text-align. That is how the per-column and per-cell
+ * alignment survives until an Alignment control is actually set.
+ */
+
+.kdna-table__wrapper--shortcode {
+	/* Wrapper frame */
+	--_kdna-table-wrapper-bg: var(--kdna-table-wrapper-bg, transparent);
+	--_kdna-table-wrapper-padding: var(--kdna-table-wrapper-padding, 0);
+	--_kdna-table-wrapper-margin: var(--kdna-table-wrapper-margin, 0);
+	--_kdna-table-wrapper-max-width: var(--kdna-table-wrapper-max-width, none);
+	--_kdna-table-wrapper-border-style: var(--kdna-table-wrapper-border-style, none);
+	--_kdna-table-wrapper-border-width: var(--kdna-table-wrapper-border-width, 0);
+	--_kdna-table-wrapper-border-color: var(--kdna-table-wrapper-border-color, #e5e7eb);
+	--_kdna-table-border-radius: var(--kdna-table-border-radius, 12px);
+	--_kdna-table-wrapper-box-shadow: var(--kdna-table-wrapper-box-shadow, none);
+
+	/* Table */
+	--_kdna-table-bg: var(--kdna-table-bg, transparent);
+	--_kdna-table-border-collapse: var(--kdna-table-border-collapse, collapse);
+	--_kdna-table-border-spacing: var(--kdna-table-border-spacing, 0);
+	--_kdna-table-layout: var(--kdna-table-layout, auto);
+
+	/* Caption */
+	--_kdna-table-caption-color: var(--kdna-table-caption-color, var(--_kdna-table-body-color));
+	--_kdna-table-caption-align: var(--kdna-table-caption-align, left);
+	--_kdna-table-caption-spacing: var(--kdna-table-caption-spacing, 12px);
+	--_kdna-table-caption-font-family: var(--kdna-table-caption-font-family, inherit);
+	--_kdna-table-caption-font-size: var(--kdna-table-caption-font-size, inherit);
+	--_kdna-table-caption-font-weight: var(--kdna-table-caption-font-weight, 600);
+	--_kdna-table-caption-text-transform: var(--kdna-table-caption-text-transform, none);
+	--_kdna-table-caption-font-style: var(--kdna-table-caption-font-style, normal);
+	--_kdna-table-caption-text-decoration: var(--kdna-table-caption-text-decoration, none);
+	--_kdna-table-caption-line-height: var(--kdna-table-caption-line-height, normal);
+	--_kdna-table-caption-letter-spacing: var(--kdna-table-caption-letter-spacing, normal);
+	--_kdna-table-caption-word-spacing: var(--kdna-table-caption-word-spacing, normal);
+
+	/* Header row */
+	--_kdna-table-header-bg: var(--kdna-table-header-bg, #000000);
+	--_kdna-table-header-color: var(--kdna-table-header-color, #ffffff);
+	--_kdna-table-header-padding: var(--kdna-table-header-padding, 14px 16px);
+	--_kdna-table-header-text-align: var(--kdna-table-header-text-align);
+	--_kdna-table-header-font-family: var(--kdna-table-header-font-family, inherit);
+	--_kdna-table-header-font-size: var(--kdna-table-header-font-size, inherit);
+	--_kdna-table-header-font-weight: var(--kdna-table-header-font-weight, 600);
+	--_kdna-table-header-text-transform: var(--kdna-table-header-text-transform, none);
+	--_kdna-table-header-font-style: var(--kdna-table-header-font-style, normal);
+	--_kdna-table-header-text-decoration: var(--kdna-table-header-text-decoration, none);
+	--_kdna-table-header-line-height: var(--kdna-table-header-line-height, normal);
+	--_kdna-table-header-letter-spacing: var(--kdna-table-header-letter-spacing, normal);
+	--_kdna-table-header-word-spacing: var(--kdna-table-header-word-spacing, normal);
+
+	/* Body cells */
+	--_kdna-table-body-padding: var(--kdna-table-body-padding, 12px 16px);
+	--_kdna-table-body-color: var(--kdna-table-body-color, #1f2937);
+	--_kdna-table-body-bg-odd: var(--kdna-table-body-bg-odd, #ffffff);
+	--_kdna-table-body-bg-even: var(--kdna-table-body-bg-even, #f7f7f8);
+	--_kdna-table-body-text-align: var(--kdna-table-body-text-align);
+	--_kdna-table-body-font-family: var(--kdna-table-body-font-family, inherit);
+	--_kdna-table-body-font-size: var(--kdna-table-body-font-size, inherit);
+	--_kdna-table-body-font-weight: var(--kdna-table-body-font-weight, inherit);
+	--_kdna-table-body-text-transform: var(--kdna-table-body-text-transform, none);
+	--_kdna-table-body-font-style: var(--kdna-table-body-font-style, normal);
+	--_kdna-table-body-text-decoration: var(--kdna-table-body-text-decoration, none);
+	--_kdna-table-body-line-height: var(--kdna-table-body-line-height, normal);
+	--_kdna-table-body-letter-spacing: var(--kdna-table-body-letter-spacing, normal);
+	--_kdna-table-body-word-spacing: var(--kdna-table-body-word-spacing, normal);
+	--_kdna-table-row-hover-bg: var(--kdna-table-row-hover-bg, transparent);
+	--_kdna-table-row-hover-color: var(--kdna-table-row-hover-color, inherit);
+	--_kdna-table-row-hover-transition: var(--kdna-table-row-hover-transition, 200ms);
+
+	/* First column
+	 * Background and colour have no default of their own. The background
+	 * resolves twice, once per row parity, so an unset First Column
+	 * leaves the striping showing through instead of painting
+	 * transparent over it — which is also why the schema default for
+	 * first_col_bg must stay null at Stage 7 rather than 'transparent'. */
+	--_kdna-table-first-col-bg-odd: var(--kdna-table-first-col-bg, var(--_kdna-table-body-bg-odd));
+	--_kdna-table-first-col-bg-even: var(--kdna-table-first-col-bg, var(--_kdna-table-body-bg-even));
+	--_kdna-table-first-col-color: var(--kdna-table-first-col-color, var(--_kdna-table-body-color));
+	--_kdna-table-first-col-padding: var(--kdna-table-first-col-padding, var(--_kdna-table-body-padding));
+	--_kdna-table-first-col-font-family: var(--kdna-table-first-col-font-family, inherit);
+	--_kdna-table-first-col-font-size: var(--kdna-table-first-col-font-size, inherit);
+	--_kdna-table-first-col-font-weight: var(--kdna-table-first-col-font-weight, inherit);
+	--_kdna-table-first-col-text-transform: var(--kdna-table-first-col-text-transform, none);
+	--_kdna-table-first-col-font-style: var(--kdna-table-first-col-font-style, normal);
+	--_kdna-table-first-col-text-decoration: var(--kdna-table-first-col-text-decoration, none);
+	--_kdna-table-first-col-line-height: var(--kdna-table-first-col-line-height, normal);
+	--_kdna-table-first-col-letter-spacing: var(--kdna-table-first-col-letter-spacing, normal);
+	--_kdna-table-first-col-word-spacing: var(--kdna-table-first-col-word-spacing, normal);
+	/* Row-header cells only, i.e. when the table marks its first column
+	 * as a header. Plain first columns are not bolded. */
+	--_kdna-table-first-col-weight: var(--kdna-table-first-col-weight, 700);
+
+	/* Rule lines. Every line is an inner line: a cell never draws on the
+	 * table's outer edge, so the wrapper border is the only frame. */
+	--_kdna-table-h-line-style: var(--kdna-table-h-line-style, solid);
+	--_kdna-table-h-line-width: var(--kdna-table-h-line-width, 1px);
+	--_kdna-table-h-line-color: var(--kdna-table-h-line-color, #e5e7eb);
+	--_kdna-table-v-line-style: var(--kdna-table-v-line-style, solid);
+	--_kdna-table-v-line-width: var(--kdna-table-v-line-width, 1px);
+	--_kdna-table-v-line-color: var(--kdna-table-v-line-color, #e5e7eb);
+	--_kdna-table-header-divider-style: var(--kdna-table-header-divider-style, solid);
+	--_kdna-table-header-divider-width: var(--kdna-table-header-divider-width, 1px);
+	--_kdna-table-header-divider-color: var(--kdna-table-header-divider-color, #e5e7eb);
+	/* Header verticals and the first column's right edge follow the body
+	 * verticals until they are styled on their own. */
+	--_kdna-table-header-v-line-style: var(--kdna-table-header-v-line-style, var(--_kdna-table-v-line-style));
+	--_kdna-table-header-v-line-width: var(--kdna-table-header-v-line-width, var(--_kdna-table-v-line-width));
+	--_kdna-table-header-v-line-color: var(--kdna-table-header-v-line-color, var(--_kdna-table-v-line-color));
+	--_kdna-table-first-col-edge-style: var(--kdna-table-first-col-edge-style, var(--_kdna-table-v-line-style));
+	--_kdna-table-first-col-edge-width: var(--kdna-table-first-col-edge-width, var(--_kdna-table-v-line-width));
+	--_kdna-table-first-col-edge-color: var(--kdna-table-first-col-edge-color, var(--_kdna-table-v-line-color));
+
+	/* Cell content */
+	--_kdna-table-icon-color: var(--kdna-table-icon-color, #3362dd);
+	--_kdna-table-icon-size: var(--kdna-table-icon-size, 1.25em);
+	--_kdna-table-cell-gap: var(--kdna-table-cell-gap, 8px);
+	--_kdna-table-image-width: var(--kdna-table-image-width, auto);
+	--_kdna-table-image-radius: var(--kdna-table-image-radius, 0);
+
+	/* Card Stack */
+	--_kdna-card-bg: var(--kdna-card-bg, #ffffff);
+	--_kdna-card-radius: var(--kdna-card-radius, 12px);
+	--_kdna-card-padding: var(--kdna-card-padding, 16px);
+	--_kdna-card-spacing: var(--kdna-card-spacing, 16px);
+
+	/* Pivot Rows */
+	--_kdna-pivot-label-color: var(--kdna-pivot-label-color, var(--_kdna-table-header-color));
+	--_kdna-pivot-label-width: var(--kdna-pivot-label-width, 30%);
+	--_kdna-pivot-row-spacing: var(--kdna-pivot-row-spacing, 16px);
+	--_kdna-pivot-heading-bg: var(--kdna-pivot-heading-bg, var(--_kdna-table-header-bg));
+	--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding, 0);
+	--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius, 0);
+	--_kdna-pivot-heading-spacing: var(--kdna-pivot-heading-spacing, 2px);
+
+	/* Column Picker */
+	--_kdna-picker-bg: var(--kdna-picker-bg, #ffffff);
+	--_kdna-picker-padding: var(--kdna-picker-padding, 12px);
+	--_kdna-picker-radius: var(--kdna-picker-radius, 12px);
+	--_kdna-picker-label-color: var(--kdna-picker-label-color, inherit);
+	--_kdna-picker-dropdown-bg: var(--kdna-picker-dropdown-bg, #ffffff);
+	--_kdna-picker-dropdown-color: var(--kdna-picker-dropdown-color, #1f2937);
+	--_kdna-picker-chip-bg: var(--kdna-picker-chip-bg, #3362dd);
+	--_kdna-picker-chip-color: var(--kdna-picker-chip-color, #ffffff);
+	--_kdna-picker-chip-radius: var(--kdna-picker-chip-radius, 999px);
+
+	/* Sticky first column */
+	--_kdna-sticky-bg: var(--kdna-sticky-bg, #ffffff);
+	--_kdna-sticky-shadow-color: var(--kdna-sticky-shadow-color, rgba(0, 0, 0, 0.08));
+	--_kdna-sticky-shadow-size: var(--kdna-sticky-shadow-size, 8px);
+	--_kdna-sticky-z-index: var(--kdna-sticky-z-index, 2);
+}
+
+/* ═══ Wrapper frame ═════════════════════════════════════════════════ */
+
+.kdna-table__wrapper--shortcode {
+	box-sizing: border-box;
+	background: var(--_kdna-table-wrapper-bg);
+	padding: var(--_kdna-table-wrapper-padding);
+	margin: var(--_kdna-table-wrapper-margin);
+	max-width: var(--_kdna-table-wrapper-max-width);
+	border-style: var(--_kdna-table-wrapper-border-style);
+	border-width: var(--_kdna-table-wrapper-border-width);
+	border-color: var(--_kdna-table-wrapper-border-color);
+	border-radius: var(--_kdna-table-border-radius);
+	box-shadow: var(--_kdna-table-wrapper-box-shadow);
+	/* Clips the header row's corners to the wrapper radius. */
+	overflow: hidden;
+}
+
+.kdna-table__wrapper--shortcode *,
+.kdna-table__wrapper--shortcode *::before,
+.kdna-table__wrapper--shortcode *::after {
+	box-sizing: border-box;
+}
+
+.kdna-table__wrapper--shortcode .kdna-table__sr-only {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect(0, 0, 0, 0) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}
+
+/* Horizontal scroller the render wraps the table in when the first
+ * column is sticky. */
+.kdna-table__wrapper--shortcode .kdna-table__scroll {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+/* ═══ Table ═════════════════════════════════════════════════════════ */
+
+.kdna-table__wrapper--shortcode .kdna-table--general {
+	width: 100%;
+	margin: 0;
+	border-collapse: var(--_kdna-table-border-collapse);
+	border-spacing: var(--_kdna-table-border-spacing);
+	background: var(--_kdna-table-bg);
+	color: var(--_kdna-table-body-color);
+	table-layout: var(--_kdna-table-layout);
+}
+
+/*
+ * Theme border resets. Themes like Hello Elementor and the block editor
+ * set cell borders through selectors such as `.entry-content table td`,
+ * which a plain reset cannot beat, and only the edges this stylesheet
+ * never draws are reset — so the line rules further down stay
+ * !important-free and remain overridable.
+ */
+
+.kdna-table__wrapper--shortcode .kdna-table--general,
+.kdna-table__wrapper--shortcode .kdna-table--general thead,
+.kdna-table__wrapper--shortcode .kdna-table--general tbody,
+.kdna-table__wrapper--shortcode .kdna-table--general tr {
+	border: 0 !important;
+}
+
+.kdna-table__wrapper--shortcode .kdna-table--general th,
+.kdna-table__wrapper--shortcode .kdna-table--general td {
+	border-top: 0 !important;
+	border-left: 0 !important;
+}
+
+.kdna-table__wrapper--shortcode .kdna-table--general .kdna-table__cell:last-child {
+	border-right: 0 !important;
+}
+
+.kdna-table__wrapper--shortcode .kdna-table--general tbody .kdna-table__row:last-child > .kdna-table__cell {
+	border-bottom: 0 !important;
+}
+
+/* ═══ Caption ═══════════════════════════════════════════════════════ */
+
+.kdna-table__wrapper--shortcode .kdna-table--general .kdna-table__caption {
+	caption-side: top;
+	padding: 0;
+	margin-bottom: var(--_kdna-table-caption-spacing);
+	color: var(--_kdna-table-caption-color);
+	text-align: var(--_kdna-table-caption-align);
+	font-family: var(--_kdna-table-caption-font-family);
+	font-size: var(--_kdna-table-caption-font-size);
+	font-weight: var(--_kdna-table-caption-font-weight);
+	font-style: var(--_kdna-table-caption-font-style);
+	text-transform: var(--_kdna-table-caption-text-transform);
+	text-decoration: var(--_kdna-table-caption-text-decoration);
+	line-height: var(--_kdna-table-caption-line-height);
+	letter-spacing: var(--_kdna-table-caption-letter-spacing);
+	word-spacing: var(--_kdna-table-caption-word-spacing);
+}
+
+/* ═══ Cells, shared ═════════════════════════════════════════════════ */
+
+.kdna-table__wrapper--shortcode .kdna-table--general .kdna-table__cell {
+	vertical-align: middle;
+	transition: background-color var(--_kdna-table-row-hover-transition) ease,
+		color var(--_kdna-table-row-hover-transition) ease;
+}
+
+/* ═══ Header row ════════════════════════════════════════════════════ */
+
+.kdna-table__wrapper--shortcode .kdna-table--general thead .kdna-table__cell {
+	background: var(--_kdna-table-header-bg);
+	color: var(--_kdna-table-header-color);
+	padding: var(--_kdna-table-header-padding);
+	/* Unset, the private variable is guaranteed-invalid and this falls
+	 * through to the cell's own inline value, which carries the column
+	 * and per-cell alignment from the table content. */
+	text-align: var(--_kdna-table-header-text-align, var(--kdna-table-cell-text-align, center));
+	font-family: var(--_kdna-table-header-font-family);
+	font-size: var(--_kdna-table-header-font-size);
+	font-weight: var(--_kdna-table-header-font-weight);
+	font-style: var(--_kdna-table-header-font-style);
+	text-transform: var(--_kdna-table-header-text-transform);
+	text-decoration: var(--_kdna-table-header-text-decoration);
+	line-height: var(--_kdna-table-header-line-height);
+	letter-spacing: var(--_kdna-table-header-letter-spacing);
+	word-spacing: var(--_kdna-table-header-word-spacing);
+}
+
+/* The single divider under the header row. */
+.kdna-table__wrapper--shortcode .kdna-table--general thead .kdna-table__cell {
+	border-bottom: var(--_kdna-table-header-divider-width) var(--_kdna-table-header-divider-style) var(--_kdna-table-header-divider-color);
+}
+
+/* Lines between header cells. */
+.kdna-table__wrapper--shortcode .kdna-table--general thead .kdna-table__cell:not(:last-child) {
+	border-right: var(--_kdna-table-header-v-line-width) var(--_kdna-table-header-v-line-style) var(--_kdna-table-header-v-line-color);
+}
+
+/* ═══ Body cells ════════════════════════════════════════════════════ */
+
+.kdna-table__wrapper--shortcode .kdna-table--general tbody .kdna-table__cell {
+	padding: var(--_kdna-table-body-padding);
+	color: var(--_kdna-table-body-color);
+	text-align: var(--_kdna-table-body-text-align, var(--kdna-table-cell-text-align, left));
+	font-family: var(--_kdna-table-body-font-family);
+	font-size: var(--_kdna-table-body-font-size);
+	font-weight: var(--_kdna-table-body-font-weight);
+	font-style: var(--_kdna-table-body-font-style);
+	text-transform: var(--_kdna-table-body-text-transform);
+	text-decoration: var(--_kdna-table-body-text-decoration);
+	line-height: var(--_kdna-table-body-line-height);
+	letter-spacing: var(--_kdna-table-body-letter-spacing);
+	word-spacing: var(--_kdna-table-body-word-spacing);
+}
+
+.kdna-table__wrapper--shortcode .kdna-table--general tbody .kdna-table__row--odd > .kdna-table__cell {
+	background: var(--_kdna-table-body-bg-odd);
+}
+
+.kdna-table__wrapper--shortcode .kdna-table--general tbody .kdna-table__row--even > .kdna-table__cell {
+	background: var(--_kdna-table-body-bg-even);
+}
+
+/* Row hover. Transparent by default, so an unset control leaves the
+ * striping alone. */
+.kdna-table__wrapper--shortcode .kdna-table--general tbody .kdna-table__row:hover > .kdna-table__cell {
+	background-color: var(--_kdna-table-row-hover-bg);
+	color: var(--_kdna-table-row-hover-color);
+}
+
+/* ═══ First column ══════════════════════════════════════════════════
+ * Applies to the first body cell of every row, whether or not the table
+ * marks that column as a header. One class more than the striping rules
+ * above, so a First Column background wins against them rather than
+ * losing the cascade.
+ */
+
+.kdna-table__wrapper--shortcode .kdna-table--general tbody .kdna-table__row > .kdna-table__cell.kdna-table__cell--first-col {
+	padding: var(--_kdna-table-first-col-padding);
+	color: var(--_kdna-table-first-col-color);
+	font-family: var(--_kdna-table-first-col-font-family);
+	font-size: var(--_kdna-table-first-col-font-size);
+	font-weight: var(--_kdna-table-first-col-font-weight);
+	font-style: var(--_kdna-table-first-col-font-style);
+	text-transform: var(--_kdna-table-first-col-text-transform);
+	text-decoration: var(--_kdna-table-first-col-text-decoration);
+	line-height: var(--_kdna-table-first-col-line-height);
+	letter-spacing: var(--_kdna-table-first-col-letter-spacing);
+	word-spacing: var(--_kdna-table-first-col-word-spacing);
+}
+
+/* The background falls back to the stripe the row would have had, so
+ * leaving First Column Background unset shows the striping rather than
+ * painting transparent over it. */
+.kdna-table__wrapper--shortcode .kdna-table--general tbody .kdna-table__row--odd > .kdna-table__cell.kdna-table__cell--first-col {
+	background: var(--_kdna-table-first-col-bg-odd);
+}
+
+.kdna-table__wrapper--shortcode .kdna-table--general tbody .kdna-table__row--even > .kdna-table__cell.kdna-table__cell--first-col {
+	background: var(--_kdna-table-first-col-bg-even);
+}
+
+/* Row-header cells carry the bold weight; a plain first column does
+ * not. The First Column typography above still overrides it. */
+.kdna-table__wrapper--shortcode .kdna-table--general .kdna-table__cell--row-header {
+	font-weight: var(--_kdna-table-first-col-weight);
+}
+
+/* ═══ Rule lines ════════════════════════════════════════════════════
+ * Only ever between cells: each rule targets a cell that has a
+ * neighbour on that side, so the table draws no frame of its own and
+ * the wrapper border owns the outside edge.
+ */
+
+.kdna-table__wrapper--shortcode .kdna-table--general tbody .kdna-table__row:not(:last-child) > .kdna-table__cell {
+	border-bottom: var(--_kdna-table-h-line-width) var(--_kdna-table-h-line-style) var(--_kdna-table-h-line-color);
+}
+
+.kdna-table__wrapper--shortcode .kdna-table--general tbody .kdna-table__cell:not(:last-child) {
+	border-right: var(--_kdna-table-v-line-width) var(--_kdna-table-v-line-style) var(--_kdna-table-v-line-color);
+}
+
+/* One class above the body verticals, so the First Column edge wins on
+ * that one cell. */
+.kdna-table__wrapper--shortcode .kdna-table--general tbody .kdna-table__row > .kdna-table__cell--first-col:not(:last-child) {
+	border-right: var(--_kdna-table-first-col-edge-width) var(--_kdna-table-first-col-edge-style) var(--_kdna-table-first-col-edge-color);
+}
+
+/* ═══ Cell content ══════════════════════════════════════════════════ */
+
+.kdna-table__wrapper--shortcode .kdna-table__cell-icon,
+.kdna-table__wrapper--shortcode .kdna-table__cell-image {
+	display: inline-flex;
+	align-items: center;
+	vertical-align: middle;
+}
+
+.kdna-table__wrapper--shortcode .kdna-table__cell-text {
+	/* inline-block, not inline-flex, so wrapped lines honour the cell's
+	 * text-align rather than only the box being aligned. */
+	display: inline-block;
+	vertical-align: middle;
+	text-align: inherit;
+}
+
+.kdna-table__wrapper--shortcode .kdna-table__cell-text + .kdna-table__cell-icon,
+.kdna-table__wrapper--shortcode .kdna-table__cell-text + .kdna-table__cell-image,
+.kdna-table__wrapper--shortcode .kdna-table__cell-icon + .kdna-table__cell-text,
+.kdna-table__wrapper--shortcode .kdna-table__cell-icon + .kdna-table__cell-image,
+.kdna-table__wrapper--shortcode .kdna-table__cell-image + .kdna-table__cell-text,
+.kdna-table__wrapper--shortcode .kdna-table__cell-image + .kdna-table__cell-icon {
+	margin-left: var(--_kdna-table-cell-gap);
+}
+
+.kdna-table__wrapper--shortcode .kdna-table__cell-icon {
+	color: var(--_kdna-table-icon-color);
+	font-size: var(--_kdna-table-icon-size);
+	line-height: 1;
+	transition: color var(--_kdna-table-row-hover-transition) ease;
+}
+
+.kdna-table__wrapper--shortcode .kdna-table__cell-icon i,
+.kdna-table__wrapper--shortcode .kdna-table__cell-icon svg {
+	width: 1em;
+	height: 1em;
+	display: inline-block;
+	/* SVG glyphs default to fill:#000 and ignore CSS color. */
+	fill: currentColor;
+}
+
+.kdna-table__wrapper--shortcode .kdna-table__cell-icon svg path,
+.kdna-table__wrapper--shortcode .kdna-table__cell-icon i::before {
+	fill: currentColor;
+}
+
+.kdna-table__wrapper--shortcode .kdna-table__cell-image img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	width: var(--_kdna-table-image-width);
+	border-radius: var(--_kdna-table-image-radius);
+}
+
+/* ═══ Sticky first column ═══════════════════════════════════════════ */
+
+.kdna-table__wrapper--shortcode[data-sticky-first-column="yes"] .kdna-table--general thead .kdna-table__cell:first-child,
+.kdna-table__wrapper--shortcode[data-sticky-first-column="yes"] .kdna-table--general tbody .kdna-table__cell:first-child {
+	position: sticky;
+	left: 0;
+	z-index: var(--_kdna-sticky-z-index);
+	background: var(--_kdna-sticky-bg);
+	box-shadow: var(--_kdna-sticky-shadow-size) 0 var(--_kdna-sticky-shadow-size) calc(var(--_kdna-sticky-shadow-size) * -0.5) var(--_kdna-sticky-shadow-color);
+}
+
+/* ═══ Column Picker chrome ══════════════════════════════════════════
+ * In the DOM whenever the frontend script runs, hidden until a
+ * column_picker breakpoint is active.
+ */
+
+.kdna-table__wrapper--shortcode .kdna-picker {
+	display: none;
+	margin-bottom: 12px;
+	padding: var(--_kdna-picker-padding);
+	background: var(--_kdna-picker-bg);
+	border-radius: var(--_kdna-picker-radius);
+}
+
+.kdna-table__wrapper--shortcode .kdna-picker__label {
+	display: block;
+	margin-bottom: 8px;
+	color: var(--_kdna-picker-label-color);
+	font-weight: 600;
+}
+
+.kdna-table__wrapper--shortcode .kdna-picker__chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.kdna-table__wrapper--shortcode .kdna-picker__chips:empty {
+	display: none;
+}
+
+.kdna-table__wrapper--shortcode .kdna-picker__chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 10px;
+	background: var(--_kdna-picker-chip-bg);
+	color: var(--_kdna-picker-chip-color);
+	border-radius: var(--_kdna-picker-chip-radius);
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.4;
+}
+
+.kdna-table__wrapper--shortcode .kdna-picker__chip-remove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	height: 14px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+	font-size: 14px;
+	line-height: 1;
+}
+
+.kdna-table__wrapper--shortcode .kdna-picker__select {
+	width: 100%;
+	padding: 8px 10px;
+	background: var(--_kdna-picker-dropdown-bg);
+	color: var(--_kdna-picker-dropdown-color);
+	border: 1px solid #d5dadf;
+	border-radius: 8px;
+	font-size: 14px;
+}
+
+/* A column the picker has hidden. */
+.kdna-table__wrapper--shortcode .kdna-table__cell--col-hidden {
+	display: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * Tablet and below (≤ 1024px)
+ *
+ * The remap below is mechanical: one line per responsive control,
+ * reading its -tablet property and falling back to the base one. Stage 7
+ * adds schema entries, not lines here — anything already listed is
+ * wired.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1024px) {
+
+	.kdna-table__wrapper--shortcode {
+		/* Wrapper */
+		--_kdna-table-wrapper-padding: var(--kdna-table-wrapper-padding-tablet, var(--kdna-table-wrapper-padding, 0));
+		--_kdna-table-wrapper-margin: var(--kdna-table-wrapper-margin-tablet, var(--kdna-table-wrapper-margin, 0));
+		--_kdna-table-wrapper-max-width: var(--kdna-table-wrapper-max-width-tablet, var(--kdna-table-wrapper-max-width, none));
+		--_kdna-table-wrapper-border-width: var(--kdna-table-wrapper-border-width-tablet, var(--kdna-table-wrapper-border-width, 0));
+		--_kdna-table-border-radius: var(--kdna-table-border-radius-tablet, var(--kdna-table-border-radius, 12px));
+
+		/* Caption */
+		--_kdna-table-caption-align: var(--kdna-table-caption-align-tablet, var(--kdna-table-caption-align, left));
+		--_kdna-table-caption-spacing: var(--kdna-table-caption-spacing-tablet, var(--kdna-table-caption-spacing, 12px));
+		--_kdna-table-caption-font-size: var(--kdna-table-caption-font-size-tablet, var(--kdna-table-caption-font-size, inherit));
+		--_kdna-table-caption-line-height: var(--kdna-table-caption-line-height-tablet, var(--kdna-table-caption-line-height, normal));
+		--_kdna-table-caption-letter-spacing: var(--kdna-table-caption-letter-spacing-tablet, var(--kdna-table-caption-letter-spacing, normal));
+
+		/* Header */
+		--_kdna-table-header-padding: var(--kdna-table-header-padding-tablet, var(--kdna-table-header-padding, 14px 16px));
+		--_kdna-table-header-text-align: var(--kdna-table-header-text-align-tablet, var(--kdna-table-header-text-align));
+		--_kdna-table-header-font-size: var(--kdna-table-header-font-size-tablet, var(--kdna-table-header-font-size, inherit));
+		--_kdna-table-header-line-height: var(--kdna-table-header-line-height-tablet, var(--kdna-table-header-line-height, normal));
+		--_kdna-table-header-letter-spacing: var(--kdna-table-header-letter-spacing-tablet, var(--kdna-table-header-letter-spacing, normal));
+
+		/* Body */
+		--_kdna-table-body-padding: var(--kdna-table-body-padding-tablet, var(--kdna-table-body-padding, 12px 16px));
+		--_kdna-table-body-text-align: var(--kdna-table-body-text-align-tablet, var(--kdna-table-body-text-align));
+		--_kdna-table-body-font-size: var(--kdna-table-body-font-size-tablet, var(--kdna-table-body-font-size, inherit));
+		--_kdna-table-body-line-height: var(--kdna-table-body-line-height-tablet, var(--kdna-table-body-line-height, normal));
+		--_kdna-table-body-letter-spacing: var(--kdna-table-body-letter-spacing-tablet, var(--kdna-table-body-letter-spacing, normal));
+
+		/* First column */
+		--_kdna-table-first-col-padding: var(--kdna-table-first-col-padding-tablet, var(--kdna-table-first-col-padding, var(--_kdna-table-body-padding)));
+		--_kdna-table-first-col-font-size: var(--kdna-table-first-col-font-size-tablet, var(--kdna-table-first-col-font-size, inherit));
+		--_kdna-table-first-col-line-height: var(--kdna-table-first-col-line-height-tablet, var(--kdna-table-first-col-line-height, normal));
+		--_kdna-table-first-col-letter-spacing: var(--kdna-table-first-col-letter-spacing-tablet, var(--kdna-table-first-col-letter-spacing, normal));
+		--_kdna-table-first-col-edge-width: var(--kdna-table-first-col-edge-width-tablet, var(--kdna-table-first-col-edge-width, var(--_kdna-table-v-line-width)));
+
+		/* Rule lines */
+		--_kdna-table-h-line-width: var(--kdna-table-h-line-width-tablet, var(--kdna-table-h-line-width, 1px));
+		--_kdna-table-v-line-width: var(--kdna-table-v-line-width-tablet, var(--kdna-table-v-line-width, 1px));
+		--_kdna-table-header-divider-width: var(--kdna-table-header-divider-width-tablet, var(--kdna-table-header-divider-width, 1px));
+		--_kdna-table-header-v-line-width: var(--kdna-table-header-v-line-width-tablet, var(--kdna-table-header-v-line-width, var(--_kdna-table-v-line-width)));
+
+		/* Cell content */
+		--_kdna-table-icon-size: var(--kdna-table-icon-size-tablet, var(--kdna-table-icon-size, 1.25em));
+		--_kdna-table-cell-gap: var(--kdna-table-cell-gap-tablet, var(--kdna-table-cell-gap, 8px));
+		--_kdna-table-image-width: var(--kdna-table-image-width-tablet, var(--kdna-table-image-width, auto));
+
+		/* Card Stack */
+		--_kdna-card-padding: var(--kdna-card-padding-tablet, var(--kdna-card-padding, 16px));
+		--_kdna-card-radius: var(--kdna-card-radius-tablet, var(--kdna-card-radius, 12px));
+		--_kdna-card-spacing: var(--kdna-card-spacing-tablet, var(--kdna-card-spacing, 16px));
+
+		/* Pivot Rows */
+		--_kdna-pivot-label-width: var(--kdna-pivot-label-width-tablet, var(--kdna-pivot-label-width, 30%));
+		--_kdna-pivot-row-spacing: var(--kdna-pivot-row-spacing-tablet, var(--kdna-pivot-row-spacing, 16px));
+		--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding-tablet, var(--kdna-pivot-heading-padding, 0));
+		--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius-tablet, var(--kdna-pivot-heading-radius, 0));
+		--_kdna-pivot-heading-spacing: var(--kdna-pivot-heading-spacing-tablet, var(--kdna-pivot-heading-spacing, 2px));
+
+		/* Sticky */
+		--_kdna-sticky-shadow-size: var(--kdna-sticky-shadow-size-tablet, var(--kdna-sticky-shadow-size, 8px));
+	}
+
+	/* ── Card Stack, tablet band ──
+	 * One card per ROW: the row becomes the card and each cell is a
+	 * label/value pair, matching kdna-responsive.css. Below 767px the
+	 * mobile block overrides this with the column-per-card layout, for
+	 * tablet_and_mobile wrappers as well as mobile ones. */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general {
+		display: block;
+		background: transparent;
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general colgroup,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general thead {
+		display: none;
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tbody {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--_kdna-card-spacing);
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
+		display: block;
+		background: var(--_kdna-card-bg);
+		padding: var(--_kdna-card-padding);
+		border-radius: var(--_kdna-card-radius);
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
+		gap: var(--_kdna-table-cell-gap);
+		padding: 8px 0;
+		border: 0 !important;
+		background: none;
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
+		content: attr(data-column-label);
+		flex: 0 0 auto;
+		font-weight: 700;
+		color: var(--_kdna-pivot-label-color);
+	}
+
+	/* ── Pivot Rows, tablet band ── */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tbody,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
+		display: block;
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general colgroup,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general thead {
+		display: none;
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
+		padding-bottom: var(--_kdna-pivot-row-spacing);
+		margin-bottom: var(--_kdna-pivot-row-spacing);
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
+		display: block;
+		border: 0 !important;
+		padding: 6px 0;
+		background: none;
+	}
+
+	/* Column headings, tablet band. The real <thead> is hidden in this
+	 * mode and every cell injects its column label instead, so that label
+	 * IS the column heading here: it takes the header row's background
+	 * and text colour, with its own padding, radius and spacing.
+	 *
+	 * These carry the breakpoint attribute like every other rule in this
+	 * block. Keyed on the mode alone they would inject labels into a
+	 * mobile-breakpoint table at tablet width, where the pivot layout is
+	 * not active at all. */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
+		background: var(--_kdna-pivot-heading-bg);
+		padding: var(--_kdna-pivot-heading-padding);
+		border-radius: var(--_kdna-pivot-heading-radius);
+	}
+
+	/* Label above is the default: the shortcode takes no label-position
+	 * attribute, so an absent attribute has to mean "above". */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"]:not([data-pivot-label-position="inline"]) .kdna-table--general .kdna-table__cell::before {
+		content: attr(data-column-label);
+		display: block;
+		font-weight: 700;
+		color: var(--_kdna-pivot-label-color);
+		margin-bottom: var(--_kdna-pivot-heading-spacing);
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"][data-pivot-label-position="inline"] .kdna-table--general .kdna-table__cell {
+		display: grid;
+		grid-template-columns: var(--_kdna-pivot-label-width) 1fr;
+		gap: var(--_kdna-table-cell-gap);
+		align-items: baseline;
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"][data-pivot-label-position="inline"] .kdna-table--general .kdna-table__cell::before {
+		content: attr(data-column-label);
+		font-weight: 700;
+		color: var(--_kdna-pivot-label-color);
+	}
+
+	/* ── Column Picker, tablet band ── */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="column_picker"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-picker {
+		display: block;
+	}
+
+	/* ── Sticky yields to an active responsive mode ── */
+	.kdna-table__wrapper--shortcode[data-responsive-mode]:not([data-responsive-mode="none"])[data-sticky-first-column="yes"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell {
+		position: static;
+		box-shadow: none;
+	}
+
+	/* ── Every active mode centres its text ──
+	 * Left and right alignment is a property of the desktop column grid.
+	 * Once the table has reflowed into cards or stacked rows there is
+	 * nothing for it to line up against, and a table whose columns were
+	 * mixed left, centre and right reads as broken stacked into one
+	 * narrow strip. Mode "none" keeps the desktop layout, so it keeps
+	 * the desktop alignment. Last in the query on purpose: it shares
+	 * specificity with the per-mode rules above, so source order settles
+	 * it. */
+	.kdna-table__wrapper--shortcode[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell {
+		text-align: center;
+		justify-content: center;
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell::before {
+		text-align: center;
+		flex: 0 0 auto;
+		margin-right: 0;
+	}
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * Mobile (≤ 767px)
+ *
+ * Each remap chains mobile → tablet → base. Both queries apply at this
+ * width, so falling straight back to the base would let a tablet value
+ * be replaced by the desktop one on a phone.
+ *
+ * The layouts here target BOTH breakpoint values, which is what makes a
+ * tablet_and_mobile wrapper switch from the tablet band's layout to the
+ * mobile one below 767px.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+
+	.kdna-table__wrapper--shortcode {
+		/* Wrapper */
+		--_kdna-table-wrapper-padding: var(--kdna-table-wrapper-padding-mobile, var(--kdna-table-wrapper-padding-tablet, var(--kdna-table-wrapper-padding, 0)));
+		--_kdna-table-wrapper-margin: var(--kdna-table-wrapper-margin-mobile, var(--kdna-table-wrapper-margin-tablet, var(--kdna-table-wrapper-margin, 0)));
+		--_kdna-table-wrapper-max-width: var(--kdna-table-wrapper-max-width-mobile, var(--kdna-table-wrapper-max-width-tablet, var(--kdna-table-wrapper-max-width, none)));
+		--_kdna-table-wrapper-border-width: var(--kdna-table-wrapper-border-width-mobile, var(--kdna-table-wrapper-border-width-tablet, var(--kdna-table-wrapper-border-width, 0)));
+		--_kdna-table-border-radius: var(--kdna-table-border-radius-mobile, var(--kdna-table-border-radius-tablet, var(--kdna-table-border-radius, 12px)));
+
+		/* Caption */
+		--_kdna-table-caption-align: var(--kdna-table-caption-align-mobile, var(--kdna-table-caption-align-tablet, var(--kdna-table-caption-align, left)));
+		--_kdna-table-caption-spacing: var(--kdna-table-caption-spacing-mobile, var(--kdna-table-caption-spacing-tablet, var(--kdna-table-caption-spacing, 12px)));
+		--_kdna-table-caption-font-size: var(--kdna-table-caption-font-size-mobile, var(--kdna-table-caption-font-size-tablet, var(--kdna-table-caption-font-size, inherit)));
+		--_kdna-table-caption-line-height: var(--kdna-table-caption-line-height-mobile, var(--kdna-table-caption-line-height-tablet, var(--kdna-table-caption-line-height, normal)));
+		--_kdna-table-caption-letter-spacing: var(--kdna-table-caption-letter-spacing-mobile, var(--kdna-table-caption-letter-spacing-tablet, var(--kdna-table-caption-letter-spacing, normal)));
+
+		/* Header */
+		--_kdna-table-header-padding: var(--kdna-table-header-padding-mobile, var(--kdna-table-header-padding-tablet, var(--kdna-table-header-padding, 14px 16px)));
+		--_kdna-table-header-text-align: var(--kdna-table-header-text-align-mobile, var(--kdna-table-header-text-align-tablet, var(--kdna-table-header-text-align)));
+		--_kdna-table-header-font-size: var(--kdna-table-header-font-size-mobile, var(--kdna-table-header-font-size-tablet, var(--kdna-table-header-font-size, inherit)));
+		--_kdna-table-header-line-height: var(--kdna-table-header-line-height-mobile, var(--kdna-table-header-line-height-tablet, var(--kdna-table-header-line-height, normal)));
+		--_kdna-table-header-letter-spacing: var(--kdna-table-header-letter-spacing-mobile, var(--kdna-table-header-letter-spacing-tablet, var(--kdna-table-header-letter-spacing, normal)));
+
+		/* Body */
+		--_kdna-table-body-padding: var(--kdna-table-body-padding-mobile, var(--kdna-table-body-padding-tablet, var(--kdna-table-body-padding, 12px 16px)));
+		--_kdna-table-body-text-align: var(--kdna-table-body-text-align-mobile, var(--kdna-table-body-text-align-tablet, var(--kdna-table-body-text-align)));
+		--_kdna-table-body-font-size: var(--kdna-table-body-font-size-mobile, var(--kdna-table-body-font-size-tablet, var(--kdna-table-body-font-size, inherit)));
+		--_kdna-table-body-line-height: var(--kdna-table-body-line-height-mobile, var(--kdna-table-body-line-height-tablet, var(--kdna-table-body-line-height, normal)));
+		--_kdna-table-body-letter-spacing: var(--kdna-table-body-letter-spacing-mobile, var(--kdna-table-body-letter-spacing-tablet, var(--kdna-table-body-letter-spacing, normal)));
+
+		/* First column */
+		--_kdna-table-first-col-padding: var(--kdna-table-first-col-padding-mobile, var(--kdna-table-first-col-padding-tablet, var(--kdna-table-first-col-padding, var(--_kdna-table-body-padding))));
+		--_kdna-table-first-col-font-size: var(--kdna-table-first-col-font-size-mobile, var(--kdna-table-first-col-font-size-tablet, var(--kdna-table-first-col-font-size, inherit)));
+		--_kdna-table-first-col-line-height: var(--kdna-table-first-col-line-height-mobile, var(--kdna-table-first-col-line-height-tablet, var(--kdna-table-first-col-line-height, normal)));
+		--_kdna-table-first-col-letter-spacing: var(--kdna-table-first-col-letter-spacing-mobile, var(--kdna-table-first-col-letter-spacing-tablet, var(--kdna-table-first-col-letter-spacing, normal)));
+		--_kdna-table-first-col-edge-width: var(--kdna-table-first-col-edge-width-mobile, var(--kdna-table-first-col-edge-width-tablet, var(--kdna-table-first-col-edge-width, var(--_kdna-table-v-line-width))));
+
+		/* Rule lines */
+		--_kdna-table-h-line-width: var(--kdna-table-h-line-width-mobile, var(--kdna-table-h-line-width-tablet, var(--kdna-table-h-line-width, 1px)));
+		--_kdna-table-v-line-width: var(--kdna-table-v-line-width-mobile, var(--kdna-table-v-line-width-tablet, var(--kdna-table-v-line-width, 1px)));
+		--_kdna-table-header-divider-width: var(--kdna-table-header-divider-width-mobile, var(--kdna-table-header-divider-width-tablet, var(--kdna-table-header-divider-width, 1px)));
+		--_kdna-table-header-v-line-width: var(--kdna-table-header-v-line-width-mobile, var(--kdna-table-header-v-line-width-tablet, var(--kdna-table-header-v-line-width, var(--_kdna-table-v-line-width))));
+
+		/* Cell content */
+		--_kdna-table-icon-size: var(--kdna-table-icon-size-mobile, var(--kdna-table-icon-size-tablet, var(--kdna-table-icon-size, 1.25em)));
+		--_kdna-table-cell-gap: var(--kdna-table-cell-gap-mobile, var(--kdna-table-cell-gap-tablet, var(--kdna-table-cell-gap, 8px)));
+		--_kdna-table-image-width: var(--kdna-table-image-width-mobile, var(--kdna-table-image-width-tablet, var(--kdna-table-image-width, auto)));
+
+		/* Card Stack */
+		--_kdna-card-padding: var(--kdna-card-padding-mobile, var(--kdna-card-padding-tablet, var(--kdna-card-padding, 16px)));
+		--_kdna-card-radius: var(--kdna-card-radius-mobile, var(--kdna-card-radius-tablet, var(--kdna-card-radius, 12px)));
+		--_kdna-card-spacing: var(--kdna-card-spacing-mobile, var(--kdna-card-spacing-tablet, var(--kdna-card-spacing, 16px)));
+
+		/* Pivot Rows */
+		--_kdna-pivot-label-width: var(--kdna-pivot-label-width-mobile, var(--kdna-pivot-label-width-tablet, var(--kdna-pivot-label-width, 30%)));
+		--_kdna-pivot-row-spacing: var(--kdna-pivot-row-spacing-mobile, var(--kdna-pivot-row-spacing-tablet, var(--kdna-pivot-row-spacing, 16px)));
+		--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding-mobile, var(--kdna-pivot-heading-padding-tablet, var(--kdna-pivot-heading-padding, 0)));
+		--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius-mobile, var(--kdna-pivot-heading-radius-tablet, var(--kdna-pivot-heading-radius, 0)));
+		--_kdna-pivot-heading-spacing: var(--kdna-pivot-heading-spacing-mobile, var(--kdna-pivot-heading-spacing-tablet, var(--kdna-pivot-heading-spacing, 2px)));
+
+		/* Sticky */
+		--_kdna-sticky-shadow-size: var(--kdna-sticky-shadow-size-mobile, var(--kdna-sticky-shadow-size-tablet, var(--kdna-sticky-shadow-size, 8px)));
+	}
+
+	/* ── Card Stack ──
+	 * One card per COLUMN: the column heading sits at the top of its
+	 * card with that column's body cells stacked underneath. Each cell
+	 * carries an inline --kdna-card-row from the render, which is what
+	 * places it in the right grid row. */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general {
+		display: grid;
+		grid-template-columns: 1fr;
+		grid-auto-rows: auto;
+		gap: var(--_kdna-card-spacing);
+		background: transparent;
+		table-layout: auto;
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general colgroup,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general colgroup {
+		display: none;
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general thead,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general thead,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general tbody,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tbody,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general tr,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
+		display: contents;
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
+		display: block;
+		grid-column: 1;
+		grid-row: var(--kdna-card-row, auto);
+		padding: var(--_kdna-card-padding);
+		border: 0 !important;
+		background: var(--_kdna-card-bg);
+	}
+
+	/* Cancel the tablet band's injected column label. A tablet_and_mobile
+	 * wrapper matches both queries down here, and this layout puts the
+	 * real heading cell at the top of each card — leaving the tablet
+	 * label in place would print every heading twice. The row-label rule
+	 * below re-establishes its own content on the cells that need it. */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
+		content: none;
+	}
+
+	/* The column heading at the top of each card keeps the header row's
+	 * background and colour, which it inherits from the desktop rule. */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell--header,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell--header {
+		background: var(--_kdna-table-header-bg);
+		border-top-left-radius: var(--_kdna-card-radius);
+		border-top-right-radius: var(--_kdna-card-radius);
+	}
+
+	/* When the table marks its first column as the row-label column,
+	 * body cells in later cards inject that row's label alongside the
+	 * value. */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell[data-row-label]:not(.kdna-table__cell--header):not(.kdna-table__cell--row-header),
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell[data-row-label]:not(.kdna-table__cell--header):not(.kdna-table__cell--row-header) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--_kdna-table-cell-gap);
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell[data-row-label]:not(.kdna-table__cell--header):not(.kdna-table__cell--row-header)::before,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell[data-row-label]:not(.kdna-table__cell--header):not(.kdna-table__cell--row-header)::before {
+		content: attr(data-row-label);
+		/* Sized to its text: growing would push the value to the right
+		 * edge and undo the centring. */
+		flex: 0 0 auto;
+		font-weight: 600;
+		color: var(--_kdna-table-body-color);
+	}
+
+	/* ── Pivot Rows ── */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general tbody,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tbody,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general tr,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
+		display: block;
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general colgroup,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general colgroup,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general thead,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general thead {
+		display: none;
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general tr,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
+		padding-bottom: var(--_kdna-pivot-row-spacing);
+		margin-bottom: var(--_kdna-pivot-row-spacing);
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
+		display: block;
+		border: 0 !important;
+		padding: 6px 0;
+		background: none;
+	}
+
+	/* Column headings. Same reasoning as the tablet band above; repeated
+	 * here so a mobile-breakpoint wrapper gets them too. */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell::before,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
+		background: var(--_kdna-pivot-heading-bg);
+		padding: var(--_kdna-pivot-heading-padding);
+		border-radius: var(--_kdna-pivot-heading-radius);
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"]:not([data-pivot-label-position="inline"]) .kdna-table--general .kdna-table__cell::before,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"]:not([data-pivot-label-position="inline"]) .kdna-table--general .kdna-table__cell::before {
+		content: attr(data-column-label);
+		display: block;
+		font-weight: 700;
+		color: var(--_kdna-pivot-label-color);
+		margin-bottom: var(--_kdna-pivot-heading-spacing);
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"][data-pivot-label-position="inline"] .kdna-table--general .kdna-table__cell,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"][data-pivot-label-position="inline"] .kdna-table--general .kdna-table__cell {
+		display: grid;
+		grid-template-columns: var(--_kdna-pivot-label-width) 1fr;
+		gap: var(--_kdna-table-cell-gap);
+		align-items: baseline;
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"][data-pivot-label-position="inline"] .kdna-table--general .kdna-table__cell::before,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"][data-pivot-label-position="inline"] .kdna-table--general .kdna-table__cell::before {
+		content: attr(data-column-label);
+		font-weight: 700;
+		color: var(--_kdna-pivot-label-color);
+		display: inline;
+		margin-bottom: 0;
+	}
+
+	/* ── Column Picker, and the centring that settles every mode ── */
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode="column_picker"][data-responsive-breakpoint="mobile"] .kdna-picker,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="column_picker"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-picker {
+		display: block;
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode]:not([data-responsive-mode="none"])[data-sticky-first-column="yes"][data-responsive-breakpoint="mobile"] .kdna-table__cell,
+	.kdna-table__wrapper--shortcode[data-responsive-mode]:not([data-responsive-mode="none"])[data-sticky-first-column="yes"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell {
+		position: static;
+		box-shadow: none;
+	}
+
+	/* Last in the file, so it settles the alignment against every
+	 * per-mode rule above at equal specificity. */
+	.kdna-table__wrapper--shortcode[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="mobile"] .kdna-table__cell,
+	.kdna-table__wrapper--shortcode[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell {
+		text-align: center;
+		justify-content: center;
+	}
+
+	.kdna-table__wrapper--shortcode[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="mobile"] .kdna-table__cell::before,
+	.kdna-table__wrapper--shortcode[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell::before {
+		text-align: center;
+		flex: 0 0 auto;
+		margin-right: 0;
+	}
+}
