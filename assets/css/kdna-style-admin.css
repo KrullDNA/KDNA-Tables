@@ -172,49 +172,217 @@
 	max-width: 320px;
 }
 
-/* Dimensions and sliders: their parts sit in one row. */
+/* Everything to the right of a field label: the breakpoint switcher and
+ * the reset. */
 
-.kdna-style-field__parts {
+.kdna-style-field__tools {
 	display: flex;
-	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-left: auto;
+}
+
+/* ─── Breakpoint switcher ──────────────────────────────────────────── */
+
+.kdna-style-devices {
+	display: inline-flex;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: 6px;
+	overflow: hidden;
+	background: #fff;
+}
+
+.kdna-style-devices__btn {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 24px;
+	padding: 0;
+	border: 0;
+	border-right: 1px solid var(--kdna-admin-border);
+	background: transparent;
+	color: var(--kdna-admin-text-soft);
+	cursor: pointer;
+}
+
+.kdna-style-devices__btn:last-child {
+	border-right: 0;
+}
+
+.kdna-style-devices__btn:hover {
+	background: var(--kdna-admin-surface);
+}
+
+.kdna-style-devices__btn.is-active {
+	background: var(--kdna-admin-accent-soft);
+	color: var(--kdna-admin-accent);
+}
+
+.kdna-style-devices__btn .dashicons {
+	width: 15px;
+	height: 15px;
+	font-size: 15px;
+	line-height: 1;
+}
+
+/* A breakpoint that already carries a value, so an override elsewhere in
+ * the cascade is visible without clicking through all three. */
+.kdna-style-devices__btn.has-value::after {
+	content: "";
+	position: absolute;
+	right: 3px;
+	top: 3px;
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: var(--kdna-admin-accent);
+}
+
+/* ─── Clear and link buttons ───────────────────────────────────────── */
+
+.kdna-style-clear,
+.kdna-style-link {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	flex: 0 0 auto;
+	padding: 0;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: 4px;
+	background: #fff;
+	color: var(--kdna-admin-text-soft);
+	cursor: pointer;
+}
+
+.kdna-style-clear:hover {
+	color: var(--kdna-admin-danger);
+	border-color: var(--kdna-admin-danger);
+}
+
+.kdna-style-link.is-linked {
+	background: var(--kdna-admin-accent-soft);
+	border-color: var(--kdna-admin-accent);
+	color: var(--kdna-admin-accent);
+}
+
+.kdna-style-clear .dashicons,
+.kdna-style-link .dashicons {
+	width: 16px;
+	height: 16px;
+	font-size: 16px;
+	line-height: 1;
+}
+
+/* ─── Colour ───────────────────────────────────────────────────────── */
+
+.kdna-style-color {
+	display: flex;
+	align-items: center;
 	gap: 8px;
 }
 
-.kdna-style-part {
+.kdna-style-color__picker {
+	width: 34px;
+	height: 28px;
+	padding: 2px;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: 4px;
+	background: #fff;
+	cursor: pointer;
+}
+
+.kdna-style-color__text {
+	width: 160px;
+	font-family: Menlo, Consolas, monospace;
+	font-size: 12px;
+}
+
+/* ─── Slider ───────────────────────────────────────────────────────── */
+
+.kdna-style-slider {
 	display: flex;
-	flex-direction: column;
-	gap: 2px;
+	align-items: center;
+	gap: 10px;
+}
+
+.kdna-style-slider__range {
+	flex: 1 1 auto;
+	max-width: 280px;
+	margin: 0;
+}
+
+.kdna-style-slider__number {
 	width: 84px;
 }
 
-.kdna-style-part--unit {
-	width: 96px;
+/* ─── Number ───────────────────────────────────────────────────────── */
+
+.kdna-style-number {
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
-.kdna-style-part__label {
-	font-size: 11px;
+.kdna-style-number input[type="number"] {
+	width: 110px;
+}
+
+.kdna-style-unit {
+	width: 76px;
+}
+
+.kdna-style-unit--fixed {
+	width: auto;
 	color: var(--kdna-admin-text-soft);
+	font-size: 12px;
 }
 
-.kdna-style-part input,
-.kdna-style-part select {
+/* ─── Dimensions ───────────────────────────────────────────────────── */
+
+.kdna-style-dimensions {
+	display: flex;
+	align-items: flex-start;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.kdna-style-dimensions__side {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	width: 74px;
+}
+
+.kdna-style-dimensions__side input {
 	width: 100%;
 }
 
-/* Breakpoint rows. */
-
-.kdna-style-device {
-	display: grid;
-	grid-template-columns: 72px minmax(0, 1fr);
-	gap: 10px;
-	align-items: start;
-	padding: 4px 0;
+.kdna-style-dimensions__label {
+	font-size: 11px;
+	color: var(--kdna-admin-text-soft);
+	text-align: center;
 }
 
-.kdna-style-device__label {
-	padding-top: 4px;
-	font-size: 12px;
-	color: var(--kdna-admin-text-soft);
+.kdna-style-dimensions .kdna-style-unit {
+	margin-left: 4px;
+}
+
+/* WordPress supplies this in the admin; declared here so the page also
+ * holds together anywhere it is rendered without wp-admin.css. */
+.kdna-style-admin .screen-reader-text {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	border: 0;
+	white-space: nowrap;
 }
 
 /* Group controls. */

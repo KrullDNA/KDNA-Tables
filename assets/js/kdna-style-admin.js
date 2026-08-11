@@ -5,23 +5,40 @@
  * KDNA_Tables_Style_Admin) and saves through the kdna-tables/v1/styles
  * REST route.
  *
- * The component's one non-obvious job is shaping. Alpine's x-model needs
- * an assignable path: binding to values['header_padding']['mobile']['top']
- * throws if any link in that chain is undefined, and the stored option
- * is deliberately sparse — an unset control is absent, not present and
- * empty, because absent is what "inherit" means everywhere downstream.
- * So the seed is expanded into a full skeleton before Alpine binds, and
- * collapsed back to a sparse object on save. The empties never reach the
- * server, and the server drops any that do.
+ * ── Shaping ───────────────────────────────────────────────────────────
  *
- * State is keyed by control key throughout, matching the schema and the
- * stored option, so nothing needs renaming in either direction.
+ * Alpine's x-model needs an assignable path: binding to
+ * values['header_padding']['mobile']['top'] throws if any link in that
+ * chain is undefined, and the stored option is deliberately sparse — an
+ * unset control is absent, not present and empty, because absent is what
+ * "inherit" means everywhere downstream. So the seed is expanded into a
+ * full skeleton before Alpine binds, and collapsed back to a sparse
+ * object on save. The empties never reach the server, and the server
+ * drops any that do.
+ *
+ * ── Addressing ────────────────────────────────────────────────────────
+ *
+ * Everything below takes the same three arguments: a control key, a
+ * field key that is empty except inside a typography, border or
+ * background group, and a device that is empty for a flat control. That
+ * triple is enough to reach any leaf in state, so the markup never has
+ * to hand the component a path to eval.
+ *
+ * ── One-way bindings ──────────────────────────────────────────────────
+ *
+ * The native colour input and the range input are bound with :value and
+ * @input rather than x-model. Neither can represent "unset": a colour
+ * input shows #000000 for an empty value and a range parks its thumb
+ * somewhere regardless. Two-way binding would write those placeholder
+ * positions into state on first paint and quietly turn every untouched
+ * control into a set one.
  */
 
 ( function () {
 	'use strict';
 
 	var DEVICES = [ 'desktop', 'tablet', 'mobile' ];
+	var SIDES = [ 'top', 'right', 'bottom', 'left' ];
 
 	function boot() {
 		return window.KDNATablesStyles || {
@@ -43,7 +60,7 @@
 		var units = ( definition && definition.units ) || [];
 
 		if ( 'dimensions' === definition.type ) {
-			return { top: '', right: '', bottom: '', left: '', unit: units[ 0 ] || '' };
+			return { top: '', right: '', bottom: '', left: '', unit: units[ 0 ] || '', linked: true };
 		}
 		if ( 'slider' === definition.type ) {
 			return { size: '', unit: units[ 0 ] || '' };
@@ -109,6 +126,9 @@
 
 		if ( 'object' === typeof value ) {
 			return ! Object.keys( value ).some( function ( k ) {
+				// unit and linked are settings about the value, not the
+				// value: a dimensions control holding nothing but a unit
+				// and a link state is still unset.
 				if ( 'unit' === k || 'linked' === k ) { return false; }
 				return '' !== String( value[ k ] ).trim();
 			} );
@@ -149,6 +169,41 @@
 		return out;
 	}
 
+	/* ── Colour helpers ───────────────────────────────────────────── */
+
+	/**
+	 * A #rrggbb the native colour input can display.
+	 *
+	 * Short hex is expanded, since the input rejects three-digit form.
+	 * rgb() and rgba() are converted, dropping the alpha the input
+	 * cannot show. Anything else — unset, a keyword, nonsense mid-typing
+	 * — parks the swatch on black without that ever being written to
+	 * state.
+	 */
+	function toSwatch( value ) {
+		var v = String( value == null ? '' : value ).trim().toLowerCase();
+
+		if ( /^#[0-9a-f]{3}$/.test( v ) ) {
+			return '#' + v[ 1 ] + v[ 1 ] + v[ 2 ] + v[ 2 ] + v[ 3 ] + v[ 3 ];
+		}
+		if ( /^#[0-9a-f]{6}$/.test( v ) ) {
+			return v;
+		}
+
+		var rgb = v.match( /^rgba?\(([^)]+)\)$/ );
+		if ( rgb ) {
+			var parts = rgb[ 1 ].split( ',' ).map( function ( p ) { return parseFloat( p.trim() ); } );
+			if ( parts.length >= 3 && parts.slice( 0, 3 ).every( function ( n ) { return ! isNaN( n ); } ) ) {
+				return '#' + parts.slice( 0, 3 ).map( function ( n ) {
+					var b = Math.max( 0, Math.min( 255, Math.round( n ) ) );
+					return ( b < 16 ? '0' : '' ) + b.toString( 16 );
+				} ).join( '' );
+			}
+		}
+
+		return '#000000';
+	}
+
 	/* ── Component ────────────────────────────────────────────────── */
 
 	function kdnaTablesStyleAdmin() {
@@ -159,6 +214,7 @@
 			strings: seed.strings || {},
 			section: Object.keys( seed.sections || {} )[ 0 ] || 'wrapper',
 			values: {},
+			device: {},
 			saving: false,
 			dirty: false,
 			status: '',
@@ -167,28 +223,157 @@
 
 			init: function () {
 				this.values = shapeAll( this.schema, seed.values );
+				this.device = this.initialDevices();
 				this._baseline = JSON.stringify( collapseAll( this.schema, this.values ) );
 
-				// Alpine's deep watcher on the whole tree is what makes the
-				// save bar honest without wiring a handler onto sixty
-				// inputs.
+				// A deep watch on the whole tree is what keeps the save bar
+				// honest without wiring a handler onto every input.
 				this.$watch( 'values', function () {
 					this.dirty = JSON.stringify( collapseAll( this.schema, this.values ) ) !== this._baseline;
 					if ( this.dirty ) { this.status = ''; this.statusClass = ''; }
 				}.bind( this ) );
 			},
 
-			/** Whether a control currently holds anything at all. */
-			hasValue: function ( key ) {
-				if ( ! this.schema[ key ] ) { return false; }
-				return undefined !== collapseControl( this.schema[ key ], this.values[ key ] );
+			/**
+			 * Every responsive slot starts on desktop. The keys match the
+			 * switcher markup: the control key, or control.field inside a
+			 * group.
+			 */
+			initialDevices: function () {
+				var map = {};
+				var schema = this.schema;
+				Object.keys( schema ).forEach( function ( key ) {
+					var definition = schema[ key ];
+					if ( isGroup( definition ) ) {
+						Object.keys( definition.fields || {} ).forEach( function ( fieldKey ) {
+							if ( definition.fields[ fieldKey ].responsive ) {
+								map[ key + '.' + fieldKey ] = 'desktop';
+							}
+						} );
+						return;
+					}
+					if ( definition.responsive ) { map[ key ] = 'desktop'; }
+				} );
+				return map;
 			},
 
-			/** Clear a control back to inherit. */
-			resetControl: function ( key ) {
-				if ( ! this.schema[ key ] ) { return; }
-				this.values[ key ] = shapeControl( this.schema[ key ], null );
+			/* ── Reaching a leaf ─────────────────────────────────────
+			 * definitionFor and holderFor are the only two places that
+			 * know how state is nested. Everything else goes through
+			 * them.
+			 */
+
+			definitionFor: function ( key, fieldKey ) {
+				var definition = this.schema[ key ];
+				if ( ! definition ) { return null; }
+				return fieldKey ? ( definition.fields || {} )[ fieldKey ] || null : definition;
 			},
+
+			/** [ object holding the leaf, property name ] or null. */
+			holderFor: function ( key, fieldKey, device ) {
+				var container = this.values[ key ];
+				if ( undefined === container ) { return null; }
+
+				if ( fieldKey ) {
+					if ( ! container[ fieldKey ] ) { return null; }
+					return device
+						? [ container[ fieldKey ], device ]
+						: [ container, fieldKey ];
+				}
+
+				return device ? [ container, device ] : [ this.values, key ];
+			},
+
+			leaf: function ( key, fieldKey, device ) {
+				var holder = this.holderFor( key, fieldKey, device );
+				return holder ? holder[ 0 ][ holder[ 1 ] ] : undefined;
+			},
+
+			setLeaf: function ( key, fieldKey, device, value ) {
+				var holder = this.holderFor( key, fieldKey, device );
+				if ( holder ) { holder[ 0 ][ holder[ 1 ] ] = value; }
+			},
+
+			/* ── Emptiness, for the clear and reset affordances ────── */
+
+			/** Whether this breakpoint (or this flat control) holds anything. */
+			hasDeviceValue: function ( key, fieldKey, device ) {
+				var definition = this.definitionFor( key, fieldKey );
+				if ( ! definition ) { return false; }
+				return ! leafIsEmpty( definition, this.leaf( key, fieldKey, device ) );
+			},
+
+			/** Whether the control holds anything at any breakpoint. */
+			hasValue: function ( key, fieldKey ) {
+				var definition = this.definitionFor( key, fieldKey );
+				if ( ! definition ) { return false; }
+				var value = fieldKey ? ( this.values[ key ] || {} )[ fieldKey ] : this.values[ key ];
+				return undefined !== collapseControl( definition, value );
+			},
+
+			/** Clear one breakpoint, or a flat control. */
+			clearLeaf: function ( key, fieldKey, device ) {
+				var definition = this.definitionFor( key, fieldKey );
+				if ( ! definition ) { return; }
+				this.setLeaf( key, fieldKey, device, emptyLeaf( definition ) );
+			},
+
+			/** Clear the control at every breakpoint, back to inherit. */
+			resetControl: function ( key, fieldKey ) {
+				var definition = this.definitionFor( key, fieldKey );
+				if ( ! definition ) { return; }
+				var blank = shapeControl( definition, null );
+				if ( fieldKey ) {
+					this.values[ key ][ fieldKey ] = blank;
+					return;
+				}
+				this.values[ key ] = blank;
+			},
+
+			/* ── Type-specific bindings ──────────────────────────────── */
+
+			colorSwatch: function ( key, fieldKey, device ) {
+				return toSwatch( this.leaf( key, fieldKey, device ) );
+			},
+
+			/** Where an unset range parks its thumb: at its minimum. */
+			sliderPosition: function ( key, fieldKey, device, min ) {
+				var value = this.leaf( key, fieldKey, device );
+				var size = value && 'object' === typeof value ? value.size : value;
+				return ( '' === size || null === size || undefined === size ) ? min : size;
+			},
+
+			setSize: function ( key, fieldKey, device, size ) {
+				var value = this.leaf( key, fieldKey, device );
+				if ( value && 'object' === typeof value ) { value.size = size; }
+			},
+
+			isLinked: function ( key, fieldKey, device ) {
+				var value = this.leaf( key, fieldKey, device );
+				return !! ( value && 'object' === typeof value && value.linked );
+			},
+
+			toggleLink: function ( key, fieldKey, device ) {
+				var value = this.leaf( key, fieldKey, device );
+				if ( ! value || 'object' !== typeof value ) { return; }
+				value.linked = ! value.linked;
+				if ( value.linked ) { this.syncLinked( key, fieldKey, device, value.top ); }
+			},
+
+			/**
+			 * Copy the edited side across when the sides are linked.
+			 *
+			 * The value comes from the event target rather than from
+			 * state, so this does not depend on whether Alpine's own
+			 * x-model listener has run first.
+			 */
+			syncLinked: function ( key, fieldKey, device, edited ) {
+				var value = this.leaf( key, fieldKey, device );
+				if ( ! value || 'object' !== typeof value || ! value.linked ) { return; }
+				SIDES.forEach( function ( side ) { value[ side ] = edited; } );
+			},
+
+			/* ── Saving ──────────────────────────────────────────────── */
 
 			save: function () {
 				if ( this.saving ) { return; }
@@ -253,12 +438,13 @@
 
 	window.kdnaTablesStyleAdmin = kdnaTablesStyleAdmin;
 
-	// Exposed for the Stage 4 round-trip test, and for Stages 5 and 6 to
-	// reuse rather than reimplement.
+	// Exposed for the round-trip tests, and for Stages 6 and 8 to reuse
+	// rather than reimplement.
 	window.kdnaTablesStyleAdminInternals = {
 		shapeAll: shapeAll,
 		collapseAll: collapseAll,
 		shapeControl: shapeControl,
-		collapseControl: collapseControl
+		collapseControl: collapseControl,
+		toSwatch: toSwatch
 	};
 }() );

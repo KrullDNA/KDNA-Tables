@@ -3,16 +3,25 @@
  * Shortcode Styles settings page.
  *
  * Rendered by KDNA_Tables_Style_Admin::render_page(), which supplies
- * $sections, $grouped and $devices. The markup is generated from the
- * schema rather than hand-written, so a control added at Stage 7 appears
- * here without this file changing.
+ * $sections, $grouped and $devices. Every control's markup is generated
+ * from its schema entry, so a control added at Stage 7 appears here
+ * without this file changing.
  *
- * Stage 4 renders every control as plain text inputs — but as inputs
- * bound to the real storage shape, not to a flattened string: a
- * dimensions control gets four side fields and a unit field, a slider
- * gets a size and a unit, and a responsive control gets one row per
- * breakpoint. Stages 5 and 6 replace the markup with real controls; the
- * shape they bind to is the one being proved here.
+ * ── Addressing ────────────────────────────────────────────────────────
+ *
+ * Each control is identified to the component by two strings: its
+ * control key, and a field key that is empty for everything except the
+ * fields inside a typography, border or background group. The component
+ * navigates state from those rather than from an eval'd path, so the
+ * only expressions in the markup are x-model bindings.
+ *
+ * A responsive control renders ONE control bound to the breakpoint
+ * currently selected in its switcher, not three stacked rows. The
+ * x-model path therefore reads the device out of state —
+ * values['header_padding'][device['header_padding']]['top'] — which is
+ * still a plain assignable expression, so binding works exactly as it
+ * does for a flat control. Switching breakpoint re-points the same
+ * inputs at a different slot.
  *
  * @var array $sections Section key => label.
  * @var array $grouped  Section key => (control key => definition).
@@ -25,71 +34,270 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/** Dashicon per breakpoint, for the switcher. */
+$kdna_device_icons = array(
+	'desktop' => 'dashicons-desktop',
+	'tablet'  => 'dashicons-tablet',
+	'mobile'  => 'dashicons-smartphone',
+);
+
 /**
- * Emit the input(s) for one leaf value.
+ * The Alpine expression addressing one leaf value.
  *
- * $path is the Alpine expression addressing this value in state, e.g.
- * values['header_padding']['mobile']. The component guarantees every
- * path exists before Alpine binds, so x-model never writes into
- * undefined.
+ * @param string $key        Control key.
+ * @param string $field_key  Group field key, or '' when not in a group.
+ * @param bool   $responsive Whether to route through the device switcher.
  */
-$kdna_render_leaf = static function ( array $definition, $path ) {
+$kdna_leaf_path = static function ( $key, $field_key, $responsive ) {
+	$path = "values['" . $key . "']";
+	if ( '' !== $field_key ) {
+		$path .= "['" . $field_key . "']";
+	}
+	if ( $responsive ) {
+		$slot  = '' === $field_key ? $key : $key . '.' . $field_key;
+		$path .= "[device['" . $slot . "']]";
+	}
+	return $path;
+};
+
+/** The arguments every component call takes: control, field, device. */
+$kdna_args = static function ( $key, $field_key, $responsive ) {
+	$slot = '' === $field_key ? $key : $key . '.' . $field_key;
+	return "'" . $key . "', '" . $field_key . "', " . ( $responsive ? "device['" . $slot . "']" : "''" );
+};
+
+/**
+ * The breakpoint switcher. Rendered only for responsive entries. The
+ * dot on a button marks a breakpoint that already carries a value, so
+ * an override elsewhere in the cascade is visible without clicking
+ * through all three.
+ */
+$kdna_render_switcher = static function ( $key, $field_key, array $devices, array $icons ) {
+	$slot = '' === $field_key ? $key : $key . '.' . $field_key;
+	?>
+	<span class="kdna-style-devices" role="group" aria-label="<?php esc_attr_e( 'Breakpoint', 'kdna-tables' ); ?>">
+		<?php foreach ( $devices as $device => $device_label ) : ?>
+			<button
+				type="button"
+				class="kdna-style-devices__btn"
+				:class="{
+					'is-active': device['<?php echo esc_attr( $slot ); ?>'] === '<?php echo esc_attr( $device ); ?>',
+					'has-value': hasDeviceValue( '<?php echo esc_attr( $key ); ?>', '<?php echo esc_attr( $field_key ); ?>', '<?php echo esc_attr( $device ); ?>' )
+				}"
+				@click="device['<?php echo esc_attr( $slot ); ?>'] = '<?php echo esc_attr( $device ); ?>'"
+				:aria-pressed="device['<?php echo esc_attr( $slot ); ?>'] === '<?php echo esc_attr( $device ); ?>' ? 'true' : 'false'"
+				title="<?php echo esc_attr( $device_label ); ?>"
+			>
+				<span class="dashicons <?php echo esc_attr( $icons[ $device ] ); ?>" aria-hidden="true"></span>
+				<span class="screen-reader-text"><?php echo esc_html( $device_label ); ?></span>
+			</button>
+		<?php endforeach; ?>
+	</span>
+	<?php
+};
+
+/**
+ * The control itself, by type.
+ */
+$kdna_render_leaf = static function ( array $definition, $key, $field_key, $responsive ) use ( $kdna_leaf_path, $kdna_args ) {
 	$type  = isset( $definition['type'] ) ? $definition['type'] : '';
 	$units = isset( $definition['units'] ) && is_array( $definition['units'] ) ? $definition['units'] : array();
+	$path  = $kdna_leaf_path( $key, $field_key, $responsive );
+	$args  = $kdna_args( $key, $field_key, $responsive );
+	$min   = isset( $definition['min'] ) ? $definition['min'] : 0;
+	$max   = isset( $definition['max'] ) ? $definition['max'] : 100;
+	$step  = isset( $definition['step'] ) ? $definition['step'] : 1;
 
-	if ( 'dimensions' === $type ) {
+	/* ── Colour ────────────────────────────────────────────────────
+	 * The native picker cannot represent "unset" — it shows #000000
+	 * for an empty value and would write one the moment it is
+	 * focused. So it is bound one way, through a swatch helper, and
+	 * only writes back on a real input event. The text field carries
+	 * the actual value, including the rgba() forms the native picker
+	 * cannot show.
+	 */
+	if ( 'color' === $type ) {
 		?>
-		<div class="kdna-style-field__parts">
-			<?php foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) : ?>
-				<label class="kdna-style-part">
-					<span class="kdna-style-part__label"><?php echo esc_html( ucfirst( $side ) ); ?></span>
-					<input type="text" inputmode="decimal" x-model="<?php echo esc_attr( $path . "['" . $side . "']" ); ?>" />
-				</label>
-			<?php endforeach; ?>
-			<label class="kdna-style-part kdna-style-part--unit">
-				<span class="kdna-style-part__label"><?php esc_html_e( 'Unit', 'kdna-tables' ); ?></span>
-				<select x-model="<?php echo esc_attr( $path . "['unit']" ); ?>">
-					<?php foreach ( $units as $unit ) : ?>
-						<option value="<?php echo esc_attr( $unit ); ?>"><?php echo esc_html( '' === $unit ? '—' : $unit ); ?></option>
-					<?php endforeach; ?>
-				</select>
-			</label>
+		<div class="kdna-style-color">
+			<input
+				type="color"
+				class="kdna-style-color__picker"
+				:value="colorSwatch( <?php echo esc_attr( $args ); ?> )"
+				@input="setLeaf( <?php echo esc_attr( $args ); ?>, $event.target.value )"
+				aria-label="<?php esc_attr_e( 'Colour picker', 'kdna-tables' ); ?>"
+			/>
+			<input
+				type="text"
+				class="kdna-style-color__text"
+				x-model="<?php echo esc_attr( $path ); ?>"
+				placeholder="<?php esc_attr_e( 'inherit', 'kdna-tables' ); ?>"
+				spellcheck="false"
+			/>
+			<button
+				type="button"
+				class="kdna-style-clear"
+				x-show="hasDeviceValue( <?php echo esc_attr( $args ); ?> )"
+				@click="clearLeaf( <?php echo esc_attr( $args ); ?> )"
+				title="<?php esc_attr_e( 'Clear', 'kdna-tables' ); ?>"
+			>
+				<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+				<span class="screen-reader-text"><?php esc_html_e( 'Clear', 'kdna-tables' ); ?></span>
+			</button>
 		</div>
 		<?php
 		return;
 	}
 
+	/* ── Slider ────────────────────────────────────────────────────
+	 * Range plus number plus unit. The range is bound one way for the
+	 * same reason as the colour picker: an unset value has to park the
+	 * thumb somewhere, and parking it must not count as a value.
+	 */
 	if ( 'slider' === $type ) {
 		?>
-		<div class="kdna-style-field__parts">
-			<label class="kdna-style-part">
-				<span class="kdna-style-part__label"><?php esc_html_e( 'Size', 'kdna-tables' ); ?></span>
-				<input type="text" inputmode="decimal" x-model="<?php echo esc_attr( $path . "['size']" ); ?>" />
-			</label>
-			<label class="kdna-style-part kdna-style-part--unit">
-				<span class="kdna-style-part__label"><?php esc_html_e( 'Unit', 'kdna-tables' ); ?></span>
-				<select x-model="<?php echo esc_attr( $path . "['unit']" ); ?>">
+		<div class="kdna-style-slider">
+			<input
+				type="range"
+				class="kdna-style-slider__range"
+				min="<?php echo esc_attr( (string) $min ); ?>"
+				max="<?php echo esc_attr( (string) $max ); ?>"
+				step="<?php echo esc_attr( (string) $step ); ?>"
+				:value="sliderPosition( <?php echo esc_attr( $args ); ?>, <?php echo esc_attr( (string) $min ); ?> )"
+				@input="setSize( <?php echo esc_attr( $args ); ?>, $event.target.value )"
+				aria-label="<?php echo esc_attr( $definition['label'] ); ?>"
+			/>
+			<input
+				type="number"
+				class="kdna-style-slider__number"
+				min="<?php echo esc_attr( (string) $min ); ?>"
+				max="<?php echo esc_attr( (string) $max ); ?>"
+				step="<?php echo esc_attr( (string) $step ); ?>"
+				x-model="<?php echo esc_attr( $path . "['size']" ); ?>"
+				placeholder="—"
+			/>
+			<?php if ( count( $units ) > 1 ) : ?>
+				<select class="kdna-style-unit" x-model="<?php echo esc_attr( $path . "['unit']" ); ?>" aria-label="<?php esc_attr_e( 'Unit', 'kdna-tables' ); ?>">
 					<?php foreach ( $units as $unit ) : ?>
 						<option value="<?php echo esc_attr( $unit ); ?>"><?php echo esc_html( '' === $unit ? '—' : $unit ); ?></option>
 					<?php endforeach; ?>
 				</select>
-			</label>
+			<?php elseif ( ! empty( $units ) ) : ?>
+				<span class="kdna-style-unit kdna-style-unit--fixed"><?php echo esc_html( '' === $units[0] ? '—' : $units[0] ); ?></span>
+			<?php endif; ?>
+			<button
+				type="button"
+				class="kdna-style-clear"
+				x-show="hasDeviceValue( <?php echo esc_attr( $args ); ?> )"
+				@click="clearLeaf( <?php echo esc_attr( $args ); ?> )"
+				title="<?php esc_attr_e( 'Clear', 'kdna-tables' ); ?>"
+			>
+				<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+				<span class="screen-reader-text"><?php esc_html_e( 'Clear', 'kdna-tables' ); ?></span>
+			</button>
 		</div>
 		<?php
 		return;
 	}
 
+	/* ── Dimensions ────────────────────────────────────────────────
+	 * Four sides, a unit, and a link toggle. Linked, editing any side
+	 * writes all four, which is how Elementor's padding behaves. The
+	 * link state itself is stored alongside the value so it survives a
+	 * reload; the resolver and the sanitiser both ignore it.
+	 */
+	if ( 'dimensions' === $type ) {
+		?>
+		<div class="kdna-style-dimensions">
+			<?php foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) : ?>
+				<label class="kdna-style-dimensions__side">
+					<input
+						type="number"
+						step="any"
+						x-model="<?php echo esc_attr( $path . "['" . $side . "']" ); ?>"
+						@input="syncLinked( <?php echo esc_attr( $args ); ?>, $event.target.value )"
+						placeholder="—"
+						aria-label="<?php echo esc_attr( ucfirst( $side ) ); ?>"
+					/>
+					<span class="kdna-style-dimensions__label"><?php echo esc_html( ucfirst( $side ) ); ?></span>
+				</label>
+			<?php endforeach; ?>
+
+			<?php if ( count( $units ) > 1 ) : ?>
+				<select class="kdna-style-unit" x-model="<?php echo esc_attr( $path . "['unit']" ); ?>" aria-label="<?php esc_attr_e( 'Unit', 'kdna-tables' ); ?>">
+					<?php foreach ( $units as $unit ) : ?>
+						<option value="<?php echo esc_attr( $unit ); ?>"><?php echo esc_html( '' === $unit ? '—' : $unit ); ?></option>
+					<?php endforeach; ?>
+				</select>
+			<?php endif; ?>
+
+			<button
+				type="button"
+				class="kdna-style-link"
+				:class="{ 'is-linked': isLinked( <?php echo esc_attr( $args ); ?> ) }"
+				@click="toggleLink( <?php echo esc_attr( $args ); ?> )"
+				:aria-pressed="isLinked( <?php echo esc_attr( $args ); ?> ) ? 'true' : 'false'"
+				:title="isLinked( <?php echo esc_attr( $args ); ?> ) ? '<?php echo esc_js( __( 'Unlink sides', 'kdna-tables' ) ); ?>' : '<?php echo esc_js( __( 'Link sides', 'kdna-tables' ) ); ?>'"
+			>
+				<span class="dashicons" :class="isLinked( <?php echo esc_attr( $args ); ?> ) ? 'dashicons-admin-links' : 'dashicons-editor-unlink'" aria-hidden="true"></span>
+				<span class="screen-reader-text"><?php esc_html_e( 'Link sides', 'kdna-tables' ); ?></span>
+			</button>
+
+			<button
+				type="button"
+				class="kdna-style-clear"
+				x-show="hasDeviceValue( <?php echo esc_attr( $args ); ?> )"
+				@click="clearLeaf( <?php echo esc_attr( $args ); ?> )"
+				title="<?php esc_attr_e( 'Clear', 'kdna-tables' ); ?>"
+			>
+				<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+				<span class="screen-reader-text"><?php esc_html_e( 'Clear', 'kdna-tables' ); ?></span>
+			</button>
+		</div>
+		<?php
+		return;
+	}
+
+	/* ── Number ────────────────────────────────────────────────── */
+	if ( 'number' === $type ) {
+		?>
+		<div class="kdna-style-number">
+			<input
+				type="number"
+				min="<?php echo esc_attr( (string) $min ); ?>"
+				max="<?php echo esc_attr( (string) $max ); ?>"
+				step="<?php echo esc_attr( (string) $step ); ?>"
+				x-model="<?php echo esc_attr( $path ); ?>"
+				placeholder="—"
+			/>
+			<?php if ( ! empty( $definition['suffix'] ) ) : ?>
+				<span class="kdna-style-unit kdna-style-unit--fixed"><?php echo esc_html( $definition['suffix'] ); ?></span>
+			<?php endif; ?>
+			<button
+				type="button"
+				class="kdna-style-clear"
+				x-show="hasDeviceValue( <?php echo esc_attr( $args ); ?> )"
+				@click="clearLeaf( <?php echo esc_attr( $args ); ?> )"
+				title="<?php esc_attr_e( 'Clear', 'kdna-tables' ); ?>"
+			>
+				<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+				<span class="screen-reader-text"><?php esc_html_e( 'Clear', 'kdna-tables' ); ?></span>
+			</button>
+		</div>
+		<?php
+		return;
+	}
+
+	/* ── Select ────────────────────────────────────────────────────
+	 * A select whose options carry no empty key cannot show the unset
+	 * state: the browser falls back to displaying the first option, so
+	 * an untouched Alignment control would read as "Left" while
+	 * nothing is stored and the schema default is centre. Prepend an
+	 * explicit empty option so blank is representable; choosing it
+	 * stores nothing and the value falls back through the layers as
+	 * any other unset control does.
+	 */
 	if ( 'select' === $type && empty( $definition['free_text'] ) ) {
 		$options = isset( $definition['options'] ) && is_array( $definition['options'] ) ? $definition['options'] : array();
-		/*
-		 * A select whose options carry no empty key cannot show the unset
-		 * state: the browser falls back to displaying the first option, so
-		 * an untouched Alignment control reads as "Left" while nothing is
-		 * stored and the schema default is centre. Prepend an explicit
-		 * empty option so blank is representable, and choosing it stores
-		 * nothing — the sanitiser drops '' and the value falls back
-		 * through the layers as any other unset control does.
-		 */
 		if ( ! array_key_exists( '', $options ) ) {
 			$options = array( '' => __( '— Default —', 'kdna-tables' ) ) + $options;
 		}
@@ -103,58 +311,74 @@ $kdna_render_leaf = static function ( array $definition, $path ) {
 		return;
 	}
 
-	// color, number, and the free-text selects: a plain text input. The
-	// colour picker and the rest arrive at Stage 5.
-	$placeholder = '';
-	if ( 'color' === $type ) {
-		$placeholder = '#000000';
-	} elseif ( 'number' === $type ) {
-		$placeholder = '0';
-	}
+	/* ── Free text, e.g. the typography font family ────────────────
+	 * A text field with a datalist of suggestions rather than an
+	 * allow-list, so a site's own Elementor faces can be typed in by
+	 * name. Stage 6 fills the datalist out.
+	 */
+	$list_id = 'kdna-style-list-' . sanitize_html_class( $key . '-' . $field_key );
 	?>
-	<input
-		type="text"
-		class="kdna-style-input"
-		x-model="<?php echo esc_attr( $path ); ?>"
-		<?php if ( '' !== $placeholder ) : ?>placeholder="<?php echo esc_attr( $placeholder ); ?>"<?php endif; ?>
-	/>
+	<div class="kdna-style-number">
+		<input
+			type="text"
+			class="kdna-style-input"
+			x-model="<?php echo esc_attr( $path ); ?>"
+			list="<?php echo esc_attr( $list_id ); ?>"
+			placeholder="<?php esc_attr_e( 'inherit', 'kdna-tables' ); ?>"
+			spellcheck="false"
+		/>
+		<datalist id="<?php echo esc_attr( $list_id ); ?>">
+			<?php foreach ( array( 'Arial', 'Georgia', 'Helvetica', 'Tahoma', 'Times New Roman', 'Verdana' ) as $suggestion ) : ?>
+				<option value="<?php echo esc_attr( $suggestion ); ?>"></option>
+			<?php endforeach; ?>
+		</datalist>
+		<button
+			type="button"
+			class="kdna-style-clear"
+			x-show="hasDeviceValue( <?php echo esc_attr( $args ); ?> )"
+			@click="clearLeaf( <?php echo esc_attr( $args ); ?> )"
+			title="<?php esc_attr_e( 'Clear', 'kdna-tables' ); ?>"
+		>
+			<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+			<span class="screen-reader-text"><?php esc_html_e( 'Clear', 'kdna-tables' ); ?></span>
+		</button>
+	</div>
 	<?php
 };
 
 /**
- * Emit one control: its label, and either a single leaf or one row per
- * breakpoint.
+ * One field row: label, breakpoint switcher, reset, and the control.
  */
-$kdna_render_control = static function ( array $definition, $key, array $devices ) use ( $kdna_render_leaf ) {
-	$base = "values['" . $key . "']";
+$kdna_render_field = static function ( array $definition, $key, $field_key, array $devices, array $icons, $nested = false ) use ( $kdna_render_leaf, $kdna_render_switcher ) {
+	$responsive = ! empty( $definition['responsive'] );
 	?>
-	<div class="kdna-style-field">
+	<div class="kdna-style-field<?php echo $nested ? ' kdna-style-field--nested' : ''; ?>">
 		<div class="kdna-style-field__head">
 			<span class="kdna-style-field__label"><?php echo esc_html( $definition['label'] ); ?></span>
-			<code class="kdna-style-field__key"><?php echo esc_html( $key ); ?></code>
-			<button
-				type="button"
-				class="kdna-style-field__reset"
-				x-show="hasValue( '<?php echo esc_attr( $key ); ?>' )"
-				@click="resetControl( '<?php echo esc_attr( $key ); ?>' )"
-			><?php esc_html_e( 'Reset to inherit', 'kdna-tables' ); ?></button>
+			<?php if ( ! $nested ) : ?>
+				<code class="kdna-style-field__key"><?php echo esc_html( $key ); ?></code>
+			<?php endif; ?>
+
+			<span class="kdna-style-field__tools">
+				<?php if ( $responsive ) : ?>
+					<?php $kdna_render_switcher( $key, $field_key, $devices, $icons ); ?>
+				<?php endif; ?>
+
+				<button
+					type="button"
+					class="kdna-style-field__reset"
+					x-show="hasValue( '<?php echo esc_attr( $key ); ?>', '<?php echo esc_attr( $field_key ); ?>' )"
+					@click="resetControl( '<?php echo esc_attr( $key ); ?>', '<?php echo esc_attr( $field_key ); ?>' )"
+					title="<?php esc_attr_e( 'Clear this control back to inherit, at every breakpoint', 'kdna-tables' ); ?>"
+				><?php esc_html_e( 'Reset', 'kdna-tables' ); ?></button>
+			</span>
 		</div>
+
 		<?php if ( ! empty( $definition['description'] ) ) : ?>
 			<p class="kdna-style-field__description"><?php echo esc_html( $definition['description'] ); ?></p>
 		<?php endif; ?>
 
-		<?php if ( empty( $definition['responsive'] ) ) : ?>
-			<?php $kdna_render_leaf( $definition, $base ); ?>
-		<?php else : ?>
-			<?php foreach ( $devices as $device => $device_label ) : ?>
-				<div class="kdna-style-device">
-					<span class="kdna-style-device__label"><?php echo esc_html( $device_label ); ?></span>
-					<div class="kdna-style-device__control">
-						<?php $kdna_render_leaf( $definition, $base . "['" . $device . "']" ); ?>
-					</div>
-				</div>
-			<?php endforeach; ?>
-		<?php endif; ?>
+		<?php $kdna_render_leaf( $definition, $key, $field_key, $responsive ); ?>
 	</div>
 	<?php
 };
@@ -211,30 +435,11 @@ $kdna_render_control = static function ( array $definition, $key, array $devices
 										<code class="kdna-style-field__key"><?php echo esc_html( $control_key ); ?></code>
 									</legend>
 									<?php foreach ( $definition['fields'] as $field_key => $field ) : ?>
-										<?php
-										$field_path = "values['" . $control_key . "']['" . $field_key . "']";
-										?>
-										<div class="kdna-style-field kdna-style-field--nested">
-											<div class="kdna-style-field__head">
-												<span class="kdna-style-field__label"><?php echo esc_html( $field['label'] ); ?></span>
-											</div>
-											<?php if ( empty( $field['responsive'] ) ) : ?>
-												<?php $kdna_render_leaf( $field, $field_path ); ?>
-											<?php else : ?>
-												<?php foreach ( $devices as $device => $device_label ) : ?>
-													<div class="kdna-style-device">
-														<span class="kdna-style-device__label"><?php echo esc_html( $device_label ); ?></span>
-														<div class="kdna-style-device__control">
-															<?php $kdna_render_leaf( $field, $field_path . "['" . $device . "']" ); ?>
-														</div>
-													</div>
-												<?php endforeach; ?>
-											<?php endif; ?>
-										</div>
+										<?php $kdna_render_field( $field, $control_key, $field_key, $devices, $kdna_device_icons, true ); ?>
 									<?php endforeach; ?>
 								</fieldset>
 							<?php else : ?>
-								<?php $kdna_render_control( $definition, $control_key, $devices ); ?>
+								<?php $kdna_render_field( $definition, $control_key, '', $devices, $kdna_device_icons ); ?>
 							<?php endif; ?>
 						<?php endforeach; ?>
 					<?php endif; ?>
