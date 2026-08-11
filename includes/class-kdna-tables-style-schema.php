@@ -90,10 +90,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 class KDNA_Tables_Style_Schema {
 
 	/**
-	 * Section keys in admin display order. Sections beyond wrapper and
-	 * header are declared but unpopulated until Stage 7; declaring them
-	 * now means the Stage 4 tab list is built from a stable list rather
-	 * than growing under it.
+	 * Section keys in admin display order.
+	 *
+	 * These do not mirror the widget's own sections exactly. The widget
+	 * keeps its rule lines in three separate places and its caption
+	 * inside Table Wrapper; here the lines are gathered into one section
+	 * because they are one system, and the caption has its own. The
+	 * mapping from each widget control to its schema key is in the
+	 * README.
 	 */
 	const SECTION_ORDER = array(
 		'wrapper',
@@ -251,7 +255,14 @@ class KDNA_Tables_Style_Schema {
 	private static function build() {
 		$controls = array_merge(
 			self::wrapper_controls(),
-			self::header_controls()
+			self::caption_controls(),
+			self::header_controls(),
+			self::first_col_controls(),
+			self::body_controls(),
+			self::lines_controls(),
+			self::cell_content_controls(),
+			self::responsive_controls(),
+			self::sticky_controls()
 		);
 
 		// Stamp each entry with its own key so a definition passed around
@@ -341,6 +352,601 @@ class KDNA_Tables_Style_Schema {
 				'units'      => array( 'px', '%', 'em' ),
 				'responsive' => true,
 				'default'    => self::dimensions( 0, 0, 0, 0, 'px' ),
+			),
+
+			/*
+			 * The widget keeps these two in their own Table Layout section.
+			 * There is no layout section in this schema, and they describe
+			 * the table frame, so they live with the rest of the frame.
+			 */
+			'border_collapse'       => array(
+				'label'      => esc_html__( 'Border Collapse', 'kdna-tables' ),
+				'section'    => 'wrapper',
+				'type'       => 'select',
+				'css_var'    => '--kdna-table-border-collapse',
+				'responsive' => false,
+				'default'    => 'collapse',
+				'options'    => array(
+					'collapse' => esc_html__( 'Collapse', 'kdna-tables' ),
+					'separate' => esc_html__( 'Separate', 'kdna-tables' ),
+				),
+			),
+
+			'border_spacing'        => array(
+				'label'       => esc_html__( 'Border Spacing', 'kdna-tables' ),
+				'section'     => 'wrapper',
+				'type'        => 'slider',
+				'css_var'     => '--kdna-table-border-spacing',
+				'units'       => array( 'px' ),
+				'min'         => 0,
+				'max'         => 30,
+				'step'        => 1,
+				'responsive'  => true,
+				'default'     => null,
+				'description' => esc_html__( 'Only applies when Border Collapse is Separate.', 'kdna-tables' ),
+			),
+		);
+	}
+
+	/* ─── Section: caption ──────────────────────────────────────────── */
+
+	private static function caption_controls() {
+		return array(
+			'caption_typography' => self::typography_group(
+				esc_html__( 'Typography', 'kdna-tables' ),
+				'caption',
+				'--kdna-table-caption',
+				// The only typographic property the stylesheet declares on
+				// the caption.
+				array( 'font_weight' => '600' )
+			),
+
+			'caption_color'      => array(
+				'label'       => esc_html__( 'Colour', 'kdna-tables' ),
+				'section'     => 'caption',
+				'type'        => 'color',
+				'css_var'     => '--kdna-table-caption-color',
+				'responsive'  => false,
+				// Unset, the caption takes the body text colour, which is
+				// what it renders as today.
+				'default'     => null,
+				'description' => esc_html__( 'Unset, the caption follows the Body Cells text colour.', 'kdna-tables' ),
+			),
+
+			'caption_alignment'  => array(
+				'label'      => esc_html__( 'Alignment', 'kdna-tables' ),
+				'section'    => 'caption',
+				'type'       => 'select',
+				'css_var'    => '--kdna-table-caption-align',
+				'responsive' => true,
+				'default'    => 'left',
+				'options'    => array(
+					'left'   => esc_html__( 'Left', 'kdna-tables' ),
+					'center' => esc_html__( 'Centre', 'kdna-tables' ),
+					'right'  => esc_html__( 'Right', 'kdna-tables' ),
+				),
+			),
+
+			'caption_spacing'    => array(
+				'label'      => esc_html__( 'Spacing Below', 'kdna-tables' ),
+				'section'    => 'caption',
+				'type'       => 'slider',
+				'css_var'    => '--kdna-table-caption-spacing',
+				'units'      => array( 'px' ),
+				'min'        => 0,
+				'max'        => 100,
+				'step'       => 1,
+				'responsive' => true,
+				'default'    => array( 'size' => 12, 'unit' => 'px' ),
+			),
+		);
+	}
+
+	/* ─── Section: first_col ────────────────────────────────────────── */
+
+	private static function first_col_controls() {
+		return array(
+			/*
+			 * Background and colour default to null rather than to a
+			 * concrete value, and that is load-bearing rather than lazy.
+			 * kdna-shortcode.css resolves an unset first-column background
+			 * to the row stripe it would otherwise have had, and an unset
+			 * colour to the body colour. A default of 'transparent' here
+			 * would paint over the striping on every table that has never
+			 * touched the control.
+			 */
+			'first_col_bg'         => array(
+				'label'       => esc_html__( 'Background Colour', 'kdna-tables' ),
+				'section'     => 'first_col',
+				'type'        => 'color',
+				'css_var'     => '--kdna-table-first-col-bg',
+				'responsive'  => false,
+				'default'     => null,
+				'description' => esc_html__( 'Unset, the first column keeps the odd and even row backgrounds.', 'kdna-tables' ),
+			),
+
+			'first_col_text_color' => array(
+				'label'       => esc_html__( 'Text Colour', 'kdna-tables' ),
+				'section'     => 'first_col',
+				'type'        => 'color',
+				'css_var'     => '--kdna-table-first-col-color',
+				'responsive'  => false,
+				'default'     => null,
+				'description' => esc_html__( 'Unset, the first column follows the Body Cells text colour.', 'kdna-tables' ),
+			),
+
+			'first_col_typography' => self::typography_group(
+				esc_html__( 'Typography', 'kdna-tables' ),
+				'first_col',
+				'--kdna-table-first-col'
+			),
+
+			'first_col_padding'    => array(
+				'label'       => esc_html__( 'Padding', 'kdna-tables' ),
+				'section'     => 'first_col',
+				'type'        => 'dimensions',
+				'css_var'     => '--kdna-table-first-col-padding',
+				'units'       => array( 'px', 'em' ),
+				'responsive'  => true,
+				'default'     => null,
+				'description' => esc_html__( 'Unset, the first column follows the Body Cells padding.', 'kdna-tables' ),
+			),
+		);
+	}
+
+	/* ─── Section: body ─────────────────────────────────────────────── */
+
+	private static function body_controls() {
+		return array(
+			'body_bg_odd'                   => self::background_group(
+				esc_html__( 'Odd Row Background', 'kdna-tables' ),
+				'body',
+				'--kdna-table-body-bg-odd',
+				'#ffffff'
+			),
+
+			'body_bg_even'                  => self::background_group(
+				esc_html__( 'Even Row Background', 'kdna-tables' ),
+				'body',
+				'--kdna-table-body-bg-even',
+				'#f7f7f8'
+			),
+
+			'body_typography'               => self::typography_group(
+				esc_html__( 'Typography', 'kdna-tables' ),
+				'body',
+				'--kdna-table-body'
+			),
+
+			'body_text_color'               => array(
+				'label'      => esc_html__( 'Text Colour', 'kdna-tables' ),
+				'section'    => 'body',
+				'type'       => 'color',
+				'css_var'    => '--kdna-table-body-color',
+				'responsive' => false,
+				'default'    => '#1f2937',
+			),
+
+			'body_padding'                  => array(
+				'label'      => esc_html__( 'Padding', 'kdna-tables' ),
+				'section'    => 'body',
+				'type'       => 'dimensions',
+				'css_var'    => '--kdna-table-body-padding',
+				'units'      => array( 'px', 'em' ),
+				'responsive' => true,
+				'default'    => self::dimensions( 12, 16, 12, 16, 'px' ),
+			),
+
+			'body_text_align'               => array(
+				'label'       => esc_html__( 'Text Alignment', 'kdna-tables' ),
+				'section'     => 'body',
+				'type'        => 'select',
+				'css_var'     => '--kdna-table-body-text-align',
+				'responsive'  => true,
+				'default'     => '',
+				'options'     => array(
+					''       => esc_html__( 'Inherit', 'kdna-tables' ),
+					'left'   => esc_html__( 'Left', 'kdna-tables' ),
+					'center' => esc_html__( 'Centre', 'kdna-tables' ),
+					'right'  => esc_html__( 'Right', 'kdna-tables' ),
+				),
+				'description' => esc_html__( 'Inherit keeps the per-column and per-cell alignment.', 'kdna-tables' ),
+			),
+
+			'row_hover_bg'                  => array(
+				'label'      => esc_html__( 'Row Hover Background', 'kdna-tables' ),
+				'section'    => 'body',
+				'type'       => 'color',
+				'css_var'    => '--kdna-table-row-hover-bg',
+				'responsive' => false,
+				'default'    => null,
+			),
+
+			'row_hover_color'               => array(
+				'label'      => esc_html__( 'Row Hover Text Colour', 'kdna-tables' ),
+				'section'    => 'body',
+				'type'       => 'color',
+				'css_var'    => '--kdna-table-row-hover-color',
+				'responsive' => false,
+				'default'    => null,
+			),
+
+			'row_hover_transition_duration' => array(
+				'label'      => esc_html__( 'Hover Transition', 'kdna-tables' ),
+				'section'    => 'body',
+				'type'       => 'number',
+				'css_var'    => '--kdna-table-row-hover-transition',
+				'suffix'     => 'ms',
+				'min'        => 0,
+				'max'        => 2000,
+				'step'       => 10,
+				'responsive' => false,
+				'default'    => 200,
+			),
+		);
+	}
+
+	/* ─── Section: lines ────────────────────────────────────────────── */
+
+	/**
+	 * Every rule line in one section.
+	 *
+	 * The widget spreads these across its Header Row, First Column and
+	 * Body Cells sections. They are gathered here instead because they
+	 * are one system: five sets of lines with identical controls, two of
+	 * which inherit from a third. Reading them side by side is the only
+	 * way to see that.
+	 */
+	private static function lines_controls() {
+		return array_merge(
+			self::line_group(
+				'body_h_line',
+				esc_html__( 'Horizontal Lines', 'kdna-tables' ),
+				'--kdna-table-h-line',
+				esc_html__( 'Lines between body rows.', 'kdna-tables' )
+			),
+			self::line_group(
+				'body_v_line',
+				esc_html__( 'Vertical Lines', 'kdna-tables' ),
+				'--kdna-table-v-line',
+				esc_html__( 'Lines between columns.', 'kdna-tables' )
+			),
+			self::line_group(
+				'header_divider',
+				esc_html__( 'Header Bottom Divider', 'kdna-tables' ),
+				'--kdna-table-header-divider',
+				esc_html__( 'The single line under the header row.', 'kdna-tables' )
+			),
+			self::line_group(
+				'header_v_line',
+				esc_html__( 'Header Vertical Lines', 'kdna-tables' ),
+				'--kdna-table-header-v-line',
+				esc_html__( 'Unset, these follow the Vertical Lines above.', 'kdna-tables' ),
+				true
+			),
+			self::line_group(
+				'first_col_edge',
+				esc_html__( 'First Column Right Edge', 'kdna-tables' ),
+				'--kdna-table-first-col-edge',
+				esc_html__( 'Unset, this follows the Vertical Lines above.', 'kdna-tables' ),
+				true
+			)
+		);
+	}
+
+	/* ─── Section: cell_content ─────────────────────────────────────── */
+
+	private static function cell_content_controls() {
+		return array(
+			'icon_color'          => array(
+				'label'      => esc_html__( 'Icon Colour', 'kdna-tables' ),
+				'section'    => 'cell_content',
+				'type'       => 'color',
+				'css_var'    => '--kdna-table-icon-color',
+				'responsive' => false,
+				'default'    => '#3362dd',
+			),
+
+			'icon_color_hover'    => array(
+				'label'      => esc_html__( 'Icon Hover Colour', 'kdna-tables' ),
+				'section'    => 'cell_content',
+				'type'       => 'color',
+				'css_var'    => '--kdna-table-icon-hover-color',
+				'responsive' => false,
+				'default'    => null,
+			),
+
+			'icon_size'           => array(
+				'label'      => esc_html__( 'Icon Size', 'kdna-tables' ),
+				'section'    => 'cell_content',
+				'type'       => 'slider',
+				'css_var'    => '--kdna-table-icon-size',
+				'units'      => array( 'em', 'px' ),
+				'min'        => 0,
+				'max'        => 200,
+				'step'       => 0.05,
+				'responsive' => true,
+				// The stylesheet renders 1.25em. The widget's own control
+				// defaults to 24px, but matching the widget here would
+				// change every existing shortcode, so the rendered value
+				// wins.
+				'default'    => array( 'size' => 1.25, 'unit' => 'em' ),
+			),
+
+			'icon_spacing'        => array(
+				'label'       => esc_html__( 'Content Spacing', 'kdna-tables' ),
+				'section'     => 'cell_content',
+				'type'        => 'slider',
+				'css_var'     => '--kdna-table-cell-gap',
+				'units'       => array( 'px', 'em' ),
+				'min'         => 0,
+				'max'         => 60,
+				'step'        => 1,
+				'responsive'  => true,
+				'default'     => array( 'size' => 8, 'unit' => 'px' ),
+				'description' => esc_html__( 'Gap between the icon, text and image pieces of a cell.', 'kdna-tables' ),
+			),
+
+			'image_width'         => array(
+				'label'      => esc_html__( 'Image Width', 'kdna-tables' ),
+				'section'    => 'cell_content',
+				'type'       => 'slider',
+				'css_var'    => '--kdna-table-image-width',
+				'units'      => array( 'px', '%' ),
+				'min'        => 0,
+				'max'        => 600,
+				'step'       => 1,
+				'responsive' => true,
+				'default'    => null,
+			),
+
+			'image_height'        => array(
+				'label'      => esc_html__( 'Image Height', 'kdna-tables' ),
+				'section'    => 'cell_content',
+				'type'       => 'slider',
+				'css_var'    => '--kdna-table-image-height',
+				'units'      => array( 'px', '%' ),
+				'min'        => 0,
+				'max'        => 600,
+				'step'       => 1,
+				'responsive' => true,
+				'default'    => null,
+			),
+
+			'image_border_radius' => array(
+				'label'      => esc_html__( 'Image Border Radius', 'kdna-tables' ),
+				'section'    => 'cell_content',
+				'type'       => 'dimensions',
+				'css_var'    => '--kdna-table-image-radius',
+				'units'      => array( 'px', '%' ),
+				'responsive' => true,
+				'default'    => null,
+			),
+
+			'image_object_fit'    => array(
+				'label'       => esc_html__( 'Image Fit', 'kdna-tables' ),
+				'section'     => 'cell_content',
+				'type'        => 'select',
+				'css_var'     => '--kdna-table-image-object-fit',
+				'responsive'  => false,
+				// The widget defaults this to cover. Left unset here,
+				// because object-fit does nothing until a height is set and
+				// defaulting it would change existing shortcodes.
+				'default'     => null,
+				'options'     => array(
+					''        => esc_html__( '— Default —', 'kdna-tables' ),
+					'cover'   => esc_html__( 'Cover', 'kdna-tables' ),
+					'contain' => esc_html__( 'Contain', 'kdna-tables' ),
+					'fill'    => esc_html__( 'Fill', 'kdna-tables' ),
+					'none'    => esc_html__( 'None', 'kdna-tables' ),
+				),
+				'description' => esc_html__( 'Only has an effect once an image height is set.', 'kdna-tables' ),
+			),
+		);
+	}
+
+	/* ─── Section: card_stack (responsive modes) ────────────────────── */
+
+	private static function responsive_controls() {
+		return array(
+			/* Card Stack */
+			'card_bg'               => array(
+				'label'      => esc_html__( 'Card Background', 'kdna-tables' ),
+				'section'    => 'card_stack',
+				'type'       => 'color',
+				'css_var'    => '--kdna-card-bg',
+				'responsive' => false,
+				'default'    => '#ffffff',
+			),
+
+			'card_border'           => self::border_group(
+				esc_html__( 'Card Border', 'kdna-tables' ),
+				'card_stack',
+				'--kdna-card-border'
+			),
+
+			'card_border_radius'    => array(
+				'label'      => esc_html__( 'Card Border Radius', 'kdna-tables' ),
+				'section'    => 'card_stack',
+				'type'       => 'dimensions',
+				'css_var'    => '--kdna-card-radius',
+				'units'      => array( 'px', '%' ),
+				'responsive' => true,
+				'default'    => self::dimensions( 12, 12, 12, 12, 'px' ),
+			),
+
+			'card_padding'          => array(
+				'label'      => esc_html__( 'Card Padding', 'kdna-tables' ),
+				'section'    => 'card_stack',
+				'type'       => 'dimensions',
+				'css_var'    => '--kdna-card-padding',
+				'units'      => array( 'px', 'em' ),
+				'responsive' => true,
+				'default'    => self::dimensions( 16, 16, 16, 16, 'px' ),
+			),
+
+			'card_spacing'          => array(
+				'label'      => esc_html__( 'Card Spacing', 'kdna-tables' ),
+				'section'    => 'card_stack',
+				'type'       => 'slider',
+				'css_var'    => '--kdna-card-spacing',
+				'units'      => array( 'px' ),
+				'min'        => 0,
+				'max'        => 80,
+				'step'       => 1,
+				'responsive' => true,
+				'default'    => array( 'size' => 16, 'unit' => 'px' ),
+			),
+
+			/* Pivot Rows */
+			'pivot_label_typography' => self::typography_group(
+				esc_html__( 'Column Heading Typography', 'kdna-tables' ),
+				'card_stack',
+				'--kdna-pivot-label',
+				array( 'font_weight' => '700' )
+			),
+
+			'pivot_label_color'     => array(
+				'label'       => esc_html__( 'Column Heading Colour', 'kdna-tables' ),
+				'section'     => 'card_stack',
+				'type'        => 'color',
+				'css_var'     => '--kdna-pivot-label-color',
+				'responsive'  => false,
+				'default'     => null,
+				'description' => esc_html__( 'Unset, headings take the Header Row text colour.', 'kdna-tables' ),
+			),
+
+			'pivot_heading_bg'      => array(
+				'label'       => esc_html__( 'Column Heading Background', 'kdna-tables' ),
+				'section'     => 'card_stack',
+				'type'        => 'color',
+				'css_var'     => '--kdna-pivot-heading-bg',
+				'responsive'  => false,
+				'default'     => null,
+				'description' => esc_html__( 'Unset, headings take the Header Row background.', 'kdna-tables' ),
+			),
+
+			'pivot_heading_padding' => array(
+				'label'      => esc_html__( 'Column Heading Padding', 'kdna-tables' ),
+				'section'    => 'card_stack',
+				'type'       => 'dimensions',
+				'css_var'    => '--kdna-pivot-heading-padding',
+				'units'      => array( 'px', 'em' ),
+				'responsive' => true,
+				'default'    => self::dimensions( 0, 0, 0, 0, 'px' ),
+			),
+
+			'pivot_heading_radius'  => array(
+				'label'      => esc_html__( 'Column Heading Radius', 'kdna-tables' ),
+				'section'    => 'card_stack',
+				'type'       => 'dimensions',
+				'css_var'    => '--kdna-pivot-heading-radius',
+				'units'      => array( 'px', '%' ),
+				'responsive' => true,
+				'default'    => self::dimensions( 0, 0, 0, 0, 'px' ),
+			),
+
+			'pivot_heading_spacing' => array(
+				'label'      => esc_html__( 'Spacing Below Heading', 'kdna-tables' ),
+				'section'    => 'card_stack',
+				'type'       => 'slider',
+				'css_var'    => '--kdna-pivot-heading-spacing',
+				'units'      => array( 'px' ),
+				'min'        => 0,
+				'max'        => 40,
+				'step'       => 1,
+				'responsive' => true,
+				'default'    => array( 'size' => 2, 'unit' => 'px' ),
+			),
+
+			'pivot_label_width'     => array(
+				'label'       => esc_html__( 'Inline Label Width', 'kdna-tables' ),
+				'section'     => 'card_stack',
+				'type'        => 'slider',
+				'css_var'     => '--kdna-pivot-label-width',
+				'units'       => array( '%' ),
+				'min'         => 10,
+				'max'         => 80,
+				'step'        => 1,
+				'responsive'  => true,
+				'default'     => array( 'size' => 30, 'unit' => '%' ),
+				'description' => esc_html__( 'Only applies to the inline label position.', 'kdna-tables' ),
+			),
+
+			'pivot_row_spacing'     => array(
+				'label'      => esc_html__( 'Row Spacing', 'kdna-tables' ),
+				'section'    => 'card_stack',
+				'type'       => 'slider',
+				'css_var'    => '--kdna-pivot-row-spacing',
+				'units'      => array( 'px' ),
+				'min'        => 0,
+				'max'        => 80,
+				'step'       => 1,
+				'responsive' => true,
+				'default'    => array( 'size' => 16, 'unit' => 'px' ),
+			),
+
+			/*
+			 * A line trio rather than a border group: this is the single
+			 * edge under each pivoted row, so a four-sided width would be
+			 * both meaningless and invalid — a dimensions value fed to the
+			 * border shorthand takes the whole declaration down with it.
+			 */
+		) + self::line_group(
+			'pivot_divider',
+			esc_html__( 'Row Divider', 'kdna-tables' ),
+			'--kdna-pivot-divider',
+			esc_html__( 'The line under each pivoted row. Unset, rows are separated by spacing alone.', 'kdna-tables' ),
+			true,
+			'card_stack'
+		);
+	}
+
+	/* ─── Section: sticky ───────────────────────────────────────────── */
+
+	private static function sticky_controls() {
+		return array(
+			'sticky_bg'           => array(
+				'label'      => esc_html__( 'Background', 'kdna-tables' ),
+				'section'    => 'sticky',
+				'type'       => 'color',
+				'css_var'    => '--kdna-sticky-bg',
+				'responsive' => false,
+				'default'    => '#ffffff',
+			),
+
+			'sticky_shadow_color' => array(
+				'label'      => esc_html__( 'Right Edge Shadow Colour', 'kdna-tables' ),
+				'section'    => 'sticky',
+				'type'       => 'color',
+				'css_var'    => '--kdna-sticky-shadow-color',
+				'responsive' => false,
+				'default'    => 'rgba(0, 0, 0, 0.08)',
+			),
+
+			'sticky_shadow_size'  => array(
+				'label'      => esc_html__( 'Right Edge Shadow Size', 'kdna-tables' ),
+				'section'    => 'sticky',
+				'type'       => 'slider',
+				'css_var'    => '--kdna-sticky-shadow-size',
+				'units'      => array( 'px' ),
+				'min'        => 0,
+				'max'        => 40,
+				'step'       => 1,
+				'responsive' => true,
+				'default'    => array( 'size' => 8, 'unit' => 'px' ),
+			),
+
+			'sticky_z_index'      => array(
+				'label'      => esc_html__( 'Z-Index', 'kdna-tables' ),
+				'section'    => 'sticky',
+				'type'       => 'number',
+				'css_var'    => '--kdna-sticky-z-index',
+				'min'        => 0,
+				'max'        => 999,
+				'step'       => 1,
+				'responsive' => false,
+				'default'    => 2,
 			),
 		);
 	}
@@ -619,6 +1225,75 @@ class KDNA_Tables_Style_Schema {
 					'responsive' => false,
 					'default'    => '#e5e7eb',
 				),
+			),
+		);
+	}
+
+	/**
+	 * One set of rule lines: style, width, colour.
+	 *
+	 * Three flat controls rather than a border group, because a rule line
+	 * is one edge with one width, not four sides — and because Style:
+	 * None is how a set of lines is removed, so it wants to be the first
+	 * thing in the row rather than buried in a group.
+	 *
+	 * $inherits marks the two sets that follow another when unset: the
+	 * header verticals and the first column's right edge both fall back
+	 * to the body verticals through a var() chain in the stylesheet.
+	 * Their defaults are therefore null, so they emit nothing at all and
+	 * the chain can do its work.
+	 *
+	 * @param string $prefix      Control key prefix.
+	 * @param string $label       Human label for the set.
+	 * @param string $var_prefix  Custom property prefix.
+	 * @param string $description Shown under the style control.
+	 * @param bool   $inherits    Whether this set follows another by default.
+	 */
+	private static function line_group( $prefix, $label, $var_prefix, $description = '', $inherits = false, $section = 'lines' ) {
+		return array(
+			$prefix . '_style' => array(
+				/* translators: %s: name of the set of rule lines. */
+				'label'       => sprintf( esc_html__( '%s: Style', 'kdna-tables' ), $label ),
+				'section'     => $section,
+				'type'        => 'select',
+				'css_var'     => $var_prefix . '-style',
+				'responsive'  => false,
+				'default'     => $inherits ? null : 'solid',
+				'options'     => array(
+					''       => $inherits
+						? esc_html__( '— Inherit —', 'kdna-tables' )
+						: esc_html__( '— Default —', 'kdna-tables' ),
+					'solid'  => esc_html__( 'Solid', 'kdna-tables' ),
+					'dashed' => esc_html__( 'Dashed', 'kdna-tables' ),
+					'dotted' => esc_html__( 'Dotted', 'kdna-tables' ),
+					'double' => esc_html__( 'Double', 'kdna-tables' ),
+					'none'   => esc_html__( 'None (hidden)', 'kdna-tables' ),
+				),
+				'description' => $description,
+			),
+
+			$prefix . '_width' => array(
+				/* translators: %s: name of the set of rule lines. */
+				'label'      => sprintf( esc_html__( '%s: Width', 'kdna-tables' ), $label ),
+				'section'    => $section,
+				'type'       => 'slider',
+				'css_var'    => $var_prefix . '-width',
+				'units'      => array( 'px' ),
+				'min'        => 0,
+				'max'        => 20,
+				'step'       => 1,
+				'responsive' => true,
+				'default'    => $inherits ? null : array( 'size' => 1, 'unit' => 'px' ),
+			),
+
+			$prefix . '_color' => array(
+				/* translators: %s: name of the set of rule lines. */
+				'label'      => sprintf( esc_html__( '%s: Colour', 'kdna-tables' ), $label ),
+				'section'    => $section,
+				'type'       => 'color',
+				'css_var'    => $var_prefix . '-color',
+				'responsive' => false,
+				'default'    => $inherits ? null : '#e5e7eb',
 			),
 		);
 	}

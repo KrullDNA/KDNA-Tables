@@ -182,6 +182,95 @@ a horizontal scroller on desktop. The Sticky Column Style section
 controls the column background, right-edge shadow colour and size, and
 z-index. The responsive mode takes precedence at its breakpoint.
 
+## Shortcode Styles
+
+The `[kdna_table]` shortcode is styled from **KDNA Tables → Shortcode
+Styles**, which sets the global defaults every shortcode renders with.
+Values resolve schema default → global option → per-table override, and
+every control writes a CSS custom property onto the wrapper as an inline
+style attribute, so a shortcode is styled wherever it lands — including
+inside a JetEngine repeater, which `has_shortcode()` cannot see.
+
+Each control maps one to one onto a widget Style control. The settings
+page groups them slightly differently from the widget: the caption gets
+its own section rather than sitting inside Table Wrapper, and all five
+sets of rule lines are gathered into one Rule Lines section rather than
+being spread across Header Row, First Column and Body Cells.
+
+| Widget control | Schema key | Custom property |
+| --- | --- | --- |
+| Table Wrapper → Background | `wrapper_background` | `--kdna-table-wrapper-bg` |
+| Table Wrapper → Border | `wrapper_border` | `--kdna-table-wrapper-border-style` / `-width` / `-color` |
+| Table Wrapper → Border Radius | `wrapper_border_radius` | `--kdna-table-border-radius` |
+| Table Wrapper → Max Width | `wrapper_max_width` | `--kdna-table-wrapper-max-width` |
+| Table Wrapper → Alignment | `wrapper_alignment` | `--kdna-table-wrapper-margin` |
+| Table Wrapper → Padding | `wrapper_padding` | `--kdna-table-wrapper-padding` |
+| Table Layout → Border Collapse | `border_collapse` | `--kdna-table-border-collapse` |
+| Table Layout → Border Spacing | `border_spacing` | `--kdna-table-border-spacing` |
+| Table Wrapper → Caption Typography | `caption_typography` | `--kdna-table-caption-font-*` |
+| Table Wrapper → Caption Colour | `caption_color` | `--kdna-table-caption-color` |
+| Table Wrapper → Caption Alignment | `caption_alignment` | `--kdna-table-caption-align` |
+| Table Wrapper → Caption Spacing | `caption_spacing` | `--kdna-table-caption-spacing` |
+| Header Row → Background | `header_background` | `--kdna-table-header-bg` |
+| Header Row → Text Colour | `header_text_color` | `--kdna-table-header-color` |
+| Header Row → Typography | `header_typography` | `--kdna-table-header-font-*` |
+| Header Row → Padding | `header_padding` | `--kdna-table-header-padding` |
+| Header Row → Text Alignment | `header_text_align` | `--kdna-table-header-text-align` |
+| Header Row → Bottom Divider | `header_divider_style` / `_width` / `_color` | `--kdna-table-header-divider-*` |
+| Header Row → Vertical Lines | `header_v_line_style` / `_width` / `_color` | `--kdna-table-header-v-line-*` |
+| First Column → Background Colour | `first_col_bg` | `--kdna-table-first-col-bg` |
+| First Column → Text Colour | `first_col_text_color` | `--kdna-table-first-col-color` |
+| First Column → Typography | `first_col_typography` | `--kdna-table-first-col-font-*` |
+| First Column → Padding | `first_col_padding` | `--kdna-table-first-col-padding` |
+| First Column → Right Edge Line | `first_col_edge_style` / `_width` / `_color` | `--kdna-table-first-col-edge-*` |
+| Body Cells → Odd Row Background | `body_bg_odd` | `--kdna-table-body-bg-odd` |
+| Body Cells → Even Row Background | `body_bg_even` | `--kdna-table-body-bg-even` |
+| Body Cells → Typography | `body_typography` | `--kdna-table-body-font-*` |
+| Body Cells → Text Colour | `body_text_color` | `--kdna-table-body-color` |
+| Body Cells → Padding | `body_padding` | `--kdna-table-body-padding` |
+| Body Cells → Text Alignment | `body_text_align` | `--kdna-table-body-text-align` |
+| Body Cells → Horizontal Lines | `body_h_line_style` / `_width` / `_color` | `--kdna-table-h-line-*` |
+| Body Cells → Vertical Lines | `body_v_line_style` / `_width` / `_color` | `--kdna-table-v-line-*` |
+| Body Cells → Row Hover Background | `row_hover_bg` | `--kdna-table-row-hover-bg` |
+| Body Cells → Hover Transition | `row_hover_transition_duration` | `--kdna-table-row-hover-transition` |
+| Cell Content → Icon Colour | `icon_color` | `--kdna-table-icon-color` |
+| Cell Content → Icon Hover Colour | `icon_color_hover` | `--kdna-table-icon-hover-color` |
+| Cell Content → Icon Size | `icon_size` | `--kdna-table-icon-size` |
+| Cell Content → Icon Spacing | `icon_spacing` | `--kdna-table-cell-gap` |
+| Cell Content → Image Width | `image_width` | `--kdna-table-image-width` |
+| Cell Content → Image Height | `image_height` | `--kdna-table-image-height` |
+| Cell Content → Image Border Radius | `image_border_radius` | `--kdna-table-image-radius` |
+| Cell Content → Image Fit | `image_object_fit` | `--kdna-table-image-object-fit` |
+| Card Stack Mode → Card Background | `card_bg` | `--kdna-card-bg` |
+| Card Stack Mode → Border | `card_border` | `--kdna-card-border-style` / `-width` / `-color` |
+| Card Stack Mode → Card Border Radius | `card_border_radius` | `--kdna-card-radius` |
+| Card Stack Mode → Card Padding | `card_padding` | `--kdna-card-padding` |
+| Card Stack Mode → Card Spacing | `card_spacing` | `--kdna-card-spacing` |
+| Pivot Rows Mode → Typography | `pivot_label_typography` | `--kdna-pivot-label-font-*` |
+| Pivot Rows Mode → Text Colour | `pivot_label_color` | `--kdna-pivot-label-color` |
+| Pivot Rows Mode → Background Colour | `pivot_heading_bg` | `--kdna-pivot-heading-bg` |
+| Pivot Rows Mode → Padding | `pivot_heading_padding` | `--kdna-pivot-heading-padding` |
+| Pivot Rows Mode → Border Radius | `pivot_heading_radius` | `--kdna-pivot-heading-radius` |
+| Pivot Rows Mode → Spacing Below Heading | `pivot_heading_spacing` | `--kdna-pivot-heading-spacing` |
+| Pivot Rows Mode → Label Width | `pivot_label_width` | `--kdna-pivot-label-width` |
+| Pivot Rows Mode → Row Spacing | `pivot_row_spacing` | `--kdna-pivot-row-spacing` |
+| Pivot Rows Mode → Row Divider | `pivot_divider_style` / `_width` / `_color` | `--kdna-pivot-divider-*` |
+| Sticky Column → Background | `sticky_bg` | `--kdna-sticky-bg` |
+| Sticky Column → Right Edge Shadow Colour | `sticky_shadow_color` | `--kdna-sticky-shadow-color` |
+| Sticky Column → Right Edge Shadow Size | `sticky_shadow_size` | `--kdna-sticky-shadow-size` |
+| Sticky Column → Z-Index | `sticky_z_index` | `--kdna-sticky-z-index` |
+
+### Widget controls not ported
+
+| Widget control | Reason |
+| --- | --- |
+| Table Wrapper → Box Shadow | No box-shadow control type in the schema. The stylesheet reads `--kdna-table-wrapper-box-shadow`, so adding one later is a schema entry plus a renderer, not a stylesheet change. |
+| Card Stack Mode → Box Shadow | Same. |
+| Card Stack Mode → Sticky Card Header | A switcher, and one aimed at the comparison table's item header. There is no switcher control type, and nothing in the general card layout it would pin. |
+| Pivot Rows Mode → Label Position | A layout switch, not a style value: the stylesheet keys it off a `data-pivot-label-position` attribute the shortcode does not take. The shortcode always uses the Above position. |
+| Column Picker Mode → all 13 controls | The column picker hides and shows columns by their `data-slot` attribute, which only the comparison render emits, and its script only initialises inside Elementor. A general-table shortcode in `column_picker` mode renders normally with no picker, so the chrome has nothing to style. The stylesheet already carries the `--kdna-picker-*` variables for when that changes. |
+| Cell Content → Icon Colour (hover) on the comparison indicators | Comparison-only, and comparison styling is out of scope for this build. |
+
 ## CSS Variables (Theme Integration)
 
 Every visual token is exposed as a CSS variable scoped to the widget

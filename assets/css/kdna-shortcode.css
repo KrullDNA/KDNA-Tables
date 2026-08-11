@@ -189,9 +189,14 @@
 
 	/* Cell content */
 	--_kdna-table-icon-color: var(--kdna-table-icon-color, #3362dd);
+	/* Unset, a hovered icon keeps its own colour. */
+	--_kdna-table-icon-hover-color: var(--kdna-table-icon-hover-color, var(--_kdna-table-icon-color));
 	--_kdna-table-icon-size: var(--kdna-table-icon-size, 1.25em);
 	--_kdna-table-cell-gap: var(--kdna-table-cell-gap, 8px);
 	--_kdna-table-image-width: var(--kdna-table-image-width, auto);
+	--_kdna-table-image-height: var(--kdna-table-image-height, auto);
+	/* fill is the initial value, so an unset Image Fit changes nothing. */
+	--_kdna-table-image-object-fit: var(--kdna-table-image-object-fit, fill);
 	--_kdna-table-image-radius: var(--kdna-table-image-radius, 0);
 
 	/* Card Stack */
@@ -199,6 +204,11 @@
 	--_kdna-card-radius: var(--kdna-card-radius, 12px);
 	--_kdna-card-padding: var(--kdna-card-padding, 16px);
 	--_kdna-card-spacing: var(--kdna-card-spacing, 16px);
+	/* No card border by default: 0 none is exactly the border: 0 the card
+	 * layouts used to hard-code, so an unstyled card is unchanged. */
+	--_kdna-card-border-style: var(--kdna-card-border-style, none);
+	--_kdna-card-border-width: var(--kdna-card-border-width, 0);
+	--_kdna-card-border-color: var(--kdna-card-border-color, #e5e7eb);
 
 	/* Pivot Rows */
 	--_kdna-pivot-label-color: var(--kdna-pivot-label-color, var(--_kdna-table-header-color));
@@ -208,6 +218,20 @@
 	--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding, 0);
 	--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius, 0);
 	--_kdna-pivot-heading-spacing: var(--kdna-pivot-heading-spacing, 2px);
+	--_kdna-pivot-label-font-family: var(--kdna-pivot-label-font-family, inherit);
+	--_kdna-pivot-label-font-size: var(--kdna-pivot-label-font-size, inherit);
+	--_kdna-pivot-label-font-weight: var(--kdna-pivot-label-font-weight, 700);
+	--_kdna-pivot-label-text-transform: var(--kdna-pivot-label-text-transform, none);
+	--_kdna-pivot-label-font-style: var(--kdna-pivot-label-font-style, normal);
+	--_kdna-pivot-label-text-decoration: var(--kdna-pivot-label-text-decoration, none);
+	--_kdna-pivot-label-line-height: var(--kdna-pivot-label-line-height, normal);
+	--_kdna-pivot-label-letter-spacing: var(--kdna-pivot-label-letter-spacing, normal);
+	--_kdna-pivot-label-word-spacing: var(--kdna-pivot-label-word-spacing, normal);
+	/* The row divider under each pivoted row. None by default: the rows
+	 * are separated by spacing, not a rule. */
+	--_kdna-pivot-divider-style: var(--kdna-pivot-divider-style, none);
+	--_kdna-pivot-divider-width: var(--kdna-pivot-divider-width, 0);
+	--_kdna-pivot-divider-color: var(--kdna-pivot-divider-color, #e5e7eb);
 
 	/* Column Picker */
 	--_kdna-picker-bg: var(--kdna-picker-bg, #ffffff);
@@ -491,6 +515,10 @@
 	transition: color var(--_kdna-table-row-hover-transition) ease;
 }
 
+.kdna-table__wrapper--shortcode .kdna-table--general .kdna-table__cell:hover .kdna-table__cell-icon {
+	color: var(--_kdna-table-icon-hover-color);
+}
+
 .kdna-table__wrapper--shortcode .kdna-table__cell-icon i,
 .kdna-table__wrapper--shortcode .kdna-table__cell-icon svg {
 	width: 1em;
@@ -508,8 +536,9 @@
 .kdna-table__wrapper--shortcode .kdna-table__cell-image img {
 	display: block;
 	max-width: 100%;
-	height: auto;
 	width: var(--_kdna-table-image-width);
+	height: var(--_kdna-table-image-height);
+	object-fit: var(--_kdna-table-image-object-fit);
 	border-radius: var(--_kdna-table-image-radius);
 }
 
@@ -668,6 +697,15 @@
 		--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius-tablet, var(--kdna-pivot-heading-radius, 0));
 		--_kdna-pivot-heading-spacing: var(--kdna-pivot-heading-spacing-tablet, var(--kdna-pivot-heading-spacing, 2px));
 
+		--_kdna-table-image-height: var(--kdna-table-image-height-tablet, var(--kdna-table-image-height, auto));
+		--_kdna-table-image-radius: var(--kdna-table-image-radius-tablet, var(--kdna-table-image-radius, 0));
+		--_kdna-card-border-width: var(--kdna-card-border-width-tablet, var(--kdna-card-border-width, 0));
+		--_kdna-pivot-divider-width: var(--kdna-pivot-divider-width-tablet, var(--kdna-pivot-divider-width, 0));
+		--_kdna-pivot-label-font-size: var(--kdna-pivot-label-font-size-tablet, var(--kdna-pivot-label-font-size, inherit));
+		--_kdna-pivot-label-line-height: var(--kdna-pivot-label-line-height-tablet, var(--kdna-pivot-label-line-height, normal));
+		--_kdna-pivot-label-letter-spacing: var(--kdna-pivot-label-letter-spacing-tablet, var(--kdna-pivot-label-letter-spacing, normal));
+		--_kdna-table-border-spacing: var(--kdna-table-border-spacing-tablet, var(--kdna-table-border-spacing, 0));
+
 		/* Sticky */
 		--_kdna-sticky-shadow-size: var(--kdna-sticky-shadow-size-tablet, var(--kdna-sticky-shadow-size, 8px));
 	}
@@ -698,6 +736,9 @@
 		background: var(--_kdna-card-bg);
 		padding: var(--_kdna-card-padding);
 		border-radius: var(--_kdna-card-radius);
+		border-width: var(--_kdna-card-border-width) !important;
+		border-style: var(--_kdna-card-border-style) !important;
+		border-color: var(--_kdna-card-border-color) !important;
 	}
 
 	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
@@ -710,10 +751,19 @@
 		background: none;
 	}
 
+	/* The injected column heading in the tablet card layout is the same
+	 * element as the pivot heading, one layout over, so it takes the same
+	 * Column Heading Typography rather than a weight of its own. */
 	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
 		content: attr(data-column-label);
 		flex: 0 0 auto;
-		font-weight: 700;
+		font-family: var(--_kdna-pivot-label-font-family);
+		font-size: var(--_kdna-pivot-label-font-size);
+		font-weight: var(--_kdna-pivot-label-font-weight);
+		font-style: var(--_kdna-pivot-label-font-style);
+		text-transform: var(--_kdna-pivot-label-text-transform);
+		text-decoration: var(--_kdna-pivot-label-text-decoration);
+		letter-spacing: var(--_kdna-pivot-label-letter-spacing);
 		color: var(--_kdna-pivot-label-color);
 	}
 
@@ -732,6 +782,10 @@
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
 		padding-bottom: var(--_kdna-pivot-row-spacing);
 		margin-bottom: var(--_kdna-pivot-row-spacing);
+		/* !important because the theme reset near the top of this file
+		 * zeroes tr borders with !important of its own. Defaults to 0
+		 * none, so an unstyled pivot row is unchanged. */
+		border-bottom: var(--_kdna-pivot-divider-width) var(--_kdna-pivot-divider-style) var(--_kdna-pivot-divider-color) !important;
 	}
 
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
@@ -761,7 +815,15 @@
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"]:not([data-pivot-label-position="inline"]) .kdna-table--general .kdna-table__cell::before {
 		content: attr(data-column-label);
 		display: block;
-		font-weight: 700;
+		font-family: var(--_kdna-pivot-label-font-family);
+		font-size: var(--_kdna-pivot-label-font-size);
+		font-weight: var(--_kdna-pivot-label-font-weight);
+		font-style: var(--_kdna-pivot-label-font-style);
+		text-transform: var(--_kdna-pivot-label-text-transform);
+		text-decoration: var(--_kdna-pivot-label-text-decoration);
+		line-height: var(--_kdna-pivot-label-line-height);
+		letter-spacing: var(--_kdna-pivot-label-letter-spacing);
+		word-spacing: var(--_kdna-pivot-label-word-spacing);
 		color: var(--_kdna-pivot-label-color);
 		margin-bottom: var(--_kdna-pivot-heading-spacing);
 	}
@@ -775,7 +837,15 @@
 
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"][data-pivot-label-position="inline"] .kdna-table--general .kdna-table__cell::before {
 		content: attr(data-column-label);
-		font-weight: 700;
+		font-family: var(--_kdna-pivot-label-font-family);
+		font-size: var(--_kdna-pivot-label-font-size);
+		font-weight: var(--_kdna-pivot-label-font-weight);
+		font-style: var(--_kdna-pivot-label-font-style);
+		text-transform: var(--_kdna-pivot-label-text-transform);
+		text-decoration: var(--_kdna-pivot-label-text-decoration);
+		line-height: var(--_kdna-pivot-label-line-height);
+		letter-spacing: var(--_kdna-pivot-label-letter-spacing);
+		word-spacing: var(--_kdna-pivot-label-word-spacing);
 		color: var(--_kdna-pivot-label-color);
 	}
 
@@ -884,6 +954,15 @@
 		--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius-mobile, var(--kdna-pivot-heading-radius-tablet, var(--kdna-pivot-heading-radius, 0)));
 		--_kdna-pivot-heading-spacing: var(--kdna-pivot-heading-spacing-mobile, var(--kdna-pivot-heading-spacing-tablet, var(--kdna-pivot-heading-spacing, 2px)));
 
+		--_kdna-table-image-height: var(--kdna-table-image-height-mobile, var(--kdna-table-image-height-tablet, var(--kdna-table-image-height, auto)));
+		--_kdna-table-image-radius: var(--kdna-table-image-radius-mobile, var(--kdna-table-image-radius-tablet, var(--kdna-table-image-radius, 0)));
+		--_kdna-card-border-width: var(--kdna-card-border-width-mobile, var(--kdna-card-border-width-tablet, var(--kdna-card-border-width, 0)));
+		--_kdna-pivot-divider-width: var(--kdna-pivot-divider-width-mobile, var(--kdna-pivot-divider-width-tablet, var(--kdna-pivot-divider-width, 0)));
+		--_kdna-pivot-label-font-size: var(--kdna-pivot-label-font-size-mobile, var(--kdna-pivot-label-font-size-tablet, var(--kdna-pivot-label-font-size, inherit)));
+		--_kdna-pivot-label-line-height: var(--kdna-pivot-label-line-height-mobile, var(--kdna-pivot-label-line-height-tablet, var(--kdna-pivot-label-line-height, normal)));
+		--_kdna-pivot-label-letter-spacing: var(--kdna-pivot-label-letter-spacing-mobile, var(--kdna-pivot-label-letter-spacing-tablet, var(--kdna-pivot-label-letter-spacing, normal)));
+		--_kdna-table-border-spacing: var(--kdna-table-border-spacing-mobile, var(--kdna-table-border-spacing-tablet, var(--kdna-table-border-spacing, 0)));
+
 		/* Sticky */
 		--_kdna-sticky-shadow-size: var(--kdna-sticky-shadow-size-mobile, var(--kdna-sticky-shadow-size-tablet, var(--kdna-sticky-shadow-size, 8px)));
 	}
@@ -923,7 +1002,14 @@
 		grid-column: 1;
 		grid-row: var(--kdna-card-row, auto);
 		padding: var(--_kdna-card-padding);
-		border: 0 !important;
+		/* Longhands, not the border shorthand: the width is a dimensions
+		 * value and can carry four sides, which the shorthand rejects
+		 * outright — taking the whole declaration with it. Defaults to
+		 * 0 none, the border: 0 this rule used to hard-code, so an
+		 * unstyled card is unchanged. */
+		border-width: var(--_kdna-card-border-width) !important;
+		border-style: var(--_kdna-card-border-style) !important;
+		border-color: var(--_kdna-card-border-color) !important;
 		background: var(--_kdna-card-bg);
 	}
 
@@ -941,8 +1027,14 @@
 	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell--header,
 	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell--header {
 		background: var(--_kdna-table-header-bg);
-		border-top-left-radius: var(--_kdna-card-radius);
-		border-top-right-radius: var(--_kdna-card-radius);
+		/* The heading cell is the top of its card, so only its top corners
+		 * round. Written as the shorthand and then squared off, because
+		 * border-top-left-radius takes at most two values and the card
+		 * radius is a four-corner dimensions value — fed to the longhand
+		 * it is invalid, and the corners silently go square. */
+		border-radius: var(--_kdna-card-radius);
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
 	}
 
 	/* When the table marks its first column as the row-label column,
@@ -987,6 +1079,10 @@
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
 		padding-bottom: var(--_kdna-pivot-row-spacing);
 		margin-bottom: var(--_kdna-pivot-row-spacing);
+		/* !important because the theme reset near the top of this file
+		 * zeroes tr borders with !important of its own. Defaults to 0
+		 * none, so an unstyled pivot row is unchanged. */
+		border-bottom: var(--_kdna-pivot-divider-width) var(--_kdna-pivot-divider-style) var(--_kdna-pivot-divider-color) !important;
 	}
 
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell,
@@ -1010,7 +1106,15 @@
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"]:not([data-pivot-label-position="inline"]) .kdna-table--general .kdna-table__cell::before {
 		content: attr(data-column-label);
 		display: block;
-		font-weight: 700;
+		font-family: var(--_kdna-pivot-label-font-family);
+		font-size: var(--_kdna-pivot-label-font-size);
+		font-weight: var(--_kdna-pivot-label-font-weight);
+		font-style: var(--_kdna-pivot-label-font-style);
+		text-transform: var(--_kdna-pivot-label-text-transform);
+		text-decoration: var(--_kdna-pivot-label-text-decoration);
+		line-height: var(--_kdna-pivot-label-line-height);
+		letter-spacing: var(--_kdna-pivot-label-letter-spacing);
+		word-spacing: var(--_kdna-pivot-label-word-spacing);
 		color: var(--_kdna-pivot-label-color);
 		margin-bottom: var(--_kdna-pivot-heading-spacing);
 	}
@@ -1026,7 +1130,15 @@
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"][data-pivot-label-position="inline"] .kdna-table--general .kdna-table__cell::before,
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"][data-pivot-label-position="inline"] .kdna-table--general .kdna-table__cell::before {
 		content: attr(data-column-label);
-		font-weight: 700;
+		font-family: var(--_kdna-pivot-label-font-family);
+		font-size: var(--_kdna-pivot-label-font-size);
+		font-weight: var(--_kdna-pivot-label-font-weight);
+		font-style: var(--_kdna-pivot-label-font-style);
+		text-transform: var(--_kdna-pivot-label-text-transform);
+		text-decoration: var(--_kdna-pivot-label-text-decoration);
+		line-height: var(--_kdna-pivot-label-line-height);
+		letter-spacing: var(--_kdna-pivot-label-letter-spacing);
+		word-spacing: var(--_kdna-pivot-label-word-spacing);
 		color: var(--_kdna-pivot-label-color);
 		display: inline;
 		margin-bottom: 0;

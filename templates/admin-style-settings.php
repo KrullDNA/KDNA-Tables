@@ -97,9 +97,38 @@ $kdna_render_switcher = static function ( $key, $field_key, array $devices, arra
 };
 
 /**
+ * The schema default, as placeholder text.
+ *
+ * A blank control means inherit, and inherit means "the schema default
+ * applies" — so showing that default greyed in the empty field is the
+ * difference between a user reading blank as "nothing" and reading it as
+ * "1px, unless I say otherwise". Returns '' where there is no default,
+ * and the caller falls back to the word inherit.
+ *
+ * @param array  $definition Control or field definition.
+ * @param string $part       Which piece of a compound value: '', 'size',
+ *                           or a dimensions side.
+ */
+$kdna_placeholder = static function ( array $definition, $part = '' ) {
+	if ( ! isset( $definition['default'] ) || null === $definition['default'] ) {
+		return '';
+	}
+
+	$default = $definition['default'];
+
+	if ( '' === $part ) {
+		return is_scalar( $default ) ? (string) $default : '';
+	}
+
+	return ( is_array( $default ) && isset( $default[ $part ] ) && '' !== $default[ $part ] )
+		? (string) $default[ $part ]
+		: '';
+};
+
+/**
  * The control itself, by type.
  */
-$kdna_render_leaf = static function ( array $definition, $key, $field_key, $responsive ) use ( $kdna_leaf_path, $kdna_args ) {
+$kdna_render_leaf = static function ( array $definition, $key, $field_key, $responsive ) use ( $kdna_leaf_path, $kdna_args, $kdna_placeholder ) {
 	$type  = isset( $definition['type'] ) ? $definition['type'] : '';
 	$units = isset( $definition['units'] ) && is_array( $definition['units'] ) ? $definition['units'] : array();
 	$path  = $kdna_leaf_path( $key, $field_key, $responsive );
@@ -126,11 +155,12 @@ $kdna_render_leaf = static function ( array $definition, $key, $field_key, $resp
 				@input="setLeaf( <?php echo esc_attr( $args ); ?>, $event.target.value )"
 				aria-label="<?php esc_attr_e( 'Colour picker', 'kdna-tables' ); ?>"
 			/>
+			<?php $kdna_default = $kdna_placeholder( $definition ); ?>
 			<input
 				type="text"
 				class="kdna-style-color__text"
 				x-model="<?php echo esc_attr( $path ); ?>"
-				placeholder="<?php esc_attr_e( 'inherit', 'kdna-tables' ); ?>"
+				placeholder="<?php echo esc_attr( '' !== $kdna_default ? $kdna_default : __( 'inherit', 'kdna-tables' ) ); ?>"
 				spellcheck="false"
 			/>
 			<button
@@ -173,7 +203,7 @@ $kdna_render_leaf = static function ( array $definition, $key, $field_key, $resp
 				max="<?php echo esc_attr( (string) $max ); ?>"
 				step="<?php echo esc_attr( (string) $step ); ?>"
 				x-model="<?php echo esc_attr( $path . "['size']" ); ?>"
-				placeholder="—"
+				placeholder="<?php echo esc_attr( $kdna_placeholder( $definition, 'size' ) ?: '—' ); ?>"
 			/>
 			<?php if ( count( $units ) > 1 ) : ?>
 				<select class="kdna-style-unit" x-model="<?php echo esc_attr( $path . "['unit']" ); ?>" aria-label="<?php esc_attr_e( 'Unit', 'kdna-tables' ); ?>">
@@ -215,7 +245,7 @@ $kdna_render_leaf = static function ( array $definition, $key, $field_key, $resp
 						step="any"
 						x-model="<?php echo esc_attr( $path . "['" . $side . "']" ); ?>"
 						@input="syncLinked( <?php echo esc_attr( $args ); ?>, $event.target.value )"
-						placeholder="—"
+						placeholder="<?php echo esc_attr( $kdna_placeholder( $definition, $side ) ?: '—' ); ?>"
 						aria-label="<?php echo esc_attr( ucfirst( $side ) ); ?>"
 					/>
 					<span class="kdna-style-dimensions__label"><?php echo esc_html( ucfirst( $side ) ); ?></span>
@@ -267,7 +297,7 @@ $kdna_render_leaf = static function ( array $definition, $key, $field_key, $resp
 				max="<?php echo esc_attr( (string) $max ); ?>"
 				step="<?php echo esc_attr( (string) $step ); ?>"
 				x-model="<?php echo esc_attr( $path ); ?>"
-				placeholder="—"
+				placeholder="<?php echo esc_attr( $kdna_placeholder( $definition ) ?: '—' ); ?>"
 			/>
 			<?php if ( ! empty( $definition['suffix'] ) ) : ?>
 				<span class="kdna-style-unit kdna-style-unit--fixed"><?php echo esc_html( $definition['suffix'] ); ?></span>
@@ -328,7 +358,7 @@ $kdna_render_leaf = static function ( array $definition, $key, $field_key, $resp
 			class="kdna-style-input"
 			x-model="<?php echo esc_attr( $path ); ?>"
 			<?php if ( ! empty( $suggestions ) ) : ?>list="<?php echo esc_attr( $list_id ); ?>"<?php endif; ?>
-			placeholder="<?php esc_attr_e( 'inherit', 'kdna-tables' ); ?>"
+			placeholder="<?php echo esc_attr( $kdna_placeholder( $definition ) ?: __( 'inherit', 'kdna-tables' ) ); ?>"
 			spellcheck="false"
 		/>
 		<?php if ( ! empty( $suggestions ) ) : ?>
