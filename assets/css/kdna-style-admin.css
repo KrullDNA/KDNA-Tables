@@ -587,9 +587,152 @@
 	font-style: italic;
 }
 
+/* ── Live preview ──────────────────────────────────────────────────
+ *
+ * The stage is a scroller and the frame inside it has an explicit width,
+ * so a 1200px preview inside a narrower admin column scrolls sideways
+ * rather than being squashed. Squashing it would defeat the point: the
+ * frame's width is the viewport the media queries read.
+ */
+
+.kdna-style-preview {
+	margin: 16px 0 24px;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: 6px;
+	background: #fff;
+}
+
+.kdna-style-preview__bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 12px;
+	padding: 12px 14px;
+	border-bottom: 1px solid var(--kdna-admin-border);
+	background: #f6f7f7;
+	border-radius: 6px 6px 0 0;
+}
+
+.kdna-style-preview__control {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.kdna-style-preview__control--check {
+	flex-direction: row;
+	align-items: center;
+	gap: 6px;
+	padding-bottom: 5px;
+	font-size: 13px;
+}
+
+.kdna-style-preview__label {
+	color: var(--kdna-admin-text-soft);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
+.kdna-style-preview__control select {
+	min-width: 150px;
+	max-width: 260px;
+}
+
+.kdna-style-preview__devices {
+	display: inline-flex;
+	margin-left: auto;
+	border: 1px solid var(--kdna-admin-border-strong);
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.kdna-style-preview__device {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1px;
+	padding: 5px 12px;
+	border: 0;
+	border-right: 1px solid var(--kdna-admin-border);
+	background: #fff;
+	color: var(--kdna-admin-text-soft);
+	cursor: pointer;
+	font-size: 12px;
+	line-height: 1.2;
+}
+
+.kdna-style-preview__device:last-child {
+	border-right: 0;
+}
+
+.kdna-style-preview__device.is-active {
+	background: var(--kdna-admin-accent-soft);
+	color: var(--kdna-admin-accent);
+	font-weight: 600;
+}
+
+.kdna-style-preview__width {
+	font-size: 10px;
+	opacity: 0.75;
+}
+
+.kdna-style-preview__status {
+	align-self: center;
+	color: var(--kdna-admin-text-soft);
+	font-size: 12px;
+}
+
+.kdna-style-preview__status.is-error {
+	color: var(--kdna-admin-danger);
+}
+
+.kdna-style-preview__notice {
+	margin: 0;
+	padding: 8px 14px;
+	border-bottom: 1px solid var(--kdna-admin-border);
+	background: #fcf9e8;
+	color: #674f16;
+	font-size: 12px;
+}
+
+.kdna-style-preview__stage {
+	display: flex;
+	justify-content: center;
+	padding: 16px;
+	overflow-x: auto;
+	background:
+		repeating-conic-gradient(#f0f0f1 0% 25%, #fff 0% 50%) 50% / 16px 16px;
+}
+
+.kdna-style-preview__frame {
+	flex: 0 0 auto;
+	/* A starting height only: the pane measures its content and sets a
+	 * real one as soon as the markup is in. */
+	height: 320px;
+	max-height: 900px;
+	border: 1px solid var(--kdna-admin-border-strong);
+	border-radius: 4px;
+	background: #fff;
+}
+
+.kdna-style-preview__empty {
+	margin: 16px 0 24px;
+	padding: 24px;
+	border: 1px dashed var(--kdna-admin-border-strong);
+	border-radius: 6px;
+	color: var(--kdna-admin-text-soft);
+	text-align: center;
+}
+
 @media screen and (max-width: 782px) {
 	.kdna-style-admin__body {
 		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.kdna-style-preview__devices {
+		margin-left: 0;
 	}
 
 	.kdna-style-tabs {

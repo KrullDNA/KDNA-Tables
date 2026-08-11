@@ -257,6 +257,293 @@
 		return set.length > 1 ? token + '+' : token;
 	}
 
+	/* ── The resolver, ported ─────────────────────────────────────────
+	 *
+	 * The live preview writes custom properties straight onto the wrapper
+	 * inside the iframe, which means the browser has to be told the same
+	 * thing PHP would have written at render time. That is a second
+	 * implementation of KDNA_Tables_Style_Resolver, and second
+	 * implementations drift.
+	 *
+	 * Two things hold it in place. It is driven by the same schema object
+	 * the PHP reads, so anything expressible in a schema entry — type,
+	 * units, responsive, css_var, value_map, default — needs no code here
+	 * at all. And the pair is checked by an executable parity test that
+	 * runs both over the same value sets and compares the property maps,
+	 * so a divergence is a failing test rather than a preview that
+	 * quietly lies.
+	 *
+	 * Every function below is a transliteration of its PHP counterpart,
+	 * named the same, in the same order.
+	 */
+
+	function isNumeric( value ) {
+		if ( 'number' === typeof value ) { return isFinite( value ); }
+		if ( 'string' !== typeof value ) { return false; }
+		return /^\s*[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?\s*$/.test( value );
+	}
+
+	/** KDNA_Tables_Style_Resolver::is_inherit() */
+	function isInherit( value ) {
+		if ( null === value || undefined === value ) { return true; }
+
+		if ( 'string' === typeof value ) {
+			var trimmed = value.trim();
+			return '' === trimmed || 'inherit' === trimmed.toLowerCase();
+		}
+
+		if ( 'object' === typeof value ) {
+			var keys = Object.keys( value );
+			if ( ! keys.length ) { return true; }
+			if ( value.inherit ) { return true; }
+			return ! keys.some( function ( k ) {
+				// unit and the UI-only linked flag alone are not a value.
+				if ( 'unit' === k || 'linked' === k ) { return false; }
+				return ! isInherit( value[ k ] );
+			} );
+		}
+
+		// Numbers, including 0, are values. Booleans are not.
+		return 'boolean' === typeof value;
+	}
+
+	/** KDNA_Tables_Style_Resolver::number() */
+	function cssNumber( value ) {
+		var f = parseFloat( value );
+		if ( ! isFinite( f ) ) { return '0'; }
+		// PHP casts an integral float to int; otherwise it formats to four
+		// decimal places and trims the trailing zeros, which is what
+		// rounding to 1e-4 and stringifying gives here.
+		if ( Math.floor( f ) === f ) { return String( f === 0 ? 0 : f ); }
+		return String( Math.round( f * 10000 ) / 10000 );
+	}
+
+	/** KDNA_Tables_Style_Resolver::resolve_unit() */
+	function resolveUnit( definition, value ) {
+		var units = ( definition && definition.units ) || [];
+		var unit = ( value && 'object' === typeof value && undefined !== value.unit )
+			? String( value.unit )
+			: null;
+
+		if ( null !== unit && -1 !== units.indexOf( unit ) ) { return unit; }
+		return units.length ? String( units[ 0 ] ) : '';
+	}
+
+	/** KDNA_Tables_Style_Resolver::dimensions_value() */
+	function dimensionsValue( definition, value ) {
+		if ( ! value || 'object' !== typeof value ) { return ''; }
+
+		var unit = resolveUnit( definition, value );
+		var sides = [];
+		var any = false;
+
+		SIDES.forEach( function ( side ) {
+			var part = undefined === value[ side ] ? '' : value[ side ];
+			if ( 'string' === typeof part ) { part = part.trim(); }
+			if ( '' === part || null === part || ! isNumeric( part ) ) {
+				// A side left blank counts as 0, so a partially filled
+				// control still produces valid CSS.
+				sides.push( '0' + unit );
+				return;
+			}
+			any = true;
+			sides.push( cssNumber( part ) + unit );
+		} );
+
+		return any ? sides.join( ' ' ) : '';
+	}
+
+	/** KDNA_Tables_Style_Resolver::slider_value() */
+	function sliderValue( definition, value ) {
+		if ( isNumeric( value ) ) { value = { size: value }; }
+		if ( ! value || 'object' !== typeof value || undefined === value.size ) { return ''; }
+
+		var size = value.size;
+		if ( 'string' === typeof size ) { size = size.trim(); }
+		if ( '' === size || null === size || ! isNumeric( size ) ) { return ''; }
+
+		return cssNumber( size ) + resolveUnit( definition, value );
+	}
+
+	/** KDNA_Tables_Style_Resolver::css_value() */
+	function cssValue( definition, value ) {
+		if ( isInherit( value ) ) { return ''; }
+
+		switch ( definition.type ) {
+			case 'dimensions':
+				return dimensionsValue( definition, value );
+
+			case 'slider':
+				return sliderValue( definition, value );
+
+			case 'number':
+				if ( ! isNumeric( value ) ) { return ''; }
+				return cssNumber( value ) + ( definition.suffix || '' );
+
+			case 'select':
+				var key = ( null === value || 'object' === typeof value ) ? '' : String( value );
+				if ( '' === key ) { return ''; }
+				// A select can store a key that is not the CSS value, e.g. an
+				// alignment that resolves to a margin shorthand.
+				if ( definition.value_map && undefined !== definition.value_map[ key ] ) {
+					return String( definition.value_map[ key ] );
+				}
+				return key;
+
+			default:
+				return ( null === value || 'object' === typeof value ) ? '' : String( value ).trim();
+		}
+	}
+
+	/** KDNA_Tables_Style_Resolver::properties_for() */
+	function propertiesFor( definition, value, out ) {
+		if ( isInherit( value ) ) { return out; }
+
+		if ( isGroup( definition ) ) {
+			if ( ! value || 'object' !== typeof value ) { return out; }
+			Object.keys( definition.fields || {} ).forEach( function ( fieldKey ) {
+				if ( ! Object.prototype.hasOwnProperty.call( value, fieldKey ) ) { return; }
+				propertiesFor( definition.fields[ fieldKey ], value[ fieldKey ], out );
+			} );
+			return out;
+		}
+
+		var cssVar = definition.css_var || '';
+		if ( '' === cssVar ) { return out; }
+
+		if ( ! definition.responsive ) {
+			var flat = cssValue( definition, value );
+			if ( '' !== flat ) { out[ cssVar ] = flat; }
+			return out;
+		}
+
+		var byDevice = ( value && 'object' === typeof value ) ? value : { desktop: value };
+		DEVICES.forEach( function ( device ) {
+			if ( ! Object.prototype.hasOwnProperty.call( byDevice, device ) ) { return; }
+			var css = cssValue( definition, byDevice[ device ] );
+			// Absent, not empty: the stylesheet's var() fallback chain only
+			// falls through on an undefined property.
+			if ( '' === css ) { return; }
+			out[ 'desktop' === device ? cssVar : cssVar + '-' + device ] = css;
+		} );
+
+		return out;
+	}
+
+	/** KDNA_Tables_Style_Schema::default_value_for() */
+	function defaultValueFor( control ) {
+		if ( isGroup( control ) ) {
+			var value = {};
+			Object.keys( control.fields || {} ).forEach( function ( fieldKey ) {
+				var fieldDefault = defaultValueFor( control.fields[ fieldKey ] );
+				if ( null !== fieldDefault ) { value[ fieldKey ] = fieldDefault; }
+			} );
+			return Object.keys( value ).length ? value : null;
+		}
+
+		if ( undefined === control.default || null === control.default ) { return null; }
+		if ( control.responsive ) { return { desktop: control.default }; }
+		return control.default;
+	}
+
+	/** KDNA_Tables_Style_Resolver::merge_value() */
+	function mergeValue( current, incoming, definition ) {
+		if ( isInherit( incoming ) ) { return null; }
+
+		if ( isGroup( definition ) ) {
+			if ( ! incoming || 'object' !== typeof incoming ) { return null; }
+			var merged = ( current && 'object' === typeof current ) ? Object.assign( {}, current ) : {};
+			Object.keys( definition.fields || {} ).forEach( function ( fieldKey ) {
+				if ( ! Object.prototype.hasOwnProperty.call( incoming, fieldKey ) ) { return; }
+				var fieldMerged = mergeValue(
+					undefined === merged[ fieldKey ] ? null : merged[ fieldKey ],
+					incoming[ fieldKey ],
+					definition.fields[ fieldKey ]
+				);
+				if ( null === fieldMerged ) { return; }
+				merged[ fieldKey ] = fieldMerged;
+			} );
+			return Object.keys( merged ).length ? merged : null;
+		}
+
+		if ( definition.responsive ) {
+			if ( ! incoming || 'object' !== typeof incoming ) { incoming = { desktop: incoming }; }
+			var byDevice = ( current && 'object' === typeof current ) ? Object.assign( {}, current ) : {};
+			DEVICES.forEach( function ( device ) {
+				if ( ! Object.prototype.hasOwnProperty.call( incoming, device ) ) { return; }
+				// Skipped, not cleared: inherit means "let the layer beneath
+				// show through" at every level.
+				if ( isInherit( incoming[ device ] ) ) { return; }
+				byDevice[ device ] = incoming[ device ];
+			} );
+			return Object.keys( byDevice ).length ? byDevice : null;
+		}
+
+		return incoming;
+	}
+
+	/** KDNA_Tables_Style_Resolver::sanitize_css_value() */
+	function sanitizeCssValue( value ) {
+		if ( null === value || 'object' === typeof value ) { return ''; }
+
+		var out = String( value ).trim();
+		if ( '' === out ) { return ''; }
+
+		out = out.replace( /[\x00-\x1F\x7F]/g, '' );
+		if ( '' === out ) { return ''; }
+		if ( out.length > 200 ) { return ''; }
+		if ( /[;{}<>"'\\]|\/\*|\*\//.test( out ) ) { return ''; }
+		if ( /(url|expression|image-set|-moz-binding|javascript|@import)\s*[:(]/i.test( out ) ) { return ''; }
+
+		return out;
+	}
+
+	/**
+	 * KDNA_Tables_Style_Resolver::resolve(), for one layer over the schema
+	 * defaults — which is exactly what the global settings page edits.
+	 *
+	 * @param {Object} schema The control schema.
+	 * @param {Object} layer  Sparse control key => value, as saved.
+	 * @return {Object} Custom property name => CSS value.
+	 */
+	function resolveProperties( schema, layer ) {
+		var values = {};
+		Object.keys( schema ).forEach( function ( key ) {
+			var fallback = defaultValueFor( schema[ key ] );
+			if ( null !== fallback ) { values[ key ] = fallback; }
+		} );
+
+		Object.keys( layer || {} ).forEach( function ( key ) {
+			if ( ! schema[ key ] ) { return; }
+			var merged = mergeValue(
+				undefined === values[ key ] ? null : values[ key ],
+				layer[ key ],
+				schema[ key ]
+			);
+			if ( null === merged ) { return; }
+			values[ key ] = merged;
+		} );
+
+		var raw = {};
+		Object.keys( schema ).forEach( function ( key ) {
+			if ( ! Object.prototype.hasOwnProperty.call( values, key ) ) { return; }
+			propertiesFor( schema[ key ], values[ key ], raw );
+		} );
+
+		// to_style_attribute()'s output check, applied here for the same
+		// reason: the preview should show what the front end would render,
+		// including a value the front end would drop.
+		var properties = {};
+		Object.keys( raw ).forEach( function ( name ) {
+			if ( ! /^--[A-Za-z0-9_-]+$/.test( name ) ) { return; }
+			var clean = sanitizeCssValue( raw[ name ] );
+			if ( '' === clean ) { return; }
+			properties[ name ] = clean;
+		} );
+
+		return properties;
+	}
+
 	/* ── Component ────────────────────────────────────────────────── */
 
 	function kdnaTablesStyleAdmin() {
@@ -283,6 +570,25 @@
 			status: '',
 			statusClass: '',
 			_baseline: '',
+			/*
+			 * What was last written into the iframe, so a repaint only
+			 * touches what changed. It is reset whenever the document is
+			 * rewritten: a fresh document has a fresh wrapper carrying
+			 * nothing, and a stale record here would convince the repaint
+			 * that every property was already in place and skip the lot.
+			 */
+			_painted: {},
+
+			/* Live preview. Null on the per-table panel, which has no pane. */
+			preview: seed.preview || null,
+			previewTable: 0,
+			previewDevice: 'desktop',
+			previewMode: 'card_stack',
+			previewBreakpoint: 'tablet_and_mobile',
+			previewSticky: false,
+			previewLoading: false,
+			previewError: '',
+			previewEmpty: false,
 
 			init: function () {
 				this.values = shapeAll( this.schema, seed.values );
@@ -295,7 +601,232 @@
 				this.$watch( 'values', function () {
 					this.dirty = JSON.stringify( collapseAll( this.schema, this.values ) ) !== this._baseline;
 					if ( this.dirty ) { this.status = ''; this.statusClass = ''; }
+					// Same watch drives the preview: every edit repaints, and
+					// repainting is a few dozen setProperty calls on one
+					// element, with no fetch and no reflow of the markup.
+					this.paintPreview();
 				}.bind( this ) );
+
+				if ( this.preview ) {
+					this.previewTable = this.preview.tableId;
+					this.$nextTick( function () { this.loadPreview(); }.bind( this ) );
+				}
+			},
+
+			/* ── Live preview ────────────────────────────────────────
+			 * The pane is an iframe with no src, so its document is
+			 * about:blank and same-origin: contentDocument is reachable,
+			 * and the whole update path is DOM writes into it.
+			 *
+			 * It has to be an iframe rather than an inline block because
+			 * the responsive layouts key off viewport media queries. Only
+			 * a real viewport of 390px makes the mobile query fire; an
+			 * inline preview would need those rules restated as container
+			 * queries, which is a second copy of the breakpoint logic to
+			 * keep in step with the first.
+			 */
+
+			previewFrame: function () {
+				return this.$refs ? this.$refs.previewFrame : null;
+			},
+
+			previewDoc: function () {
+				var frame = this.previewFrame();
+				try {
+					return frame ? frame.contentDocument : null;
+				} catch ( e ) {
+					return null;
+				}
+			},
+
+			previewWidth: function () {
+				var widths = ( this.preview && this.preview.widths ) || {};
+				return widths[ this.previewDevice ] || 1200;
+			},
+
+			setPreviewDevice: function ( key ) {
+				this.previewDevice = key;
+				// A narrower viewport is a taller table, sometimes by a lot:
+				// card stack turns four rows into four cards.
+				this.fitPreview();
+			},
+
+			/**
+			 * Match the frame's height to its content, so the preview is not
+			 * a letterbox with the caption cut off. Bounded at both ends: a
+			 * tiny table should still look like a preview pane, and a
+			 * hundred-row one should not push the controls off the screen.
+			 */
+			fitPreview: function () {
+				var self = this;
+				window.requestAnimationFrame( function () {
+					var frame = self.previewFrame();
+					var doc = self.previewDoc();
+					if ( ! frame || ! doc || ! doc.body ) { return; }
+
+					/*
+					 * The body, not the documentElement. The root element's
+					 * scrollHeight is never less than the viewport, which is
+					 * the height we are about to set — so measuring it would
+					 * ratchet: the frame could grow but never shrink again.
+					 */
+					var height = doc.body.scrollHeight;
+					frame.style.height = Math.min( 900, Math.max( 220, height + 4 ) ) + 'px';
+				} );
+			},
+
+			/** The chosen table, for the overrides notice. */
+			previewTableInfo: function () {
+				var id = parseInt( this.previewTable, 10 );
+				return ( ( this.preview && this.preview.tables ) || [] ).filter( function ( t ) {
+					return t.id === id;
+				} )[ 0 ] || null;
+			},
+
+			previewHasOverrides: function () {
+				var info = this.previewTableInfo();
+				return !! ( info && info.hasOverrides );
+			},
+
+			/**
+			 * The iframe's document shell: the front-end stylesheets and an
+			 * empty root to drop markup into.
+			 *
+			 * Written once and then left alone. Rewriting it per fetch would
+			 * throw away the loaded stylesheets and re-request them, and the
+			 * new document would paint the table unstyled until they came
+			 * back — a flash on every table change, for nothing. Swapping
+			 * the markup inside the root has neither problem.
+			 */
+			ensurePreviewShell: function () {
+				var doc = this.previewDoc();
+				if ( ! doc ) { return null; }
+				if ( doc.getElementById( 'kdna-preview-root' ) ) { return doc; }
+
+				var links = ( this.preview.css || [] ).map( function ( href ) {
+					return '<link rel="stylesheet" href="' + href.replace( /"/g, '&quot;' ) + '">';
+				} ).join( '' );
+
+				doc.open();
+				doc.write(
+					'<!doctype html><html><head><meta charset="utf-8">' +
+					'<meta name="viewport" content="width=device-width, initial-scale=1">' +
+					links +
+					'<style>html,body{margin:0;padding:16px;background:#fff;' +
+					'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}</style>' +
+					'</head><body><div id="kdna-preview-root"></div></body></html>'
+				);
+				doc.close();
+
+				return doc;
+			},
+
+			previewWrapper: function () {
+				var doc = this.previewDoc();
+				return doc ? doc.querySelector( '.kdna-table__wrapper' ) : null;
+			},
+
+			/**
+			 * Fetch the markup. Only the table and the sticky toggle change
+			 * it: sticky wraps the table in a scroll container, which is
+			 * structure rather than style. Mode and breakpoint are wrapper
+			 * data attributes, so they are written in place like the
+			 * variables are.
+			 */
+			loadPreview: function () {
+				if ( ! this.preview ) { return; }
+
+				var id = parseInt( this.previewTable, 10 );
+				if ( ! id ) { return; }
+
+				var self = this;
+				var url = this.preview.restUrl + id + ( this.previewSticky ? '?sticky=1' : '' );
+
+				this.previewLoading = true;
+				this.previewError = '';
+
+				window.fetch( url, {
+					method: 'GET',
+					credentials: 'same-origin',
+					headers: { 'X-WP-Nonce': seed.nonce }
+				} ).then( function ( response ) {
+					return response.json().then( function ( body ) {
+						return { ok: response.ok, body: body };
+					} );
+				} ).then( function ( result ) {
+					self.previewLoading = false;
+
+					if ( ! result.ok || ! result.body || undefined === result.body.html ) {
+						self.previewError = ( result.body && result.body.message )
+							? result.body.message
+							: ( self.strings.previewFailed || 'Could not load the preview.' );
+						return;
+					}
+
+					self.previewEmpty = !! result.body.empty;
+
+					var doc = self.ensurePreviewShell();
+					if ( ! doc ) { return; }
+
+					var root = doc.getElementById( 'kdna-preview-root' );
+					// The markup is our own render templates' output, fetched
+					// from an authenticated route on this origin, and it is
+					// exactly what the front end would print.
+					root.innerHTML = result.body.html;
+
+					// A new wrapper element, carrying nothing. Without this
+					// the repaint would compare against what it wrote to the
+					// PREVIOUS wrapper, conclude everything was already in
+					// place, and leave the new one bare.
+					self._painted = {};
+					self.paintPreview();
+				} ).catch( function () {
+					self.previewLoading = false;
+					self.previewError = self.strings.previewFailed || 'Could not load the preview.';
+				} );
+			},
+
+			/**
+			 * Push the current form state into the iframe: the resolved
+			 * custom properties, and the two layout attributes.
+			 *
+			 * Properties that resolve to nothing are REMOVED rather than
+			 * set empty, for the same reason the render path omits them —
+			 * the stylesheet's var() fallback chains only fall through on a
+			 * property that is not there.
+			 */
+			paintPreview: function () {
+				if ( ! this.preview ) { return; }
+
+				var wrapper = this.previewWrapper();
+				if ( ! wrapper ) { return; }
+
+				var properties = this.previewProperties();
+				var previous = this._painted || {};
+
+				Object.keys( previous ).forEach( function ( name ) {
+					if ( ! Object.prototype.hasOwnProperty.call( properties, name ) ) {
+						wrapper.style.removeProperty( name );
+					}
+				} );
+
+				Object.keys( properties ).forEach( function ( name ) {
+					if ( previous[ name ] !== properties[ name ] ) {
+						wrapper.style.setProperty( name, properties[ name ] );
+					}
+				} );
+
+				this._painted = properties;
+
+				wrapper.setAttribute( 'data-responsive-mode', this.previewMode );
+				wrapper.setAttribute( 'data-responsive-breakpoint', this.previewBreakpoint );
+
+				this.fitPreview();
+			},
+
+			/** What the preview is about to write, for the tests. */
+			previewProperties: function () {
+				return resolveProperties( this.schema, collapseAll( this.schema, this.values ) );
 			},
 
 			/**
@@ -689,6 +1220,9 @@
 		collapseControl: collapseControl,
 		toSwatch: toSwatch,
 		leafToken: leafToken,
-		fieldToken: fieldToken
+		fieldToken: fieldToken,
+		// Exposed for the Stage 9 parity test, which runs this against the
+		// PHP resolver over the same value sets.
+		resolveProperties: resolveProperties
 	};
 }() );

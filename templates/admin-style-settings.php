@@ -28,6 +28,8 @@ $kdna_renderers = require KDNA_TABLES_PATH . 'templates/admin-style-controls.php
 		<?php esc_html_e( 'These are the defaults every [kdna_table] shortcode renders with. Individual tables can override them on their own edit screen.', 'kdna-tables' ); ?>
 	</p>
 
+	<?php require KDNA_TABLES_PATH . 'templates/admin-style-preview.php'; ?>
+
 	<?php $kdna_renderers['panel']( $sections, $grouped, $devices ); ?>
 
 	<div class="kdna-style-savebar">

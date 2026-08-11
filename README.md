@@ -271,6 +271,48 @@ being spread across Header Row, First Column and Body Cells.
 | Column Picker Mode → all 13 controls | The column picker hides and shows columns by their `data-slot` attribute, which only the comparison render emits, and its script only initialises inside Elementor. A general-table shortcode in `column_picker` mode renders normally with no picker, so the chrome has nothing to style. The stylesheet already carries the `--kdna-picker-*` variables for when that changes. |
 | Cell Content → Icon Colour (hover) on the comparison indicators | Comparison-only, and comparison styling is out of scope for this build. |
 
+### Live preview
+
+The settings page carries a preview pane above the controls. A dropdown
+picks any published table, defaulting to the most recently modified one,
+and a device toggle sets the preview width to 1200px, 900px or 390px.
+
+The preview is an **iframe**, not an inline block, and that is a
+deliberate constraint rather than an implementation detail. The
+responsive modes are viewport media queries; only a document with a real
+390px viewport makes the mobile query fire. Previewing inline would mean
+restating every breakpoint rule as a container query or a class
+override — a second copy of the responsive layer to keep in step with
+the first for ever.
+
+The frame carries no `src`, so its document is `about:blank` and
+therefore same-origin. It loads `kdna-tables.css` and
+`kdna-shortcode.css` by URL, and the markup comes from
+`kdna-tables/v1/preview/<id>` — the render templates' own output,
+deliberately stripped of its resolved style attribute so an unset control
+reads as absent in the preview exactly as it does on the front end.
+
+Everything after that is a DOM write through `contentDocument`. Because
+every visual property reads from a custom property, updating the preview
+is writing the resolved variables onto the wrapper, so editing repaints
+with no re-fetch and no `postMessage` plumbing. The markup is re-fetched
+only when the chosen table changes, or when the sticky toggle does —
+sticky wraps the table in a scroll container, which is structure rather
+than style. Responsive mode and breakpoint are wrapper data attributes,
+so they are rewritten in place like the variables are.
+
+Resolving the variables in the browser means there are two
+implementations of the resolver, one in PHP and one in
+`assets/js/kdna-style-admin.js`. Both are driven by the same schema
+object, so anything expressible as a schema entry needs no code in
+either, and the pair is held together by a parity test that runs both
+over the same value sets and compares the property maps.
+
+The pane is on the global settings page only. A per-table panel
+previewing itself would want the table's own overrides folded into the
+preview's variable maths, which is a change to what the pane resolves
+rather than to where it is rendered.
+
 ### Per-table overrides
 
 Every table gets a **Styles** panel on its own edit screen, with the same

@@ -44,7 +44,19 @@ class KDNA_Tables_Style_Admin {
 	/* Per-table overrides. Same sanitiser, same permission callback, one
 	 * extra check that the id really is a table this user may edit. */
 	const REST_ROUTE_TABLE = '/styles/(?P<id>\d+)';
-	const META_BOX_ID      = 'kdna_table_styles';
+	/* Markup for the live preview iframe. */
+	const REST_ROUTE_PREVIEW = '/preview/(?P<id>\d+)';
+	const META_BOX_ID        = 'kdna_table_styles';
+
+	/** How many tables the preview picker lists. */
+	const PREVIEW_TABLE_LIMIT = 100;
+
+	/** Iframe widths for the preview device toggle. */
+	const PREVIEW_WIDTHS = array(
+		'desktop' => 1200,
+		'tablet'  => 900,
+		'mobile'  => 390,
+	);
 
 	/** Hook suffix returned by add_submenu_page, for the asset check. */
 	private static $hook_suffix = '';
@@ -237,6 +249,14 @@ class KDNA_Tables_Style_Admin {
 				? rest_url( self::REST_NAMESPACE . '/styles/' . $table_id )
 				: rest_url( self::REST_NAMESPACE . self::REST_ROUTE ),
 			'nonce'     => wp_create_nonce( 'wp_rest' ),
+			/*
+			 * The preview pane is on the global settings page only. A
+			 * per-table panel previewing itself would be the better tool,
+			 * but it needs the resolver's table layer in the preview's
+			 * variable maths, which is a change to what the pane resolves
+			 * rather than to where it is rendered.
+			 */
+			'preview'   => $is_table ? null : self::preview_data(),
 			'strings'   => array(
 				'saving'    => __( 'Saving…', 'kdna-tables' ),
 				'saved'     => __( 'Saved', 'kdna-tables' ),
@@ -246,7 +266,186 @@ class KDNA_Tables_Style_Admin {
 				'inherit'   => __( 'Inherit', 'kdna-tables' ),
 				'default'   => __( 'the plugin default', 'kdna-tables' ),
 				'confirm'   => __( 'Drop every style override on this table and follow the global defaults again?', 'kdna-tables' ),
+				'loading'   => __( 'Loading preview…', 'kdna-tables' ),
+				'noPreview' => __( 'Publish a table to see it previewed here.', 'kdna-tables' ),
+				'previewFailed' => __( 'Could not load the preview.', 'kdna-tables' ),
 			),
+		);
+	}
+
+	/* ─── Live preview ──────────────────────────────────────────────── */
+
+	/**
+	 * Everything the preview pane needs to boot: what it can show, what
+	 * to show first, where to fetch markup, and what to load inside the
+	 * iframe.
+	 *
+	 * Returns null when there is nothing to preview, which the pane reads
+	 * as "render the empty state" rather than as an error.
+	 */
+	private static function preview_data() {
+		$tables = self::preview_tables();
+		if ( empty( $tables ) ) {
+			return null;
+		}
+
+		return array(
+			'tables'  => $tables,
+			// Most recently modified: the one the user was last working on,
+			// which is the one they are most likely to be styling for.
+			'tableId' => $tables[0]['id'],
+			'restUrl' => rest_url( self::REST_NAMESPACE . '/preview/' ),
+			'widths'  => self::PREVIEW_WIDTHS,
+			/*
+			 * The iframe is a document of our own making, so it loads the
+			 * front-end stylesheets by URL rather than inheriting the admin's.
+			 * Order matters: kdna-shortcode.css declares its private
+			 * resolution layer on top of the base rules.
+			 */
+			'css'     => self::preview_stylesheets(),
+			'devices' => array(
+				'desktop' => __( 'Desktop', 'kdna-tables' ),
+				'tablet'  => __( 'Tablet', 'kdna-tables' ),
+				'mobile'  => __( 'Mobile', 'kdna-tables' ),
+			),
+			'modes'   => array(
+				'none'          => __( 'No responsive mode', 'kdna-tables' ),
+				'card_stack'    => __( 'Card Stack', 'kdna-tables' ),
+				'pivot_rows'    => __( 'Pivot Rows', 'kdna-tables' ),
+				'column_picker' => __( 'Column Picker', 'kdna-tables' ),
+			),
+			'breakpoints' => array(
+				'mobile'            => __( 'Mobile only', 'kdna-tables' ),
+				'tablet_and_mobile' => __( 'Tablet and mobile', 'kdna-tables' ),
+			),
+		);
+	}
+
+	/**
+	 * Published tables the preview can render, most recently modified
+	 * first. Whether each carries its own overrides travels with it, so
+	 * the pane can say that the front end will look different from what
+	 * is being previewed here.
+	 */
+	private static function preview_tables() {
+		$posts = get_posts(
+			array(
+				'post_type'        => KDNA_Tables_CPT::POST_TYPE,
+				'post_status'      => 'publish',
+				'numberposts'      => self::PREVIEW_TABLE_LIMIT,
+				'orderby'          => 'modified',
+				'order'            => 'DESC',
+				'suppress_filters' => false,
+			)
+		);
+
+		$tables = array();
+		foreach ( (array) $posts as $post ) {
+			if ( ! $post instanceof WP_Post ) {
+				continue;
+			}
+			$title = trim( (string) $post->post_title );
+			$tables[] = array(
+				'id'           => (int) $post->ID,
+				/* translators: %d: table post id. */
+				'title'        => '' === $title ? sprintf( __( 'Table %d', 'kdna-tables' ), (int) $post->ID ) : $title,
+				'type'         => (string) KDNA_Tables_CPT::get_type( $post->ID ),
+				'hasOverrides' => ! empty( self::stored_overrides( $post->ID ) ),
+			);
+		}
+
+		return $tables;
+	}
+
+	/**
+	 * Stylesheet URLs the preview iframe loads.
+	 *
+	 * Font Awesome comes from Elementor's bundled copy when Elementor is
+	 * active, matching what enqueue_font_awesome() does on the front end.
+	 * Without it the indicator icons preview as empty boxes, which is also
+	 * what the front end would show, so nothing is faked here.
+	 */
+	private static function preview_stylesheets() {
+		$urls = array(
+			KDNA_TABLES_URL . 'assets/css/kdna-tables.css',
+			KDNA_TABLES_URL . 'assets/css/kdna-comparison.css',
+			KDNA_TABLES_URL . 'assets/css/kdna-shortcode.css',
+		);
+
+		$font_awesome = defined( 'ELEMENTOR_ASSETS_URL' )
+			? ELEMENTOR_ASSETS_URL . 'lib/font-awesome/css/all.min.css'
+			: '';
+
+		/** This filter is documented in includes/class-kdna-tables-shortcode.php */
+		$font_awesome = (string) apply_filters( 'kdna_tables_font_awesome_url', $font_awesome );
+		if ( '' !== $font_awesome ) {
+			$urls[] = $font_awesome;
+		}
+
+		$versioned = array();
+		foreach ( $urls as $url ) {
+			$versioned[] = esc_url_raw( add_query_arg( 'ver', KDNA_TABLES_VERSION, $url ) );
+		}
+
+		return $versioned;
+	}
+
+	/**
+	 * Markup for the preview iframe.
+	 *
+	 * The shortcode renders it, so the preview is the render templates'
+	 * own output rather than a second layout that could disagree with the
+	 * front end — including the structural pieces the CSS alone cannot
+	 * produce, like the scroll container a sticky first column needs.
+	 *
+	 * The one thing deliberately withheld is the resolved style attribute.
+	 * The pane writes the custom properties itself, from the values
+	 * currently in the form, and it can only do that reliably if the
+	 * wrapper is not already carrying a saved set underneath: an unset
+	 * control has to read as absent in the iframe exactly as it does on
+	 * the front end, and a leftover attribute would make it read as the
+	 * last saved value instead.
+	 */
+	public static function handle_preview( $request ) {
+		$table_id = (int) $request->get_param( 'id' );
+		$post     = get_post( $table_id );
+
+		if ( ! $post instanceof WP_Post
+			|| KDNA_Tables_CPT::POST_TYPE !== $post->post_type
+			|| 'publish' !== $post->post_status ) {
+			return new WP_Error(
+				'kdna_tables_unknown_table',
+				__( 'That table does not exist, or is not published.', 'kdna-tables' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		$strip = static function () {
+			return array();
+		};
+		add_filter( 'kdna_tables_style_properties', $strip, 99 );
+
+		$html = KDNA_Tables_Shortcode::render(
+			array(
+				'id' => $table_id,
+				// Mode and breakpoint are wrapper data attributes, and the
+				// pane rewrites them in place rather than re-fetching. Sticky
+				// is structural, so it is a render argument.
+				'responsive' => 'card_stack',
+				'breakpoint' => 'tablet_and_mobile',
+				'sticky'     => $request->get_param( 'sticky' ) ? 'yes' : 'no',
+			)
+		);
+
+		remove_filter( 'kdna_tables_style_properties', $strip, 99 );
+
+		return rest_ensure_response(
+			array(
+				'id'    => $table_id,
+				'type'  => (string) KDNA_Tables_CPT::get_type( $table_id ),
+				'html'  => $html,
+				'empty' => ( '' === trim( (string) $html ) ),
+			)
 		);
 	}
 
@@ -309,6 +508,34 @@ class KDNA_Tables_Style_Admin {
 					'values' => array(
 						'required' => true,
 						'type'     => 'object',
+					),
+				),
+			)
+		);
+
+		/*
+		 * Preview markup. Read-only, but behind the same permission
+		 * callback as the two save routes: it renders a table's content,
+		 * including tables that are published but not yet linked from
+		 * anywhere, and this is a settings-page facility rather than a
+		 * public one.
+		 */
+		register_rest_route(
+			self::REST_NAMESPACE,
+			self::REST_ROUTE_PREVIEW,
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( __CLASS__, 'handle_preview' ),
+				'permission_callback' => array( __CLASS__, 'permission_check' ),
+				'args'                => array(
+					'id'     => array(
+						'required' => true,
+						'type'     => 'integer',
+					),
+					'sticky' => array(
+						'required' => false,
+						'type'     => 'boolean',
+						'default'  => false,
 					),
 				),
 			)
