@@ -12,7 +12,8 @@ different pages.
 - **Widget:** KDNA Table (Elementor category: KDNA Tables)
 - **Shortcode:** `[kdna_table id="123"]` (non-Elementor contexts)
 - **Custom post type:** `kdna_table` (admin only, not public)
-- **Requires:** WordPress 6.0+, PHP 8.0+, Elementor
+- **Requires:** WordPress 6.0+, PHP 8.0+. Elementor is required for the
+  widget; since 3.0.0 the shortcode renders without it.
 
 ## Installation
 
@@ -47,7 +48,8 @@ sticky column, and so on.
 
 **Without Elementor (classic editor, theme template, Gutenberg shortcode
 block, JetEngine or ACF field, widget, term description):** Use the
-shortcode
+shortcode. Since 3.0.0 this works whether Elementor is installed or not —
+the render templates no longer depend on it.
 
 ```
 [kdna_table id="123"]
@@ -622,9 +624,18 @@ previously reach.
   API is present.
 - New shortcode attributes: `responsive`, `breakpoint`, `sticky`,
   `style_id`.
-- Fixed a fatal error when the shortcode was rendered with Elementor
-  deactivated. The shortcode now degrades to rendering nothing instead of
-  taking the page down.
+- **The shortcode no longer needs Elementor.** The cell-render helpers
+  moved out of the widget class into
+  `KDNA_Tables_Cell_Renderer_Trait`, so the shortcode binds the render
+  templates to a plain object instead of to a widget. Previously,
+  rendering with Elementor deactivated was a fatal error, and the guard
+  against it made the shortcode render nothing at all. It now renders
+  identically with or without Elementor.
+- Fixed the Card Border Radius control squaring the top corners of a
+  card. The control writes four values and the stylesheet fed them to
+  `border-top-left-radius`, which accepts at most two — so the
+  declaration was invalid and silently dropped. Affected the Elementor
+  widget's card-stack layout for both table types.
 
 ### 2.3.1
 

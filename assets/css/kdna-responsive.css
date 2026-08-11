@@ -188,8 +188,15 @@
 		 * so existing themes still get a sensible header foreground. */
 		color: var(--kdna-comparison-header-color);
 		justify-content: center;
-		border-top-left-radius: var(--kdna-card-radius);
-		border-top-right-radius: var(--kdna-card-radius);
+		/* Only the top corners round, since this cell is the top of its
+		 * card. Written as the shorthand and then squared off, NOT as the
+		 * two top longhands: the Card Border Radius control writes four
+		 * values, border-top-left-radius accepts at most two, and a
+		 * longhand fed four is invalid — the whole declaration is dropped
+		 * and the corner silently goes square. */
+		border-radius: var(--kdna-card-radius);
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
 	}
 
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__cell--value,
@@ -288,8 +295,11 @@
 	 * text-align centres the heading text. */
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell--header,
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell--header {
-		border-top-left-radius: var(--kdna-card-radius);
-		border-top-right-radius: var(--kdna-card-radius);
+		/* Shorthand then squared off rather than the two top longhands —
+		 * see the comparison item header above for why. */
+		border-radius: var(--kdna-card-radius);
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
 	}
 
 	/* When the user marked the first column as a row-label column, body
@@ -537,8 +547,11 @@
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison thead .kdna-comparison__cell--item {
 		background: var(--kdna-comparison-header-bg);
 		color: var(--kdna-comparison-header-color);
-		border-top-left-radius: var(--kdna-card-radius);
-		border-top-right-radius: var(--kdna-card-radius);
+		/* Shorthand then squared off rather than the two top longhands —
+		 * see the mobile block above for why. */
+		border-radius: var(--kdna-card-radius);
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
 	}
 
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--value {

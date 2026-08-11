@@ -207,10 +207,7 @@ class KDNA_Tables_Shortcode {
 
 		self::enqueue_assets( $settings['table_type'], $responsive_mode, $sticky );
 
-		$render_instance = self::widget_instance();
-		if ( ! $render_instance ) {
-			return '';
-		}
+		$render_instance = self::cell_renderer();
 
 		$wrapper_classes = array(
 			'kdna-table__wrapper',
@@ -248,9 +245,8 @@ class KDNA_Tables_Shortcode {
 		ob_start();
 		echo '<div' . $attr_string . '>';
 		// Wrap in a closure so the include scope sees both $settings and
-		// $this bound to a widget instance. The instance has no Elementor
-		// editor lifecycle, just the cell-render helpers the templates
-		// call.
+		// $this bound to the cell renderer, which is what the templates
+		// call their helpers on.
 		$render = function () use ( $settings ) {
 			$template_file = 'general' === $settings['table_type']
 				? KDNA_TABLES_PATH . 'templates/render-general.php'
@@ -337,64 +333,28 @@ class KDNA_Tables_Shortcode {
 		);
 	}
 
-	/* ─── Widget instance for the render helpers ────────────────────── */
+	/* ─── The object the templates are bound to ─────────────────────── */
 
-	private static function widget_instance() {
+	/**
+	 * The cell renderer the render templates call their $this-> helpers
+	 * on.
+	 *
+	 * A plain KDNA_Tables_Cell_Renderer, never the widget. The two share
+	 * the helpers through KDNA_Tables_Cell_Renderer_Trait, so the output
+	 * is identical either way, and using the plain one means this path
+	 * touches nothing that needs Elementor: the widget class extends
+	 * \Elementor\Widget_Base, so instantiating it — or even including its
+	 * file — is a fatal error on a site with Elementor deactivated.
+	 *
+	 * That used to be guarded by refusing to render at all without
+	 * Elementor. Now there is nothing to guard.
+	 */
+	private static function cell_renderer() {
 		static $instance = null;
-		if ( null !== $instance ) {
-			return $instance;
+		if ( null === $instance ) {
+			$instance = new KDNA_Tables_Cell_Renderer();
 		}
-
-		if ( ! class_exists( 'KDNA_Tables_Widget' ) ) {
-			/*
-			 * The widget class extends \Elementor\Widget_Base, so merely
-			 * including the file is a fatal error when that class does not
-			 * exist — which is every request on a site with Elementor
-			 * deactivated, since Elementor is what loads the widget file
-			 * in the first place. Requiring it unguarded took the whole
-			 * page down rather than dropping one table.
-			 *
-			 * Guarded, the shortcode degrades to rendering nothing there.
-			 * Rendering properly without Elementor needs the cell-render
-			 * helpers the templates call on $this to live somewhere other
-			 * than the widget class; that is a separate change to
-			 * class-kdna-tables-widget.php, not to this file.
-			 */
-			if ( ! class_exists( '\\Elementor\\Widget_Base' ) ) {
-				return null;
-			}
-			$widget_file = KDNA_TABLES_PATH . 'includes/class-kdna-tables-widget.php';
-			if ( file_exists( $widget_file ) ) {
-				require_once $widget_file;
-			}
-		}
-		if ( ! class_exists( 'KDNA_Tables_Widget' ) ) {
-			return null;
-		}
-
-		// The widget needs a shim because Elementor's Widget_Base
-		// constructor expects Elementor's bootstrap to have run. Calling
-		// new KDNA_Tables_Widget() inside a non-Elementor request can
-		// throw. Detect Elementor's presence; fall back to instantiating
-		// without the parent constructor so the cell render helpers are
-		// still available.
-		if ( class_exists( '\\Elementor\\Widget_Base' ) ) {
-			try {
-				$instance = new KDNA_Tables_Widget();
-				return $instance;
-			} catch ( Throwable $e ) {
-				// fallthrough
-			}
-		}
-
-		try {
-			$ref      = new ReflectionClass( 'KDNA_Tables_Widget' );
-			$instance = $ref->newInstanceWithoutConstructor();
-			return $instance;
-		} catch ( Throwable $e ) {
-			$instance = null;
-			return null;
-		}
+		return $instance;
 	}
 
 	/* ─── Render-time enqueue ───────────────────────────────────────── */

@@ -93,7 +93,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</p>
 
 	<p class="kdna-style-preview__notice" x-show="previewEmpty">
-		<?php esc_html_e( 'This table rendered nothing. It may have no columns, or Elementor may be deactivated.', 'kdna-tables' ); ?>
+		<?php esc_html_e( 'This table rendered nothing. It may have no columns yet.', 'kdna-tables' ); ?>
 	</p>
 
 	<div class="kdna-style-preview__stage">

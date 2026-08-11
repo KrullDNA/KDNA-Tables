@@ -15,6 +15,9 @@ require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-data.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-admin.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-editor.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-migration.php';
+// The cell-render helpers the templates call, shared by the widget and
+// the shortcode. Extends nothing, so it loads with or without Elementor.
+require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-cell-renderer.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-shortcode.php';
 // Shortcode Style Engine.
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-style-schema.php';
