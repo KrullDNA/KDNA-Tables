@@ -16,6 +16,10 @@ require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-admin.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-editor.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-migration.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-shortcode.php';
+// Shortcode Style Engine. Definitions only at this stage: nothing hooks,
+// enqueues or renders until the shortcode starts consuming the resolver.
+require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-style-schema.php';
+require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-style-resolver.php';
 
 KDNA_Tables_CPT::init();
 KDNA_Tables_Shortcode::init();
