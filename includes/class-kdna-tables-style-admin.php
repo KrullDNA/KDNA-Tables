@@ -41,12 +41,17 @@ class KDNA_Tables_Style_Admin {
 	const ALPINE_HANDLE  = 'kdna-tables-alpine';
 	const REST_NAMESPACE = 'kdna-tables/v1';
 	const REST_ROUTE     = '/styles';
+	/* Per-table overrides. Same sanitiser, same permission callback, one
+	 * extra check that the id really is a table this user may edit. */
+	const REST_ROUTE_TABLE = '/styles/(?P<id>\d+)';
+	const META_BOX_ID      = 'kdna_table_styles';
 
 	/** Hook suffix returned by add_submenu_page, for the asset check. */
 	private static $hook_suffix = '';
 
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'register_menu' ) );
+		add_action( 'add_meta_boxes', array( __CLASS__, 'register_meta_box' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
 		add_action( 'rest_api_init', array( __CLASS__, 'register_rest_routes' ) );
 	}
@@ -76,10 +81,55 @@ class KDNA_Tables_Style_Admin {
 		include KDNA_TABLES_PATH . 'templates/admin-style-settings.php';
 	}
 
+	/* ─── Per-table panel ───────────────────────────────────────────── */
+
+	/**
+	 * The Styles meta box on the table edit screen.
+	 *
+	 * Gated on manage_options rather than on edit_post, deliberately: the
+	 * save route it posts to is the global route's twin and carries the
+	 * same capability check, so showing the panel to an editor who could
+	 * not save from it would be a worse experience than not showing it.
+	 */
+	public static function register_meta_box() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		add_meta_box(
+			self::META_BOX_ID,
+			__( 'Styles', 'kdna-tables' ),
+			array( __CLASS__, 'render_overrides_panel' ),
+			KDNA_Tables_CPT::POST_TYPE,
+			'normal',
+			'low'
+		);
+	}
+
+	public static function render_overrides_panel( $post ) {
+		$table_id = $post instanceof WP_Post ? (int) $post->ID : 0;
+		$sections = KDNA_Tables_Style_Schema::get_sections();
+		$grouped  = KDNA_Tables_Style_Schema::get_by_section();
+		$devices  = self::device_labels();
+
+		include KDNA_TABLES_PATH . 'templates/admin-style-overrides.php';
+	}
+
+	/**
+	 * The overrides stored against one table, always an array.
+	 */
+	public static function stored_overrides( $table_id ) {
+		$values = get_post_meta( (int) $table_id, KDNA_Tables_Style_Resolver::META_KEY, true );
+		return is_array( $values ) ? $values : array();
+	}
+
 	/* ─── Assets ────────────────────────────────────────────────────── */
 
 	public static function enqueue_assets( $hook ) {
-		if ( '' === self::$hook_suffix || $hook !== self::$hook_suffix ) {
+		$table_id = self::edited_table_id( $hook );
+		$on_page  = ( '' !== self::$hook_suffix && $hook === self::$hook_suffix );
+
+		if ( ! $on_page && 0 === $table_id ) {
 			return;
 		}
 
@@ -105,19 +155,58 @@ class KDNA_Tables_Style_Admin {
 			true
 		);
 
-		wp_enqueue_script(
-			self::ALPINE_HANDLE,
-			KDNA_TABLES_URL . 'assets/js/alpine.min.js',
-			array( self::SCRIPT_HANDLE ),
-			'3.15.12',
-			true
-		);
+		/*
+		 * On the table edit screen the table editor has usually
+		 * registered this same Alpine handle already, with only its own
+		 * script as a dependency — so wp_enqueue_script would not
+		 * re-register it and ours could print after Alpine had booted,
+		 * too late for the alpine:init listener. Append ourselves to the
+		 * existing dependency list instead. (The component is also
+		 * exposed on window, which is what makes x-data resolve either
+		 * way, but the ordering should be right rather than merely
+		 * survivable.)
+		 */
+		if ( wp_script_is( self::ALPINE_HANDLE, 'registered' ) ) {
+			$alpine = wp_scripts()->query( self::ALPINE_HANDLE, 'registered' );
+			if ( $alpine && ! in_array( self::SCRIPT_HANDLE, (array) $alpine->deps, true ) ) {
+				$alpine->deps[] = self::SCRIPT_HANDLE;
+			}
+			wp_enqueue_script( self::ALPINE_HANDLE );
+		} else {
+			wp_enqueue_script(
+				self::ALPINE_HANDLE,
+				KDNA_TABLES_URL . 'assets/js/alpine.min.js',
+				array( self::SCRIPT_HANDLE ),
+				'3.15.12',
+				true
+			);
+		}
 
 		wp_add_inline_script(
 			self::SCRIPT_HANDLE,
-			'window.KDNATablesStyles = ' . wp_json_encode( self::bootstrap_data() ) . ';',
+			'window.KDNATablesStyles = ' . wp_json_encode( self::bootstrap_data( $table_id ) ) . ';',
 			'before'
 		);
+	}
+
+	/**
+	 * The table being edited on this screen, or 0 when this is not a
+	 * table edit screen at all.
+	 */
+	private static function edited_table_id( $hook ) {
+		if ( 'post.php' !== $hook && 'post-new.php' !== $hook ) {
+			return 0;
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return 0;
+		}
+
+		$post = get_post();
+		if ( ! $post instanceof WP_Post || KDNA_Tables_CPT::POST_TYPE !== $post->post_type ) {
+			return 0;
+		}
+
+		return (int) $post->ID;
 	}
 
 	/**
@@ -125,21 +214,38 @@ class KDNA_Tables_Style_Admin {
 	 * the JS needs it for the same reason the PHP does: to know each
 	 * control's shape before binding a value to it.
 	 */
-	private static function bootstrap_data() {
+	private static function bootstrap_data( $table_id = 0 ) {
+		$table_id = (int) $table_id;
+		$is_table = $table_id > 0;
+
 		return array(
-			'schema'   => KDNA_Tables_Style_Schema::get(),
-			'sections' => KDNA_Tables_Style_Schema::get_sections(),
-			'devices'  => array_keys( self::device_labels() ),
-			'values'   => self::stored_values(),
-			'restUrl'  => rest_url( self::REST_NAMESPACE . self::REST_ROUTE ),
-			'nonce'    => wp_create_nonce( 'wp_rest' ),
-			'strings'  => array(
+			'schema'    => KDNA_Tables_Style_Schema::get(),
+			'sections'  => KDNA_Tables_Style_Schema::get_sections(),
+			'devices'   => array_keys( self::device_labels() ),
+			'context'   => $is_table ? 'table' : 'global',
+			'tableId'   => $table_id,
+			'values'    => $is_table ? self::stored_overrides( $table_id ) : self::stored_values(),
+			/*
+			 * What the layer beneath is contributing, so an inherited
+			 * control can show the value it is inheriting rather than a
+			 * blank. For a table that is the schema defaults merged with
+			 * the global option; on the global page it is the schema
+			 * defaults alone, which is what its placeholders already show.
+			 */
+			'inherited' => $is_table ? KDNA_Tables_Style_Resolver::resolve_values( 0 ) : array(),
+			'restUrl'   => $is_table
+				? rest_url( self::REST_NAMESPACE . '/styles/' . $table_id )
+				: rest_url( self::REST_NAMESPACE . self::REST_ROUTE ),
+			'nonce'     => wp_create_nonce( 'wp_rest' ),
+			'strings'   => array(
 				'saving'    => __( 'Saving…', 'kdna-tables' ),
 				'saved'     => __( 'Saved', 'kdna-tables' ),
 				'failed'    => __( 'Could not save', 'kdna-tables' ),
 				'unsaved'   => __( 'Unsaved changes', 'kdna-tables' ),
 				'discarded' => __( 'Some values were not valid and were discarded.', 'kdna-tables' ),
 				'inherit'   => __( 'Inherit', 'kdna-tables' ),
+				'default'   => __( 'the plugin default', 'kdna-tables' ),
+				'confirm'   => __( 'Drop every style override on this table and follow the global defaults again?', 'kdna-tables' ),
 			),
 		);
 	}
@@ -174,6 +280,32 @@ class KDNA_Tables_Style_Admin {
 				'callback'            => array( __CLASS__, 'handle_save' ),
 				'permission_callback' => array( __CLASS__, 'permission_check' ),
 				'args'                => array(
+					'values' => array(
+						'required' => true,
+						'type'     => 'object',
+					),
+				),
+			)
+		);
+
+		/*
+		 * Per-table overrides. Same callback shape, same permission
+		 * callback and the same sanitiser as the global route — the only
+		 * difference is where the result is stored, and one extra check
+		 * that the id is a table this user may edit.
+		 */
+		register_rest_route(
+			self::REST_NAMESPACE,
+			self::REST_ROUTE_TABLE,
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( __CLASS__, 'handle_table_save' ),
+				'permission_callback' => array( __CLASS__, 'permission_check' ),
+				'args'                => array(
+					'id'     => array(
+						'required' => true,
+						'type'     => 'integer',
+					),
 					'values' => array(
 						'required' => true,
 						'type'     => 'object',
@@ -242,6 +374,63 @@ class KDNA_Tables_Style_Admin {
 
 		// The resolver memoises per request; a save in the same request
 		// as a render would otherwise serve the old values.
+		KDNA_Tables_Style_Resolver::flush_cache();
+
+		return rest_ensure_response(
+			array(
+				'saved'  => true,
+				'values' => $clean,
+			)
+		);
+	}
+
+	/**
+	 * Save one table's overrides.
+	 *
+	 * Everything about this is the global save but for the storage
+	 * target: same payload shape, same sanitiser, same response contract,
+	 * so the page can re-seed from what was actually stored either way.
+	 * Overrides that sanitise to nothing are deleted rather than stored
+	 * empty, because an absent override is exactly what inherit means to
+	 * the resolver.
+	 */
+	public static function handle_table_save( $request ) {
+		$table_id = (int) $request->get_param( 'id' );
+		$post     = get_post( $table_id );
+
+		if ( ! $post instanceof WP_Post || KDNA_Tables_CPT::POST_TYPE !== $post->post_type ) {
+			return new WP_Error(
+				'kdna_tables_unknown_table',
+				__( 'That table does not exist.', 'kdna-tables' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		if ( ! current_user_can( 'edit_post', $table_id ) ) {
+			return new WP_Error(
+				'kdna_tables_forbidden',
+				__( 'You do not have permission to edit this table.', 'kdna-tables' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		$incoming = $request->get_param( 'values' );
+		if ( ! is_array( $incoming ) ) {
+			return new WP_Error(
+				'kdna_tables_bad_payload',
+				__( 'Expected an object of style values.', 'kdna-tables' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$clean = self::sanitize_values( $incoming );
+
+		if ( empty( $clean ) ) {
+			delete_post_meta( $table_id, KDNA_Tables_Style_Resolver::META_KEY );
+		} else {
+			update_post_meta( $table_id, KDNA_Tables_Style_Resolver::META_KEY, $clean );
+		}
+
 		KDNA_Tables_Style_Resolver::flush_cache();
 
 		return rest_ensure_response(

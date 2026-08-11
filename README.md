@@ -271,6 +271,32 @@ being spread across Header Row, First Column and Body Cells.
 | Column Picker Mode → all 13 controls | The column picker hides and shows columns by their `data-slot` attribute, which only the comparison render emits, and its script only initialises inside Elementor. A general-table shortcode in `column_picker` mode renders normally with no picker, so the chrome has nothing to style. The stylesheet already carries the `--kdna-picker-*` variables for when that changes. |
 | Cell Content → Icon Colour (hover) on the comparison indicators | Comparison-only, and comparison styling is out of scope for this build. |
 
+### Per-table overrides
+
+Every table gets a **Styles** panel on its own edit screen, with the same
+controls as the settings page. Each control there has a third state on
+top of set and unset: **inherit**, which is the default and means the
+table follows the global value. An inherited control shows the value it
+is inheriting, greyed, next to an **Override** button that takes it off
+inherit — seeded with the value it was showing, so editing starts from
+what was on screen rather than from blank. Once overridden it offers
+**Revert to global**, and each section header offers **Reset all in this
+section to inherit**. The save bar carries a confirmed **Reset entire
+table to inherit** for the whole panel.
+
+Overrides are stored in the `_kdna_table_style_overrides` post meta,
+merged leaf by leaf over the global option, so overriding a table's
+mobile padding leaves its desktop padding following the global. Nothing
+is written for an inherited control: absent is what inherit means to the
+resolver, and a control reverted back to inherit is deleted from the meta
+rather than stored empty. A table with no overrides at all deletes the
+meta key entirely.
+
+The panel is visible to users with `manage_options`, and saves through
+`kdna-tables/v1/styles/<id>` — the same nonce check, the same capability
+check and the same schema-driven sanitiser as the global route, plus a
+check that the id is a table this user can edit.
+
 ## CSS Variables (Theme Integration)
 
 Every visual token is exposed as a CSS variable scoped to the widget

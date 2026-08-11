@@ -164,6 +164,26 @@ class KDNA_Tables_CPT {
 				'auth_callback'     => $auth,
 			)
 		);
+
+		/*
+		 * Per-table style overrides, written by the Shortcode Styles
+		 * panel. Not exposed through the core REST meta endpoints: the
+		 * plugin's own route sanitises the whole payload against the
+		 * style schema, and core would have no way to do that.
+		 */
+		register_post_meta(
+			self::POST_TYPE,
+			KDNA_Tables_Style_Resolver::META_KEY,
+			array(
+				'type'          => 'object',
+				'single'        => true,
+				'default'       => array(),
+				'show_in_rest'  => false,
+				'auth_callback' => function () {
+					return current_user_can( 'manage_options' );
+				},
+			)
+		);
 	}
 
 	public static function meta_auth( $allowed, $meta_key, $post_id ) {

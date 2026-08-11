@@ -43,6 +43,7 @@
 	function boot() {
 		return window.KDNATablesStyles || {
 			schema: {}, sections: {}, devices: DEVICES, values: {},
+			context: 'global', tableId: 0, inherited: {},
 			restUrl: '', nonce: '', strings: {}
 		};
 	}
@@ -265,9 +266,18 @@
 			schema: seed.schema,
 			strings: seed.strings || {},
 			section: Object.keys( seed.sections || {} )[ 0 ] || 'wrapper',
+			context: seed.context || 'global',
 			values: {},
 			device: {},
 			open: {},
+			/*
+			 * Which controls the user has taken off inherit. Mostly this
+			 * tracks hasValue, but not always: overriding a control whose
+			 * inherited value is itself empty has to leave the inputs
+			 * showing even though nothing is stored yet, or Override would
+			 * look like it did nothing.
+			 */
+			overridden: {},
 			saving: false,
 			dirty: false,
 			status: '',
@@ -277,6 +287,7 @@
 			init: function () {
 				this.values = shapeAll( this.schema, seed.values );
 				this.device = this.initialDevices();
+				this.overridden = this.initialOverrides();
 				this._baseline = JSON.stringify( collapseAll( this.schema, this.values ) );
 
 				// A deep watch on the whole tree is what keeps the save bar
@@ -308,6 +319,142 @@
 					if ( definition.responsive ) { map[ key ] = 'desktop'; }
 				} );
 				return map;
+			},
+
+			/* ── Inherit and override, per-table panel only ──────────
+			 * On the global page every control is simply set or unset.
+			 * On a table each control is additionally inheriting or
+			 * overriding, and the two are not the same question: an
+			 * override can hold a value, or can be an empty control the
+			 * user has just taken off inherit and not yet filled in.
+			 */
+
+			isTable: function () {
+				return 'table' === this.context;
+			},
+
+			slotKey: function ( key, fieldKey ) {
+				return fieldKey ? key + '.' + fieldKey : key;
+			},
+
+			/** Everything already stored counts as overridden on load. */
+			initialOverrides: function () {
+				var map = {};
+				var self = this;
+				Object.keys( this.schema ).forEach( function ( key ) {
+					var definition = self.schema[ key ];
+					if ( isGroup( definition ) ) {
+						Object.keys( definition.fields || {} ).forEach( function ( fieldKey ) {
+							if ( self.hasValue( key, fieldKey ) ) { map[ key + '.' + fieldKey ] = true; }
+						} );
+						return;
+					}
+					if ( self.hasValue( key, '' ) ) { map[ key ] = true; }
+				} );
+				return map;
+			},
+
+			isOverridden: function ( key, fieldKey ) {
+				if ( ! this.isTable() ) { return true; }
+				return !! this.overridden[ this.slotKey( key, fieldKey ) ] || this.hasValue( key, fieldKey );
+			},
+
+			/**
+			 * Take a control off inherit, seeded with the value it was
+			 * inheriting — so the user starts from what they could see,
+			 * not from blank.
+			 */
+			override: function ( key, fieldKey ) {
+				var definition = this.definitionFor( key, fieldKey );
+				if ( ! definition ) { return; }
+
+				var source = ( seed.inherited || {} )[ key ];
+				if ( fieldKey ) { source = source ? source[ fieldKey ] : undefined; }
+
+				var shaped = shapeControl( definition, source );
+				if ( fieldKey ) {
+					this.values[ key ][ fieldKey ] = shaped;
+				} else {
+					this.values[ key ] = shaped;
+				}
+
+				this.overridden[ this.slotKey( key, fieldKey ) ] = true;
+			},
+
+			/** Drop the override and let the global show through again. */
+			revert: function ( key, fieldKey ) {
+				this.resetControl( key, fieldKey );
+				delete this.overridden[ this.slotKey( key, fieldKey ) ];
+			},
+
+			/** What an inherited control is inheriting, for the greyed row. */
+			inheritedLabel: function ( key, fieldKey ) {
+				var definition = this.definitionFor( key, fieldKey );
+				if ( ! definition ) { return ''; }
+
+				var source = ( seed.inherited || {} )[ key ];
+				if ( fieldKey ) { source = source ? source[ fieldKey ] : undefined; }
+
+				if ( isGroup( definition ) ) {
+					var tokens = [];
+					Object.keys( definition.fields || {} ).forEach( function ( f ) {
+						var token = fieldToken( definition.fields[ f ], source && source[ f ] );
+						if ( token ) { tokens.push( token ); }
+					} );
+					if ( tokens.length ) { return tokens.join( ' · ' ); }
+				} else {
+					var token = fieldToken( definition, source );
+					if ( token ) { return token; }
+				}
+
+				return this.strings.default || 'the plugin default';
+			},
+
+			/* ── Section and whole-table resets ─────────────────────── */
+
+			sectionHasOverrides: function ( section ) {
+				var self = this;
+				return Object.keys( this.schema ).some( function ( key ) {
+					if ( self.schema[ key ].section !== section ) { return false; }
+					return self.isOverridden( key, '' ) ||
+						Object.keys( self.schema[ key ].fields || {} ).some( function ( f ) {
+							return self.isOverridden( key, f );
+						} );
+				} );
+			},
+
+			resetSection: function ( section ) {
+				var self = this;
+				Object.keys( this.schema ).forEach( function ( key ) {
+					if ( self.schema[ key ].section !== section ) { return; }
+					self.revert( key, '' );
+					Object.keys( self.schema[ key ].fields || {} ).forEach( function ( f ) {
+						self.revert( key, f );
+					} );
+				} );
+			},
+
+			anyOverrides: function () {
+				var self = this;
+				return Object.keys( this.schema ).some( function ( key ) {
+					return self.isOverridden( key, '' ) ||
+						Object.keys( self.schema[ key ].fields || {} ).some( function ( f ) {
+							return self.isOverridden( key, f );
+						} );
+				} );
+			},
+
+			/**
+			 * Drop every override on the table. Confirmed first: it is the
+			 * one action on this panel that another click cannot undo.
+			 */
+			resetAll: function () {
+				var message = this.strings.confirm ||
+					'Drop every style override on this table?';
+				if ( ! window.confirm( message ) ) { return; }
+
+				this.values = shapeAll( this.schema, {} );
+				this.overridden = {};
 			},
 
 			/* ── Groups ──────────────────────────────────────────────

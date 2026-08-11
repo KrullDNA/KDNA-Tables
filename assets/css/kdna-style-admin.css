@@ -480,6 +480,71 @@
 	border-top: 0;
 }
 
+/* ─── Inherit and override, per-table panel ────────────────────────── */
+
+/* The panel is a meta box, not a page: no fixed save bar, no page
+ * chrome, and it has to sit inside the box's padding. */
+.kdna-style-admin--panel {
+	padding-bottom: 0;
+}
+
+.kdna-style-admin--panel .kdna-style-tabs {
+	top: 32px;
+}
+
+.kdna-style-field.is-inherited .kdna-style-field__label {
+	font-weight: 400;
+	color: var(--kdna-admin-text-soft);
+}
+
+/* What the control is inheriting, in place of the control itself. */
+.kdna-style-inherited {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	margin: 0;
+	color: var(--kdna-admin-text-soft);
+	font-size: 12px;
+}
+
+.kdna-style-inherited__label {
+	text-transform: uppercase;
+	font-size: 10px;
+	letter-spacing: 0.04em;
+}
+
+.kdna-style-inherited__value {
+	font-family: Menlo, Consolas, monospace;
+	font-size: 12px;
+}
+
+.kdna-style-field__override {
+	border: 0;
+	background: none;
+	padding: 0;
+	color: var(--kdna-admin-accent);
+	font-size: 12px;
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+.kdna-style-panel__header {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.kdna-style-savebar--panel {
+	position: static;
+	padding: 12px 0 0;
+	border-top: 1px solid var(--kdna-admin-border);
+}
+
+.kdna-style-savebar__reset {
+	margin-left: auto;
+}
+
 /* ─── Save bar ─────────────────────────────────────────────────────── */
 
 .kdna-style-savebar {
