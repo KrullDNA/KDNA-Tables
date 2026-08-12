@@ -8,7 +8,7 @@ same table can be styled differently in different widget instances on
 different pages.
 
 - **Plugin slug:** kdna-tables
-- **Version:** 3.1.0
+- **Version:** 3.1.1
 - **Widget:** KDNA Table (Elementor category: KDNA Tables)
 - **Shortcode:** `[kdna_table id="123"]` (non-Elementor contexts)
 - **Custom post type:** `kdna_table` (admin only, not public)
@@ -18,7 +18,7 @@ different pages.
 ## Installation
 
 1. Download the latest `kdna-tables-vX.Y.Z.zip` from the repository root
-   (currently `kdna-tables-v3.1.0.zip`).
+   (currently `kdna-tables-v3.1.1.zip`).
 2. In WordPress, go to **Plugins, Add New, Upload Plugin** and choose the zip.
 3. Click **Install Now**, then **Activate**.
 4. A new top-level **KDNA Tables** menu appears in WP Admin (with submenus
@@ -618,6 +618,25 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 - UK English throughout code, labels, and documentation.
 
 ## Changelog
+
+### 3.1.1
+
+- Fixed the preview pane's **Responsive Mode** and **Applies at**
+  dropdowns showing their first option regardless of what the preview was
+  actually rendering — the mode select read "No responsive mode" over a
+  card-stack preview, so styling Card Stack or Pivot Rows looked like it
+  did nothing, and choosing the mode the dropdown already claimed to be
+  on changed nothing because the value had not moved. Alpine applies
+  `x-model` to a select before an `x-for` inside it has created the
+  options, so the select fell to its first option and never re-synced.
+  These lists are fixed and known to PHP, so they are rendered there
+  instead.
+- The preview's table, responsive mode, breakpoint, width and sticky
+  toggle are now remembered between page loads, in `localStorage`. They
+  say what you are looking at rather than what the site renders, so they
+  are not part of the saved styles. A remembered value that no longer
+  exists — a deleted table, a mode from a later version — is discarded
+  and the default used.
 
 ### 3.1.0
 

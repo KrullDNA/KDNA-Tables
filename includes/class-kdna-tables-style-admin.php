@@ -127,6 +127,15 @@ class KDNA_Tables_Style_Admin {
 		$sections = KDNA_Tables_Style_Schema::get_sections();
 		$grouped  = KDNA_Tables_Style_Schema::get_by_section();
 		$devices  = self::device_labels();
+		/*
+		 * The preview pane renders its select options from this rather
+		 * than from an x-for over the JS seed. Alpine applies x-model
+		 * before an x-for inside the same element has created the
+		 * options, so the select landed on its first option and never
+		 * re-synced — the Responsive Mode dropdown read "No responsive
+		 * mode" while the preview was actually rendering card stack.
+		 */
+		$preview = self::preview_data();
 
 		include KDNA_TABLES_PATH . 'templates/admin-style-settings.php';
 	}

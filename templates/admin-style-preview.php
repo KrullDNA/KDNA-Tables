@@ -17,12 +17,30 @@
  * through contentDocument: no postMessage plumbing, no re-fetch, and
  * nothing to serialise.
  *
+ * ── Why the options are rendered here, not with x-for ─────────────────
+ *
+ * Alpine applies x-model to a <select> before an x-for INSIDE that select
+ * has produced its options. With nothing to match, the select falls back
+ * to its first option and never re-syncs — so the Responsive Mode
+ * dropdown read "No responsive mode" while the preview was rendering card
+ * stack, and picking the mode it already claimed to be on did nothing.
+ * These lists are fixed and known to PHP, so they are printed here and
+ * x-model has something to bind to from the first paint.
+ *
+ * @var array|null $preview Preview configuration, null when nothing is
+ *                          published to preview.
+ *
  * @package KDNA_Tables
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+$kdna_preview = isset( $preview ) && is_array( $preview ) ? $preview : array();
+$kdna_tables_list = isset( $kdna_preview['tables'] ) ? $kdna_preview['tables'] : array();
+$kdna_modes       = isset( $kdna_preview['modes'] ) ? $kdna_preview['modes'] : array();
+$kdna_bands       = isset( $kdna_preview['breakpoints'] ) ? $kdna_preview['breakpoints'] : array();
 ?>
 <div class="kdna-style-preview" x-show="preview">
 
@@ -38,27 +56,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 			 */
 			?>
 			<select x-model="previewTable" @change="loadPreview()">
-				<template x-for="table in (preview ? preview.tables : [])" :key="table.id">
-					<option :value="table.id" x-text="table.title"></option>
-				</template>
+				<?php foreach ( $kdna_tables_list as $kdna_table ) : ?>
+					<option value="<?php echo esc_attr( (string) $kdna_table['id'] ); ?>">
+						<?php echo esc_html( $kdna_table['title'] ); ?>
+					</option>
+				<?php endforeach; ?>
 			</select>
 		</label>
 
 		<label class="kdna-style-preview__control">
 			<span class="kdna-style-preview__label"><?php esc_html_e( 'Responsive mode', 'kdna-tables' ); ?></span>
 			<select x-model="previewMode" @change="paintPreview()">
-				<template x-for="(label, key) in (preview ? preview.modes : {})" :key="key">
-					<option :value="key" x-text="label"></option>
-				</template>
+				<?php foreach ( $kdna_modes as $kdna_key => $kdna_label ) : ?>
+					<option value="<?php echo esc_attr( $kdna_key ); ?>"><?php echo esc_html( $kdna_label ); ?></option>
+				<?php endforeach; ?>
 			</select>
 		</label>
 
 		<label class="kdna-style-preview__control">
 			<span class="kdna-style-preview__label"><?php esc_html_e( 'Applies at', 'kdna-tables' ); ?></span>
 			<select x-model="previewBreakpoint" @change="paintPreview()">
-				<template x-for="(label, key) in (preview ? preview.breakpoints : {})" :key="key">
-					<option :value="key" x-text="label"></option>
-				</template>
+				<?php foreach ( $kdna_bands as $kdna_key => $kdna_label ) : ?>
+					<option value="<?php echo esc_attr( $kdna_key ); ?>"><?php echo esc_html( $kdna_label ); ?></option>
+				<?php endforeach; ?>
 			</select>
 		</label>
 

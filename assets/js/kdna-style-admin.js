@@ -608,8 +608,20 @@
 				}.bind( this ) );
 
 				if ( this.preview ) {
-					this.previewTable = this.preview.tableId;
+					this.restorePreviewPrefs();
 					this.$nextTick( function () { this.loadPreview(); }.bind( this ) );
+
+					/*
+					 * Which table, mode, breakpoint and width you are
+					 * previewing at is a working position, not a transient
+					 * one: styling Pivot Rows means sitting in Pivot Rows for
+					 * a while, and losing it on every reload meant setting it
+					 * again every time.
+					 */
+					[ 'previewTable', 'previewDevice', 'previewMode', 'previewBreakpoint', 'previewSticky' ]
+						.forEach( function ( key ) {
+							this.$watch( key, function () { this.rememberPreviewPrefs(); }.bind( this ) );
+						}.bind( this ) );
 				}
 			},
 
@@ -625,6 +637,64 @@
 			 * queries, which is a second copy of the breakpoint logic to
 			 * keep in step with the first.
 			 */
+
+			/*
+			 * The preview's own view settings, kept in localStorage.
+			 *
+			 * Deliberately not in the saved style values: these say what you
+			 * are LOOKING at, not what the site renders. Storing them on the
+			 * server would also mean a write on every dropdown change.
+			 */
+			PREVIEW_PREFS_KEY: 'kdnaTablesPreviewPrefs',
+
+			restorePreviewPrefs: function () {
+				this.previewTable = this.preview.tableId;
+
+				var saved = null;
+				try {
+					saved = JSON.parse( window.localStorage.getItem( this.PREVIEW_PREFS_KEY ) || 'null' );
+				} catch ( e ) {
+					saved = null;
+				}
+				if ( ! saved || 'object' !== typeof saved ) { return; }
+
+				/*
+				 * Everything is validated against what this site actually
+				 * offers. A remembered table that has since been deleted, or
+				 * a mode from a later version, must not leave the pane
+				 * pointing at something that does not exist.
+				 */
+				var tables = ( this.preview.tables || [] ).map( function ( t ) { return t.id; } );
+				if ( -1 !== tables.indexOf( parseInt( saved.table, 10 ) ) ) {
+					this.previewTable = parseInt( saved.table, 10 );
+				}
+				if ( ( this.preview.modes || {} )[ saved.mode ] ) {
+					this.previewMode = saved.mode;
+				}
+				if ( ( this.preview.breakpoints || {} )[ saved.breakpoint ] ) {
+					this.previewBreakpoint = saved.breakpoint;
+				}
+				if ( ( this.preview.widths || {} )[ saved.device ] ) {
+					this.previewDevice = saved.device;
+				}
+				this.previewSticky = !! saved.sticky;
+			},
+
+			rememberPreviewPrefs: function () {
+				if ( ! this.preview ) { return; }
+				try {
+					window.localStorage.setItem( this.PREVIEW_PREFS_KEY, JSON.stringify( {
+						table: parseInt( this.previewTable, 10 ),
+						mode: this.previewMode,
+						breakpoint: this.previewBreakpoint,
+						device: this.previewDevice,
+						sticky: !! this.previewSticky
+					} ) );
+				} catch ( e ) {
+					// Private browsing, or a full quota. Not worth surfacing:
+					// the pane still works, it just forgets.
+				}
+			},
 
 			previewFrame: function () {
 				return this.$refs ? this.$refs.previewFrame : null;
