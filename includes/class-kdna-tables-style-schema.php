@@ -887,11 +887,70 @@ class KDNA_Tables_Style_Schema {
 			),
 
 			/*
+			 * ── Making each pivoted row a box of its own ──────────────
+			 *
+			 * A pivoted table is one row per desktop row, each a stack of
+			 * heading-and-value pairs. Spacing and a divider alone leave
+			 * that reading as one continuous column of text: there is
+			 * nothing to say where one row's group of facts ends and the
+			 * next begins. These four give the row a container — the same
+			 * set Card Stack has — so each one reads as a unit.
+			 *
+			 * All default to nothing, so a pivot table that has not asked
+			 * for a box does not grow one.
+			 */
+			'pivot_row_padding'     => array(
+				'label'       => esc_html__( 'Row Padding', 'kdna-tables' ),
+				'section'     => 'card_stack',
+				'type'        => 'dimensions',
+				'css_var'     => '--kdna-pivot-row-padding',
+				'units'       => array( 'px', 'em', '%' ),
+				'responsive'  => true,
+				// Nothing by default, so a pivot table that has not asked
+				// for a box does not grow one.
+				'default'     => null,
+				'description' => esc_html__( 'Inset for each pivoted row. Set this with a background or border to make each row a distinct box.', 'kdna-tables' ),
+			),
+
+			'pivot_row_radius'      => array(
+				'label'      => esc_html__( 'Row Border Radius', 'kdna-tables' ),
+				'section'    => 'card_stack',
+				'type'       => 'dimensions',
+				'css_var'    => '--kdna-pivot-row-radius',
+				'units'      => array( 'px', '%' ),
+				'responsive' => true,
+				'default'    => null,
+			),
+
+			/*
 			 * A line trio rather than a border group: this is the single
 			 * edge under each pivoted row, so a four-sided width would be
 			 * both meaningless and invalid — a dimensions value fed to the
 			 * border shorthand takes the whole declaration down with it.
 			 */
+		) + array(
+			'pivot_row_bg'     => self::background_group(
+				esc_html__( 'Row Background', 'kdna-tables' ),
+				'card_stack',
+				'--kdna-pivot-row-bg',
+				null
+			),
+
+		/*
+		 * A line trio rather than a border group, so the width is a single
+		 * value. All four sides share it, which is what a row box wants,
+		 * and it lets the Row Divider fall back to the border's own width
+		 * for the bottom edge — a four-sided dimensions value fed to
+		 * border-bottom-width is invalid, and an invalid longhand resets
+		 * to medium rather than falling through to the shorthand.
+		 */
+		) + self::line_group(
+			'pivot_row_border',
+			esc_html__( 'Row Border', 'kdna-tables' ),
+			'--kdna-pivot-row-border',
+			esc_html__( 'A border around each pivoted row. Set this, or a Row Background, to make each row a distinct box.', 'kdna-tables' ),
+			true,
+			'card_stack'
 		) + self::line_group(
 			'pivot_divider',
 			esc_html__( 'Row Divider', 'kdna-tables' ),

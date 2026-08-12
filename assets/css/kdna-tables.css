@@ -241,6 +241,31 @@
 	text-align: inherit;
 }
 
+/* ── Line height has to reach the text ──────────────────────────────
+ *
+ * The cell text lives in the span above, and that span's own
+ * line-height beat the one inherited from the cell. So setting a Line
+ * Height — on the widget or on the shortcode styles page — grew the
+ * cell's line box, adding space above and below the text, while the
+ * spacing BETWEEN wrapped lines stayed at 1.5. Which is the opposite of
+ * what the control is for.
+ *
+ * Fixed by moving the default onto the cell and letting the span
+ * inherit. Scoped to general tables: comparison cells carry their own
+ * per-element line heights from kdna-comparison.css, and those spans
+ * should go on taking the 1.5 above.
+ *
+ * 1.5 here is the same 1.5 the span used to hard-code, so a table with
+ * no Line Height set renders exactly as it did.
+ */
+.kdna-table--general .kdna-table__cell {
+	line-height: 1.5;
+}
+
+.kdna-table--general .kdna-table__cell .kdna-table__cell-text {
+	line-height: inherit;
+}
+
 .kdna-table__cell-text + .kdna-table__cell-icon,
 .kdna-table__cell-text + .kdna-table__cell-image,
 .kdna-table__cell-icon + .kdna-table__cell-text,
