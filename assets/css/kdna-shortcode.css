@@ -83,6 +83,11 @@
 	--_kdna-table-wrapper-bg: var(--kdna-table-wrapper-bg, transparent);
 	--_kdna-table-wrapper-padding: var(--kdna-table-wrapper-padding, 0);
 	--_kdna-table-wrapper-margin: var(--kdna-table-wrapper-margin, 0);
+	/* The vertical edges only. Alignment owns the shorthand above because
+	 * centring is auto/auto on the sides, so these are applied as
+	 * longhands after it rather than folded in. */
+	--_kdna-table-wrapper-margin-top: var(--kdna-table-wrapper-margin-top, 0);
+	--_kdna-table-wrapper-margin-bottom: var(--kdna-table-wrapper-margin-bottom, 0);
 	--_kdna-table-wrapper-max-width: var(--kdna-table-wrapper-max-width, none);
 	--_kdna-table-wrapper-border-style: var(--kdna-table-wrapper-border-style, none);
 	--_kdna-table-wrapper-border-width: var(--kdna-table-wrapper-border-width, 0);
@@ -214,14 +219,19 @@
 	--_kdna-pivot-label-color: var(--kdna-pivot-label-color, var(--_kdna-table-header-color));
 	--_kdna-pivot-label-width: var(--kdna-pivot-label-width, 30%);
 	--_kdna-pivot-row-spacing: var(--kdna-pivot-row-spacing, 16px);
-	/* The pivoted row as a box of its own. All inert by default, so a
-	 * pivot table that has not asked for a box does not grow one. */
-	--_kdna-pivot-row-bg: var(--kdna-pivot-row-bg, transparent);
-	--_kdna-pivot-row-padding: var(--kdna-pivot-row-padding, 0);
-	--_kdna-pivot-row-radius: var(--kdna-pivot-row-radius, 0);
-	--_kdna-pivot-row-border-style: var(--kdna-pivot-row-border-style, none);
-	--_kdna-pivot-row-border-width: var(--kdna-pivot-row-border-width, 0px);
+	/* The pivoted row IS the card: one card per desktop row, its cells
+	 * stacked inside it. The fallbacks match the schema defaults, so a
+	 * pivot table looks like a set of cards with nothing configured. */
+	--_kdna-pivot-row-bg: var(--kdna-pivot-row-bg, #ffffff);
+	--_kdna-pivot-row-padding: var(--kdna-pivot-row-padding, 16px);
+	--_kdna-pivot-row-radius: var(--kdna-pivot-row-radius, 12px);
+	--_kdna-pivot-row-border-style: var(--kdna-pivot-row-border-style, solid);
+	--_kdna-pivot-row-border-width: var(--kdna-pivot-row-border-width, 1px);
 	--_kdna-pivot-row-border-color: var(--kdna-pivot-row-border-color, #e5e7eb);
+	/* The gap between one cell and the next inside a card. A flex gap
+	 * rather than padding on each cell, so there is no doubling between
+	 * neighbours and no half-gap against the card's own padding. */
+	--_kdna-pivot-cell-spacing: var(--kdna-pivot-cell-spacing, 12px);
 	--_kdna-pivot-heading-bg: var(--kdna-pivot-heading-bg, var(--_kdna-table-header-bg));
 	--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding, 0);
 	--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius, 0);
@@ -280,6 +290,10 @@
 	background: var(--_kdna-table-wrapper-bg);
 	padding: var(--_kdna-table-wrapper-padding);
 	margin: var(--_kdna-table-wrapper-margin);
+	/* After the shorthand, which Alignment writes, so the two controls
+	 * share the property instead of overwriting each other. */
+	margin-top: var(--_kdna-table-wrapper-margin-top);
+	margin-bottom: var(--_kdna-table-wrapper-margin-bottom);
 	max-width: var(--_kdna-table-wrapper-max-width);
 	border-style: var(--_kdna-table-wrapper-border-style);
 	border-width: var(--_kdna-table-wrapper-border-width);
@@ -439,11 +453,24 @@
 	background: var(--_kdna-table-body-bg-even);
 }
 
-/* Row hover. Transparent by default, so an unset control leaves the
- * striping alone. */
-.kdna-table__wrapper--shortcode .kdna-table--general tbody .kdna-table__row:hover > .kdna-table__cell {
-	background-color: var(--_kdna-table-row-hover-bg);
-	color: var(--_kdna-table-row-hover-color);
+/*
+ * Row hover. Transparent by default, so an unset control leaves the
+ * striping alone.
+ *
+ * ── Why (hover: hover) and not a width query ──────────────────────────
+ *
+ * A touch device has no pointer to hover with, but it still fires a
+ * :hover on tap and then leaves it stuck there until something else is
+ * tapped — so the row you last touched stays highlighted, reading as a
+ * selection the table never made. (hover: hover) asks the question that
+ * actually matters, which is whether there is a pointing device, rather
+ * than inferring it from a viewport width that a laptop can also have.
+ */
+@media (hover: hover) {
+	.kdna-table__wrapper--shortcode .kdna-table--general tbody .kdna-table__row:hover > .kdna-table__cell {
+		background-color: var(--_kdna-table-row-hover-bg);
+		color: var(--_kdna-table-row-hover-color);
+	}
 }
 
 /* ═══ First column ══════════════════════════════════════════════════
@@ -537,8 +564,11 @@
 	transition: color var(--_kdna-table-row-hover-transition) ease;
 }
 
-.kdna-table__wrapper--shortcode .kdna-table--general .kdna-table__cell:hover .kdna-table__cell-icon {
-	color: var(--_kdna-table-icon-hover-color);
+/* Pointing devices only — see the note by the row hover rule above. */
+@media (hover: hover) {
+	.kdna-table__wrapper--shortcode .kdna-table--general .kdna-table__cell:hover .kdna-table__cell-icon {
+		color: var(--_kdna-table-icon-hover-color);
+	}
 }
 
 .kdna-table__wrapper--shortcode .kdna-table__cell-icon i,
@@ -664,6 +694,8 @@
 		/* Wrapper */
 		--_kdna-table-wrapper-padding: var(--kdna-table-wrapper-padding-tablet, var(--kdna-table-wrapper-padding, 0));
 		--_kdna-table-wrapper-margin: var(--kdna-table-wrapper-margin-tablet, var(--kdna-table-wrapper-margin, 0));
+		--_kdna-table-wrapper-margin-top: var(--kdna-table-wrapper-margin-top-tablet, var(--kdna-table-wrapper-margin-top, 0));
+		--_kdna-table-wrapper-margin-bottom: var(--kdna-table-wrapper-margin-bottom-tablet, var(--kdna-table-wrapper-margin-bottom, 0));
 		--_kdna-table-wrapper-max-width: var(--kdna-table-wrapper-max-width-tablet, var(--kdna-table-wrapper-max-width, none));
 		--_kdna-table-wrapper-border-width: var(--kdna-table-wrapper-border-width-tablet, var(--kdna-table-wrapper-border-width, 0));
 		--_kdna-table-border-radius: var(--kdna-table-border-radius-tablet, var(--kdna-table-border-radius, 12px));
@@ -715,12 +747,13 @@
 		/* Pivot Rows */
 		--_kdna-pivot-label-width: var(--kdna-pivot-label-width-tablet, var(--kdna-pivot-label-width, 30%));
 		--_kdna-pivot-row-spacing: var(--kdna-pivot-row-spacing-tablet, var(--kdna-pivot-row-spacing, 16px));
-		--_kdna-pivot-row-bg: var(--kdna-pivot-row-bg, transparent);
-		--_kdna-pivot-row-padding: var(--kdna-pivot-row-padding-tablet, var(--kdna-pivot-row-padding, 0));
-		--_kdna-pivot-row-radius: var(--kdna-pivot-row-radius-tablet, var(--kdna-pivot-row-radius, 0));
-		--_kdna-pivot-row-border-style: var(--kdna-pivot-row-border-style, none);
-		--_kdna-pivot-row-border-width: var(--kdna-pivot-row-border-width-tablet, var(--kdna-pivot-row-border-width, 0px));
+		--_kdna-pivot-row-bg: var(--kdna-pivot-row-bg, #ffffff);
+		--_kdna-pivot-row-padding: var(--kdna-pivot-row-padding-tablet, var(--kdna-pivot-row-padding, 16px));
+		--_kdna-pivot-row-radius: var(--kdna-pivot-row-radius-tablet, var(--kdna-pivot-row-radius, 12px));
+		--_kdna-pivot-row-border-style: var(--kdna-pivot-row-border-style, solid);
+		--_kdna-pivot-row-border-width: var(--kdna-pivot-row-border-width-tablet, var(--kdna-pivot-row-border-width, 1px));
 		--_kdna-pivot-row-border-color: var(--kdna-pivot-row-border-color, #e5e7eb);
+		--_kdna-pivot-cell-spacing: var(--kdna-pivot-cell-spacing-tablet, var(--kdna-pivot-cell-spacing, 12px));
 		--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding-tablet, var(--kdna-pivot-heading-padding, 0));
 		--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius-tablet, var(--kdna-pivot-heading-radius, 0));
 		--_kdna-pivot-heading-spacing: var(--kdna-pivot-heading-spacing-tablet, var(--kdna-pivot-heading-spacing, 2px));
@@ -808,12 +841,19 @@
 	}
 
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
+		/* A column flex box rather than a block, so the gap falls between
+		 * the cells and nowhere else. Vertical margins on each cell would
+		 * double up between neighbours and leave a half gap against the
+		 * card's own padding at the two ends. */
+		display: flex;
+		flex-direction: column;
+		gap: var(--_kdna-pivot-cell-spacing);
 		background: var(--_kdna-pivot-row-bg);
+		/* On the card, not on its cells: one radius for the whole box. */
 		border-radius: var(--_kdna-pivot-row-radius);
-		/* Padding, then the row spacing on top of its bottom edge, so a
-		 * boxed row keeps an even inset and still clears the next one. */
+		/* An even inset all round. The gap to the next card is the margin
+		 * below, so the bottom padding is not asked to do both jobs. */
 		padding: var(--_kdna-pivot-row-padding);
-		padding-bottom: calc(var(--_kdna-pivot-row-spacing) + 0px);
 		margin-bottom: var(--_kdna-pivot-row-spacing);
 		/* !important because the theme reset near the top of this file
 		 * zeroes tr borders with !important of its own. Defaults to 0
@@ -834,7 +874,10 @@
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
 		display: block;
 		border: 0 !important;
-		padding: 6px 0;
+		/* No padding of its own: the card's padding holds the whole stack
+		 * off its edges and the card's gap holds the cells off each
+		 * other. Padding here would add to both. */
+		padding: 0;
 		background: none;
 	}
 
@@ -853,7 +896,7 @@
 	 * and the pivot block above has already cleared its borders.
 	 */
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general .kdna-table__cell.kdna-table__cell.kdna-table__cell--first-col {
-		padding: 6px 0;
+		padding: 0;
 	}
 
 	/*
@@ -978,6 +1021,8 @@
 		/* Wrapper */
 		--_kdna-table-wrapper-padding: var(--kdna-table-wrapper-padding-mobile, var(--kdna-table-wrapper-padding-tablet, var(--kdna-table-wrapper-padding, 0)));
 		--_kdna-table-wrapper-margin: var(--kdna-table-wrapper-margin-mobile, var(--kdna-table-wrapper-margin-tablet, var(--kdna-table-wrapper-margin, 0)));
+		--_kdna-table-wrapper-margin-top: var(--kdna-table-wrapper-margin-top-mobile, var(--kdna-table-wrapper-margin-top-tablet, var(--kdna-table-wrapper-margin-top, 0)));
+		--_kdna-table-wrapper-margin-bottom: var(--kdna-table-wrapper-margin-bottom-mobile, var(--kdna-table-wrapper-margin-bottom-tablet, var(--kdna-table-wrapper-margin-bottom, 0)));
 		--_kdna-table-wrapper-max-width: var(--kdna-table-wrapper-max-width-mobile, var(--kdna-table-wrapper-max-width-tablet, var(--kdna-table-wrapper-max-width, none)));
 		--_kdna-table-wrapper-border-width: var(--kdna-table-wrapper-border-width-mobile, var(--kdna-table-wrapper-border-width-tablet, var(--kdna-table-wrapper-border-width, 0)));
 		--_kdna-table-border-radius: var(--kdna-table-border-radius-mobile, var(--kdna-table-border-radius-tablet, var(--kdna-table-border-radius, 12px)));
@@ -1029,12 +1074,13 @@
 		/* Pivot Rows */
 		--_kdna-pivot-label-width: var(--kdna-pivot-label-width-mobile, var(--kdna-pivot-label-width-tablet, var(--kdna-pivot-label-width, 30%)));
 		--_kdna-pivot-row-spacing: var(--kdna-pivot-row-spacing-mobile, var(--kdna-pivot-row-spacing-tablet, var(--kdna-pivot-row-spacing, 16px)));
-		--_kdna-pivot-row-bg: var(--kdna-pivot-row-bg, transparent);
-		--_kdna-pivot-row-padding: var(--kdna-pivot-row-padding-mobile, var(--kdna-pivot-row-padding-tablet, var(--kdna-pivot-row-padding, 0)));
-		--_kdna-pivot-row-radius: var(--kdna-pivot-row-radius-mobile, var(--kdna-pivot-row-radius-tablet, var(--kdna-pivot-row-radius, 0)));
-		--_kdna-pivot-row-border-style: var(--kdna-pivot-row-border-style, none);
-		--_kdna-pivot-row-border-width: var(--kdna-pivot-row-border-width-mobile, var(--kdna-pivot-row-border-width-tablet, var(--kdna-pivot-row-border-width, 0px)));
+		--_kdna-pivot-row-bg: var(--kdna-pivot-row-bg, #ffffff);
+		--_kdna-pivot-row-padding: var(--kdna-pivot-row-padding-mobile, var(--kdna-pivot-row-padding-tablet, var(--kdna-pivot-row-padding, 16px)));
+		--_kdna-pivot-row-radius: var(--kdna-pivot-row-radius-mobile, var(--kdna-pivot-row-radius-tablet, var(--kdna-pivot-row-radius, 12px)));
+		--_kdna-pivot-row-border-style: var(--kdna-pivot-row-border-style, solid);
+		--_kdna-pivot-row-border-width: var(--kdna-pivot-row-border-width-mobile, var(--kdna-pivot-row-border-width-tablet, var(--kdna-pivot-row-border-width, 1px)));
 		--_kdna-pivot-row-border-color: var(--kdna-pivot-row-border-color, #e5e7eb);
+		--_kdna-pivot-cell-spacing: var(--kdna-pivot-cell-spacing-mobile, var(--kdna-pivot-cell-spacing-tablet, var(--kdna-pivot-cell-spacing, 12px)));
 		--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding-mobile, var(--kdna-pivot-heading-padding-tablet, var(--kdna-pivot-heading-padding, 0)));
 		--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius-mobile, var(--kdna-pivot-heading-radius-tablet, var(--kdna-pivot-heading-radius, 0)));
 		--_kdna-pivot-heading-spacing: var(--kdna-pivot-heading-spacing-mobile, var(--kdna-pivot-heading-spacing-tablet, var(--kdna-pivot-heading-spacing, 2px)));
@@ -1162,12 +1208,19 @@
 
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general tr,
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
+		/* A column flex box rather than a block, so the gap falls between
+		 * the cells and nowhere else. Vertical margins on each cell would
+		 * double up between neighbours and leave a half gap against the
+		 * card's own padding at the two ends. */
+		display: flex;
+		flex-direction: column;
+		gap: var(--_kdna-pivot-cell-spacing);
 		background: var(--_kdna-pivot-row-bg);
+		/* On the card, not on its cells: one radius for the whole box. */
 		border-radius: var(--_kdna-pivot-row-radius);
-		/* Padding, then the row spacing on top of its bottom edge, so a
-		 * boxed row keeps an even inset and still clears the next one. */
+		/* An even inset all round. The gap to the next card is the margin
+		 * below, so the bottom padding is not asked to do both jobs. */
 		padding: var(--_kdna-pivot-row-padding);
-		padding-bottom: calc(var(--_kdna-pivot-row-spacing) + 0px);
 		margin-bottom: var(--_kdna-pivot-row-spacing);
 		/* !important because the theme reset near the top of this file
 		 * zeroes tr borders with !important of its own. Defaults to 0
@@ -1189,7 +1242,10 @@
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
 		display: block;
 		border: 0 !important;
-		padding: 6px 0;
+		/* No padding of its own: the card's padding holds the whole stack
+		 * off its edges and the card's gap holds the cells off each
+		 * other. Padding here would add to both. */
+		padding: 0;
 		background: none;
 	}
 
@@ -1208,7 +1264,7 @@
 	 * and the pivot block above has already cleared its borders.
 	 */
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general .kdna-table__cell.kdna-table__cell.kdna-table__cell--first-col {
-		padding: 6px 0;
+		padding: 0;
 	}
 
 	/*

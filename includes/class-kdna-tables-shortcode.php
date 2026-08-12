@@ -147,6 +147,15 @@ class KDNA_Tables_Shortcode {
 	/* ─── Render ────────────────────────────────────────────────────── */
 
 	public static function render( $atts ) {
+		/*
+		 * Which keys the author actually wrote, before shortcode_atts()
+		 * fills the rest in. An attribute that IS written wins; anything
+		 * left out falls to the saved Responsive Mode setting, so
+		 * [kdna_table id="12"] renders what the settings page says rather
+		 * than a hard-coded card_stack the page could not show or change.
+		 */
+		$given = is_array( $atts ) ? $atts : array();
+
 		$atts = shortcode_atts(
 			array(
 				'id'         => 0,
@@ -169,9 +178,30 @@ class KDNA_Tables_Shortcode {
 			return '';
 		}
 
-		$responsive_mode = self::one_of( $atts['responsive'], self::VALID_RESPONSIVE_MODES, 'card_stack' );
-		$breakpoint      = self::one_of( $atts['breakpoint'], self::VALID_BREAKPOINTS, 'mobile' );
-		$sticky          = self::is_yes( $atts['sticky'] );
+		// style_id borrows another table's overrides, and the layout
+		// settings travel with them: two tables told to look identical
+		// should not then lay out differently on a phone.
+		$style_id_raw = (int) $atts['style_id'];
+		$layout_from  = ( $style_id_raw > 0 && self::is_renderable_table( $style_id_raw ) ) ? $style_id_raw : $table_id;
+		$saved        = KDNA_Tables_Style_Resolver::resolve_values( $layout_from );
+
+		$responsive_mode = array_key_exists( 'responsive', $given )
+			? self::one_of( $atts['responsive'], self::VALID_RESPONSIVE_MODES, 'card_stack' )
+			: self::one_of(
+				isset( $saved['responsive_mode'] ) ? $saved['responsive_mode'] : '',
+				self::VALID_RESPONSIVE_MODES,
+				'card_stack'
+			);
+
+		$breakpoint = array_key_exists( 'breakpoint', $given )
+			? self::one_of( $atts['breakpoint'], self::VALID_BREAKPOINTS, 'mobile' )
+			: self::one_of(
+				isset( $saved['responsive_breakpoint'] ) ? $saved['responsive_breakpoint'] : '',
+				self::VALID_BREAKPOINTS,
+				'mobile'
+			);
+
+		$sticky = self::is_yes( $atts['sticky'] );
 
 		// style_id borrows another table's overrides. An id that is not a
 		// published table falls back to this table's own styles rather

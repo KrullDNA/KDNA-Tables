@@ -716,6 +716,20 @@
 	max-width: 260px;
 }
 
+/*
+ * The mode and breakpoint the pane is rendering. Deliberately not styled
+ * as a control: they are set in Responsive Modes below, and this reads
+ * back what was chosen there. A second dropdown here is what let the
+ * preview and the front end disagree.
+ */
+.kdna-style-preview__readout {
+	padding: 4px 0;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.3;
+	color: var(--kdna-admin-text);
+}
+
 .kdna-style-preview__devices {
 	display: inline-flex;
 	margin-left: auto;

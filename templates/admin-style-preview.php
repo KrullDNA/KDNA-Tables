@@ -64,23 +64,23 @@ $kdna_bands       = isset( $kdna_preview['breakpoints'] ) ? $kdna_preview['break
 			</select>
 		</label>
 
-		<label class="kdna-style-preview__control">
+		<?php
+		/*
+		 * The mode and breakpoint are SETTINGS, in Responsive Modes below,
+		 * not preview options. Shown read-only here so the pane says what it
+		 * is rendering without offering a second place to change it — which
+		 * is what let the preview and the front end disagree.
+		 */
+		?>
+		<span class="kdna-style-preview__control">
 			<span class="kdna-style-preview__label"><?php esc_html_e( 'Responsive mode', 'kdna-tables' ); ?></span>
-			<select x-model="previewMode" @change="paintPreview()">
-				<?php foreach ( $kdna_modes as $kdna_key => $kdna_label ) : ?>
-					<option value="<?php echo esc_attr( $kdna_key ); ?>"><?php echo esc_html( $kdna_label ); ?></option>
-				<?php endforeach; ?>
-			</select>
-		</label>
+			<span class="kdna-style-preview__readout" x-text="(preview.modes || {})[ previewMode ] || previewMode"></span>
+		</span>
 
-		<label class="kdna-style-preview__control">
+		<span class="kdna-style-preview__control">
 			<span class="kdna-style-preview__label"><?php esc_html_e( 'Applies at', 'kdna-tables' ); ?></span>
-			<select x-model="previewBreakpoint" @change="paintPreview()">
-				<?php foreach ( $kdna_bands as $kdna_key => $kdna_label ) : ?>
-					<option value="<?php echo esc_attr( $kdna_key ); ?>"><?php echo esc_html( $kdna_label ); ?></option>
-				<?php endforeach; ?>
-			</select>
-		</label>
+			<span class="kdna-style-preview__readout" x-text="(preview.breakpoints || {})[ previewBreakpoint ] || previewBreakpoint"></span>
+		</span>
 
 		<label class="kdna-style-preview__control kdna-style-preview__control--check">
 			<?php /* Structural: sticky wraps the table in a scroll container. */ ?>
