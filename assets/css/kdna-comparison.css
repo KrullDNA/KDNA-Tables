@@ -374,9 +374,26 @@
 	transition: opacity 0.15s ease;
 }
 
-.kdna-comparison__tooltip-trigger:hover .kdna-comparison__tooltip-icon,
+/*
+ * ── :hover is gated, :focus is not ────────────────────────────────────
+ *
+ * A touch device has no pointer, but it still fires :hover on tap and
+ * leaves it stuck there until something else is tapped. So the hover
+ * halves of these rules are behind (hover: hover) — the query that asks
+ * whether there is a pointing device rather than guessing from viewport
+ * width — while the :focus, :focus-within and .is-open halves stay
+ * unconditional. Those are how a tooltip is opened by tap and by
+ * keyboard, and gating them would take the tooltips away from exactly
+ * the devices that need the tap path.
+ */
 .kdna-comparison__tooltip-trigger:focus .kdna-comparison__tooltip-icon {
 	opacity: 1;
+}
+
+@media (hover: hover) {
+	.kdna-comparison__tooltip-trigger:hover .kdna-comparison__tooltip-icon {
+		opacity: 1;
+	}
 }
 
 .kdna-comparison__tooltip {
@@ -417,15 +434,25 @@
 	transform: translate(-50%, -4px);
 }
 
-.kdna-comparison__tooltip-trigger:hover ~ .kdna-comparison__tooltip,
 .kdna-comparison__tooltip-trigger:focus ~ .kdna-comparison__tooltip,
 .kdna-comparison__tooltip-wrap:focus-within .kdna-comparison__tooltip,
-.kdna-comparison__tooltip-wrap.is-open .kdna-comparison__tooltip,
-.kdna-comparison__tooltip:hover {
+.kdna-comparison__tooltip-wrap.is-open .kdna-comparison__tooltip {
 	opacity: 1;
 	visibility: visible;
 	transform: translate(-50%, 0);
 	pointer-events: auto;
+}
+
+/* Pointing devices only — see the note by the tooltip icon rule above.
+ * The tap and keyboard paths are in the rule above this one. */
+@media (hover: hover) {
+	.kdna-comparison__tooltip-trigger:hover ~ .kdna-comparison__tooltip,
+	.kdna-comparison__tooltip:hover {
+		opacity: 1;
+		visibility: visible;
+		transform: translate(-50%, 0);
+		pointer-events: auto;
+	}
 }
 
 .kdna-comparison__tooltip-arrow {
@@ -484,12 +511,22 @@
 		box-shadow var(--kdna-comparison-cta-transition, 150ms) ease;
 }
 
-.kdna-comparison__cta:hover,
 .kdna-comparison__cta:focus {
 	background: var(--kdna-comparison-cta-hover-bg);
 	color: var(--kdna-comparison-cta-hover-color);
 	text-decoration: none;
 	outline: none;
+}
+
+/* Pointing devices only. Without this the last button tapped on a phone
+ * keeps its hover colour for the rest of the page's life. */
+@media (hover: hover) {
+	.kdna-comparison__cta:hover {
+		background: var(--kdna-comparison-cta-hover-bg);
+		color: var(--kdna-comparison-cta-hover-color);
+		text-decoration: none;
+		outline: none;
+	}
 }
 
 .kdna-comparison__cta-icon {

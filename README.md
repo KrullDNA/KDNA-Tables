@@ -66,8 +66,8 @@ on its own edit screen. See [Shortcode Styles](#shortcode-styles).
 | Attribute | Values | Default | What it does |
 | --- | --- | --- | --- |
 | `id` | table post id | — | **Required.** The table to render. An id that is not a published `kdna_table` renders nothing. |
-| `responsive` | `none`, `card_stack`, `pivot_rows`, `column_picker` | `card_stack` | Layout below the breakpoint. See [Responsive Modes](#responsive-modes). |
-| `breakpoint` | `mobile`, `tablet_and_mobile` | `mobile` | Where the responsive mode starts applying. `mobile` is ≤767px; `tablet_and_mobile` is ≤1024px. |
+| `responsive` | `none`, `card_stack`, `pivot_rows`, `column_picker` | the **Responsive Mode** setting | Layout below the breakpoint. See [Responsive Modes](#responsive-modes). |
+| `breakpoint` | `mobile`, `tablet_and_mobile` | the **Applies At** setting | Where the responsive mode starts applying. `mobile` is ≤767px; `tablet_and_mobile` is ≤1024px. |
 | `sticky` | `yes`, `no` | `no` | Pins the first column to the left edge of a horizontal scroller. |
 | `style_id` | table post id | — | Borrow another table's style overrides instead of using this table's own. Useful for keeping a set of tables visually identical. |
 
@@ -75,6 +75,15 @@ Every attribute is validated against an allow-list, and anything
 unrecognised falls back to its default rather than failing — a shortcode
 is hand-typed, and a typo should not blank the table. `yes`, `y`, `true`,
 `1` and `on` are all accepted for `sticky`.
+
+`responsive` and `breakpoint` are the two attributes whose default is not
+a constant. Written, the attribute wins. Left off, the shortcode takes
+the **Responsive Mode** and **Applies At** settings from Shortcode
+Styles, overridable per table like any other style. That is what makes
+the live preview trustworthy: before, the mode existed only as an
+attribute defaulting to card stack, so a settings page previewing pivot
+rows and a page rendering card stack were both behaving correctly and
+nothing on screen explained the difference.
 
 ```
 [kdna_table id="123" responsive="pivot_rows" breakpoint="tablet_and_mobile" sticky="yes"]
@@ -237,6 +246,8 @@ being spread across Header Row, First Column and Body Cells.
 | Table Wrapper → Max Width | `wrapper_max_width` | `--kdna-table-wrapper-max-width` |
 | Table Wrapper → Alignment | `wrapper_alignment` | `--kdna-table-wrapper-margin` |
 | Table Wrapper → Padding | `wrapper_padding` | `--kdna-table-wrapper-padding` |
+| Table Wrapper → Space Above Table | `wrapper_margin_top` | `--kdna-table-wrapper-margin-top` |
+| Table Wrapper → Space Below Table | `wrapper_margin_bottom` | `--kdna-table-wrapper-margin-bottom` |
 | Table Layout → Border Collapse | `border_collapse` | `--kdna-table-border-collapse` |
 | Table Layout → Border Spacing | `border_spacing` | `--kdna-table-border-spacing` |
 | Table Wrapper → Caption Typography | `caption_typography` | `--kdna-table-caption-font-*` |
@@ -415,22 +426,57 @@ previewing itself would want the table's own overrides folded into the
 preview's variable maths, which is a change to what the pane resolves
 rather than to where it is rendered.
 
-### Pivot rows as separate boxes
+### Pivot rows are cards
 
-A pivoted table is one row per desktop row, each a stack of
-heading-and-value pairs. Spacing and a divider alone leave that reading
-as one continuous column of text, with nothing to say where one row's
-facts end and the next begin. **Row Background**, **Row Border**, **Row
-Padding** and **Row Border Radius** give each row a container of its own,
-the same set Card Stack has. All four default to nothing, so a pivot
-table that has not asked for a box does not grow one.
+A pivoted table is one card per desktop row, its cells stacked inside it:
+each row's facts in a box of their own, one box under the next with a gap
+between them.
 
-Row Border and Row Divider both want the bottom edge. A divider that is
-set wins it; with no divider, the border closes the box. The Row Border
+| Control | Default | What it does |
+| --- | --- | --- |
+| **Card Background** | `#ffffff` | The card's ground |
+| **Card Border** | `1px solid #e5e7eb` | Style, width and colour, one width for all four sides |
+| **Card Border Radius** | `12px` | Rounds the whole card; the cells inside stay square |
+| **Card Padding** | `16px` | Even inset between the card edge and its contents |
+| **Spacing Between Cells** | `12px` | The gap between one heading-and-value pair and the next, *inside* a card |
+| **Row Spacing** | `16px` | The gap between one card and the next |
+
+These carry the card's own defaults rather than defaulting to nothing. A
+mode called Pivot Rows that renders as one undifferentiated column of
+text until four separate controls are found and set looks broken, not
+neutral.
+
+Two details are load-bearing:
+
+- **The radius is on the row, not the cells.** A radius per cell rounds
+  every band inside the card and leaves the card itself square, which is
+  the opposite of what a card is.
+- **The cell gap is a flex gap, not cell padding.** The row is a column
+  flex box, so the gap falls between cells and nowhere else. Padding on
+  each cell would double up between neighbours and leave a half gap
+  against the card's own padding at the two ends.
+
+Card Border and Row Divider both want the bottom edge. A divider that is
+set wins it; with no divider, the border closes the box. The Card Border
 is a style/width/colour trio rather than a four-sided border group, so
 its single width can be handed to `border-bottom-width` — a four-sided
 value there is invalid, and an invalid longhand resets to `medium`
 rather than falling through to the shorthand above it.
+
+### Hover states on touch devices
+
+Every front-end `:hover` rule sits inside `@media (hover: hover)`. A
+phone has no pointer, but it still fires `:hover` on tap and leaves it
+stuck there until something else is tapped — so the last row touched kept
+a highlight it never earned, reading as a selection the table had not
+made.
+
+The query asks whether a pointing device exists rather than inferring it
+from viewport width, which a laptop can also have. Where a rule paired
+`:hover` with `:focus`, `:focus-within` or `.is-open` — the comparison
+table's tooltips — only the hover half moved. Those are the tap and
+keyboard paths, and gating them would have taken tooltips away from
+exactly the devices that need the tap path.
 
 ### Per-table overrides
 
@@ -563,7 +609,14 @@ wrapper. Theme stylesheets or per-instance Custom CSS (via the
 | `--kdna-card-spacing` | `16px` | Gap between stacked cards |
 | `--kdna-pivot-label-color` | undeclared | Pivot rows label colour. Unset, the general table's column headings take `--kdna-table-header-color` and the comparison item labels inherit |
 | `--kdna-pivot-label-width` | `30%` | Pivot rows inline label width |
-| `--kdna-pivot-row-spacing` | `16px` | Pivot rows row spacing |
+| `--kdna-pivot-row-spacing` | `16px` | Gap between one pivot card and the next |
+| `--kdna-pivot-row-bg` | `#ffffff` | Pivot card background |
+| `--kdna-pivot-row-padding` | `16px` | Pivot card padding |
+| `--kdna-pivot-row-radius` | `12px` | Pivot card radius, on the whole card |
+| `--kdna-pivot-row-border-style` | `solid` | Pivot card border style |
+| `--kdna-pivot-row-border-width` | `1px` | Pivot card border width, one value for all four sides |
+| `--kdna-pivot-row-border-color` | `#e5e7eb` | Pivot card border colour |
+| `--kdna-pivot-cell-spacing` | `12px` | Gap between cells inside a pivot card |
 | `--kdna-pivot-heading-padding` | `0` | Pivot rows column heading padding |
 | `--kdna-pivot-heading-radius` | `0` | Pivot rows column heading radius |
 | `--kdna-pivot-heading-spacing` | `2px` | Gap under a pivot rows column heading |
@@ -618,6 +671,43 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 - UK English throughout code, labels, and documentation.
 
 ## Changelog
+
+### 3.2.0
+
+- **The responsive mode is a setting.** It used to exist only as a
+  `responsive="…"` shortcode attribute defaulting to card stack, while
+  the settings page offered a *Responsive Mode* dropdown in the preview
+  bar that flipped an attribute on the preview iframe and nothing else.
+  Both halves behaved correctly and they disagreed: the pane showed pivot
+  rows, the page showed cards, and nothing on screen explained why.
+  **Responsive Mode** and **Applies At** are now saved controls in
+  Responsive Modes, overridable per table, and the preview reads them
+  back as a readout rather than offering a second place to set them. A
+  shortcode attribute still wins wherever one is written, so existing
+  markup is untouched.
+- **Pivot Rows renders as cards out of the box.** Card Background, Card
+  Border, Card Border Radius and Card Padding carry the card's own
+  defaults instead of defaulting to nothing — a mode that renders as one
+  undifferentiated column of text until four controls are found and set
+  looks broken, not neutral. The radius is on the card, not on its cells,
+  so the corner belongs to the whole box.
+- New **Spacing Between Cells** control for how tightly the facts inside
+  one card are packed, separate from Row Spacing, which is the gap
+  between whole cards. Implemented as a flex gap on the row: padding on
+  each cell would double up between neighbours and leave a half gap
+  against the card's own padding at the two ends.
+- New **Space Above Table** and **Space Below Table** controls, on every
+  device. They are two controls rather than one margin box because
+  Alignment already owns the margin shorthand — centring is `auto` on the
+  two sides — so these take the vertical edges on variables of their own
+  and are applied as longhands after it. Neither can erase the other.
+- **Hover states no longer apply on touch devices.** Every front-end
+  `:hover` rule now sits inside `@media (hover: hover)`. A phone has no
+  pointer but still fires `:hover` on tap and leaves it stuck there, so
+  the last row touched kept a highlight it never earned. Where a rule
+  paired `:hover` with `:focus`, `:focus-within` or `.is-open` — the
+  comparison tooltips — only the hover half moved; those are the tap and
+  keyboard paths.
 
 ### 3.1.2
 

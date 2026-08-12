@@ -355,6 +355,53 @@ class KDNA_Tables_Style_Schema {
 			),
 
 			/*
+			 * ── Why the vertical margins are two controls of their own ──
+			 *
+			 * Alignment above owns --kdna-table-wrapper-margin, and it owns
+			 * the whole shorthand: it has to, because centring is "auto" on
+			 * the left and right and a select can only write one variable.
+			 * A margin dimensions control writing the same variable would
+			 * mean whichever of the two was resolved last silently threw
+			 * the other away.
+			 *
+			 * So these are the top and bottom edges only, on variables of
+			 * their own, applied as longhands after the shorthand in the
+			 * stylesheet. Alignment keeps the horizontal edges, these keep
+			 * the vertical ones, and neither can erase the other.
+			 *
+			 * Responsive, so a tighter gap on mobile is possible, but a
+			 * single desktop value inherits to every band — which is what
+			 * "the same space on all devices" wants.
+			 */
+			'wrapper_margin_top'    => array(
+				'label'       => esc_html__( 'Space Above Table', 'kdna-tables' ),
+				'section'     => 'wrapper',
+				'type'        => 'slider',
+				'css_var'     => '--kdna-table-wrapper-margin-top',
+				'units'       => array( 'px', 'em', 'rem', '%' ),
+				'min'         => 0,
+				'max'         => 200,
+				'step'        => 1,
+				'responsive'  => true,
+				'default'     => array( 'size' => 0, 'unit' => 'px' ),
+				'description' => esc_html__( 'Margin between the table and whatever sits above it on the page.', 'kdna-tables' ),
+			),
+
+			'wrapper_margin_bottom' => array(
+				'label'       => esc_html__( 'Space Below Table', 'kdna-tables' ),
+				'section'     => 'wrapper',
+				'type'        => 'slider',
+				'css_var'     => '--kdna-table-wrapper-margin-bottom',
+				'units'       => array( 'px', 'em', 'rem', '%' ),
+				'min'         => 0,
+				'max'         => 200,
+				'step'        => 1,
+				'responsive'  => true,
+				'default'     => array( 'size' => 0, 'unit' => 'px' ),
+				'description' => esc_html__( 'Margin between the table and whatever sits below it on the page.', 'kdna-tables' ),
+			),
+
+			/*
 			 * The widget keeps these two in their own Table Layout section.
 			 * There is no layout section in this schema, and they describe
 			 * the table frame, so they live with the rest of the frame.
@@ -775,7 +822,51 @@ class KDNA_Tables_Style_Schema {
 	}
 
 	private static function responsive_controls() {
-		return self::prefix_labels( esc_html__( 'Card Stack', 'kdna-tables' ), array(
+		/*
+		 * ── The mode itself is a setting, not just a shortcode argument ──
+		 *
+		 * These two carry no css_var: they are not styling, they are which
+		 * layout the table takes below the breakpoint. They used to be
+		 * reachable only as [kdna_table responsive="..."] attributes, which
+		 * meant the settings page could show a preview in Pivot Rows while
+		 * every shortcode on the site rendered the card_stack default —
+		 * with nothing on the page to say why.
+		 *
+		 * Saved here, they are the default for every shortcode, overridable
+		 * per table like anything else, and the preview shows the real
+		 * answer instead of a detached copy. A shortcode attribute still
+		 * wins where one is written, so existing markup is untouched.
+		 */
+		return array(
+			'responsive_mode'       => array(
+				'label'       => esc_html__( 'Responsive Mode', 'kdna-tables' ),
+				'section'     => 'card_stack',
+				'type'        => 'select',
+				'css_var'     => null,
+				'responsive'  => false,
+				'default'     => 'card_stack',
+				'options'     => array(
+					'none'          => esc_html__( 'No responsive mode', 'kdna-tables' ),
+					'card_stack'    => esc_html__( 'Card Stack — one card per column', 'kdna-tables' ),
+					'pivot_rows'    => esc_html__( 'Pivot Rows — one card per row', 'kdna-tables' ),
+					'column_picker' => esc_html__( 'Column Picker (comparison tables only)', 'kdna-tables' ),
+				),
+				'description' => esc_html__( 'How a table lays out below the breakpoint. A responsive="…" attribute on an individual shortcode still overrides this.', 'kdna-tables' ),
+			),
+
+			'responsive_breakpoint' => array(
+				'label'       => esc_html__( 'Applies At', 'kdna-tables' ),
+				'section'     => 'card_stack',
+				'type'        => 'select',
+				'css_var'     => null,
+				'responsive'  => false,
+				'default'     => 'mobile',
+				'options'     => array(
+					'mobile'            => esc_html__( 'Mobile only (up to 767px)', 'kdna-tables' ),
+					'tablet_and_mobile' => esc_html__( 'Tablet and mobile (up to 1024px)', 'kdna-tables' ),
+				),
+			),
+		) + self::prefix_labels( esc_html__( 'Card Stack', 'kdna-tables' ), array(
 			/* Card Stack */
 			'card_bg'               => array(
 				'label'      => esc_html__( 'Card Background', 'kdna-tables' ),
@@ -915,39 +1006,61 @@ class KDNA_Tables_Style_Schema {
 			),
 
 			/*
-			 * ── Making each pivoted row a box of its own ──────────────
+			 * ── Each pivoted row IS the card ──────────────────────────
 			 *
-			 * A pivoted table is one row per desktop row, each a stack of
-			 * heading-and-value pairs. Spacing and a divider alone leave
-			 * that reading as one continuous column of text: there is
-			 * nothing to say where one row's group of facts ends and the
-			 * next begins. These four give the row a container — the same
-			 * set Card Stack has — so each one reads as a unit.
+			 * A pivoted table is one card per desktop row, each a stack of
+			 * heading-and-value pairs. Spacing alone leaves that reading as
+			 * one continuous column of text: nothing says where one row's
+			 * group of facts ends and the next begins.
 			 *
-			 * All default to nothing, so a pivot table that has not asked
-			 * for a box does not grow one.
+			 * These carry the card's own defaults — an inset, a white
+			 * ground, a rounded corner and a hairline — rather than
+			 * defaulting to nothing and waiting to be switched on. A mode
+			 * called Pivot Rows that renders as unboxed text until four
+			 * separate controls are found and set is a mode that looks
+			 * broken out of the box. The radius sits on the row, not on
+			 * the cells, so the corner belongs to the whole card.
 			 */
 			'pivot_row_padding'     => array(
-				'label'       => esc_html__( 'Row Padding', 'kdna-tables' ),
+				'label'       => esc_html__( 'Card Padding', 'kdna-tables' ),
 				'section'     => 'card_stack',
 				'type'        => 'dimensions',
 				'css_var'     => '--kdna-pivot-row-padding',
 				'units'       => array( 'px', 'em', '%' ),
 				'responsive'  => true,
-				// Nothing by default, so a pivot table that has not asked
-				// for a box does not grow one.
-				'default'     => null,
-				'description' => esc_html__( 'Inset for each pivoted row. Set this with a background or border to make each row a distinct box.', 'kdna-tables' ),
+				'default'     => self::dimensions( 16, 16, 16, 16, 'px' ),
+				'description' => esc_html__( 'Inset between the edge of each card and its contents.', 'kdna-tables' ),
 			),
 
 			'pivot_row_radius'      => array(
-				'label'      => esc_html__( 'Row Border Radius', 'kdna-tables' ),
-				'section'    => 'card_stack',
-				'type'       => 'dimensions',
-				'css_var'    => '--kdna-pivot-row-radius',
-				'units'      => array( 'px', '%' ),
-				'responsive' => true,
-				'default'    => null,
+				'label'       => esc_html__( 'Card Border Radius', 'kdna-tables' ),
+				'section'     => 'card_stack',
+				'type'        => 'dimensions',
+				'css_var'     => '--kdna-pivot-row-radius',
+				'units'       => array( 'px', '%' ),
+				'responsive'  => true,
+				'default'     => self::dimensions( 12, 12, 12, 12, 'px' ),
+				'description' => esc_html__( 'Rounds the whole card. The cells inside it are square.', 'kdna-tables' ),
+			),
+
+			/*
+			 * The gap between one heading-and-value pair and the next,
+			 * inside a card. Distinct from Row Spacing, which is the gap
+			 * between whole cards: this is how tightly the facts within a
+			 * single card are packed.
+			 */
+			'pivot_cell_spacing'    => array(
+				'label'       => esc_html__( 'Spacing Between Cells', 'kdna-tables' ),
+				'section'     => 'card_stack',
+				'type'        => 'slider',
+				'css_var'     => '--kdna-pivot-cell-spacing',
+				'units'       => array( 'px' ),
+				'min'         => 0,
+				'max'         => 60,
+				'step'        => 1,
+				'responsive'  => true,
+				'default'     => array( 'size' => 12, 'unit' => 'px' ),
+				'description' => esc_html__( 'The gap between each cell inside a card. Card Padding sets the space around them all.', 'kdna-tables' ),
 			),
 
 			/*
@@ -958,10 +1071,10 @@ class KDNA_Tables_Style_Schema {
 			 */
 		) ) + self::prefix_labels( esc_html__( 'Pivot Rows', 'kdna-tables' ), array(
 			'pivot_row_bg'     => self::background_group(
-				esc_html__( 'Row Background', 'kdna-tables' ),
+				esc_html__( 'Card Background', 'kdna-tables' ),
 				'card_stack',
 				'--kdna-pivot-row-bg',
-				null
+				'#ffffff'
 			),
 
 		/*
@@ -974,10 +1087,10 @@ class KDNA_Tables_Style_Schema {
 		 */
 		) ) + self::prefix_labels( esc_html__( 'Pivot Rows', 'kdna-tables' ), self::line_group(
 			'pivot_row_border',
-			esc_html__( 'Row Border', 'kdna-tables' ),
+			esc_html__( 'Card Border', 'kdna-tables' ),
 			'--kdna-pivot-row-border',
-			esc_html__( 'A border around each pivoted row. Set this, or a Row Background, to make each row a distinct box.', 'kdna-tables' ),
-			true,
+			esc_html__( 'The border around each card. Set the style to None for a card with a background but no outline.', 'kdna-tables' ),
+			false,
 			'card_stack'
 		) ) + self::prefix_labels( esc_html__( 'Pivot Rows', 'kdna-tables' ), self::line_group(
 			'pivot_divider',

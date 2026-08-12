@@ -583,8 +583,12 @@
 			preview: seed.preview || null,
 			previewTable: 0,
 			previewDevice: 'desktop',
-			previewMode: 'card_stack',
-			previewBreakpoint: 'tablet_and_mobile',
+			/*
+			 * Read from the saved controls, never held separately. The pane
+			 * used to keep its own copy, which is how the preview could sit
+			 * in Pivot Rows while every shortcode on the site rendered card
+			 * stack — there was nothing tying the two together.
+			 */
 			previewSticky: false,
 			previewLoading: false,
 			previewError: '',
@@ -618,7 +622,7 @@
 					 * a while, and losing it on every reload meant setting it
 					 * again every time.
 					 */
-					[ 'previewTable', 'previewDevice', 'previewMode', 'previewBreakpoint', 'previewSticky' ]
+					[ 'previewTable', 'previewDevice', 'previewSticky' ]
 						.forEach( function ( key ) {
 							this.$watch( key, function () { this.rememberPreviewPrefs(); }.bind( this ) );
 						}.bind( this ) );
@@ -668,12 +672,6 @@
 				if ( -1 !== tables.indexOf( parseInt( saved.table, 10 ) ) ) {
 					this.previewTable = parseInt( saved.table, 10 );
 				}
-				if ( ( this.preview.modes || {} )[ saved.mode ] ) {
-					this.previewMode = saved.mode;
-				}
-				if ( ( this.preview.breakpoints || {} )[ saved.breakpoint ] ) {
-					this.previewBreakpoint = saved.breakpoint;
-				}
 				if ( ( this.preview.widths || {} )[ saved.device ] ) {
 					this.previewDevice = saved.device;
 				}
@@ -685,8 +683,6 @@
 				try {
 					window.localStorage.setItem( this.PREVIEW_PREFS_KEY, JSON.stringify( {
 						table: parseInt( this.previewTable, 10 ),
-						mode: this.previewMode,
-						breakpoint: this.previewBreakpoint,
 						device: this.previewDevice,
 						sticky: !! this.previewSticky
 					} ) );
@@ -707,6 +703,38 @@
 				} catch ( e ) {
 					return null;
 				}
+			},
+
+			/*
+			 * ── The preview reads the setting, it does not hold one ──
+			 *
+			 * These were preview state of their own, driven by a dropdown
+			 * in the preview bar. That dropdown looked like a setting and
+			 * was not: it flipped an attribute on the iframe and nothing
+			 * else, so the pane could show Pivot Rows while every shortcode
+			 * on the site rendered Card Stack, with nothing on the page to
+			 * say why.
+			 *
+			 * Getters, so there is one value and the preview cannot drift
+			 * from it. The fallback comes from the schema rather than a
+			 * literal, because a literal here is how the preview and the
+			 * front end would silently disagree again the day a default
+			 * moves.
+			 */
+			get previewMode() {
+				return this.settingOrDefault( 'responsive_mode', 'card_stack' );
+			},
+
+			get previewBreakpoint() {
+				return this.settingOrDefault( 'responsive_breakpoint', 'mobile' );
+			},
+
+			settingOrDefault: function ( key, ultimate ) {
+				var saved = this.values && this.values[ key ];
+				if ( saved ) { return saved; }
+				var definition = this.schema && this.schema[ key ];
+				if ( definition && definition.default ) { return definition.default; }
+				return ultimate;
 			},
 
 			previewWidth: function () {
