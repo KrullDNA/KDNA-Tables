@@ -8,7 +8,7 @@ same table can be styled differently in different widget instances on
 different pages.
 
 - **Plugin slug:** kdna-tables
-- **Version:** 3.0.0
+- **Version:** 3.1.0
 - **Widget:** KDNA Table (Elementor category: KDNA Tables)
 - **Shortcode:** `[kdna_table id="123"]` (non-Elementor contexts)
 - **Custom post type:** `kdna_table` (admin only, not public)
@@ -286,10 +286,10 @@ being spread across Header Row, First Column and Body Cells.
 | Pivot Rows Mode → Label Width | `pivot_label_width` | `--kdna-pivot-label-width` |
 | Pivot Rows Mode → Row Spacing | `pivot_row_spacing` | `--kdna-pivot-row-spacing` |
 | Pivot Rows Mode → Row Divider | `pivot_divider_style` / `_width` / `_color` | `--kdna-pivot-divider-*` |
-| *(new in 3.0.0)* Pivot Rows Mode → Row Background | `pivot_row_bg` | `--kdna-pivot-row-bg` |
-| *(new in 3.0.0)* Pivot Rows Mode → Row Border | `pivot_row_border_style` / `_width` / `_color` | `--kdna-pivot-row-border-*` |
-| *(new in 3.0.0)* Pivot Rows Mode → Row Padding | `pivot_row_padding` | `--kdna-pivot-row-padding` |
-| *(new in 3.0.0)* Pivot Rows Mode → Row Border Radius | `pivot_row_radius` | `--kdna-pivot-row-radius` |
+| *(new in 3.1.0)* Pivot Rows Mode → Row Background | `pivot_row_bg` | `--kdna-pivot-row-bg` |
+| *(new in 3.1.0)* Pivot Rows Mode → Row Border | `pivot_row_border_style` / `_width` / `_color` | `--kdna-pivot-row-border-*` |
+| *(new in 3.1.0)* Pivot Rows Mode → Row Padding | `pivot_row_padding` | `--kdna-pivot-row-padding` |
+| *(new in 3.1.0)* Pivot Rows Mode → Row Border Radius | `pivot_row_radius` | `--kdna-pivot-row-radius` |
 | Sticky Column → Background | `sticky_bg` | `--kdna-sticky-bg` |
 | Sticky Column → Right Edge Shadow Colour | `sticky_shadow_color` | `--kdna-sticky-shadow-color` |
 | Sticky Column → Right Edge Shadow Size | `sticky_shadow_size` | `--kdna-sticky-shadow-size` |
@@ -618,6 +618,42 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 
 ## Changelog
 
+### 3.1.0
+
+Everything below shipped after 3.0.0 went out. The version bump matters
+beyond bookkeeping: `KDNA_TABLES_VERSION` is the `?ver=` on every
+stylesheet, so a fix shipped under the same number leaves browsers and
+CDNs serving the cached old CSS.
+
+- **Pivot Rows gains Row Background, Row Border, Row Padding and Row
+  Border Radius**, so each pivoted row reads as a separate box rather
+  than one continuous column of text. All four default to nothing. A Row
+  Divider that is set still wins the bottom edge; with no divider, the
+  border closes the box.
+- Fixed **Line Height** doing nothing to the space between wrapped lines.
+  The cell text sits in a span that hard-coded `line-height: 1.5`, which
+  beat the value inherited from the cell — so the control grew the cell's
+  line box, padding the text above and below, while the lines inside
+  stayed where they were. The default now lives on the cell and the span
+  inherits it. Affects the header row, first column and body cells, on
+  the widget as well as the shortcode.
+- Fixed the **Shortcode Styles menu link** pointing at
+  `/wp-admin/kdna-tables-styles`, which is not an admin URL and landed on
+  the theme's 404. The submenu registered before its parent menu existed,
+  so WordPress derived the wrong load hook — which also stopped the
+  page's own CSS and JS loading. It now registers at a later priority.
+- **The shortcode no longer needs Elementor.** The cell-render helpers
+  moved out of the widget class into `KDNA_Tables_Cell_Renderer_Trait`,
+  so the shortcode binds the render templates to a plain object instead
+  of to a widget. Previously, rendering with Elementor deactivated was a
+  fatal error, and the guard against it made the shortcode render nothing
+  at all. It now renders identically with or without Elementor.
+- Fixed the **Card Border Radius** control squaring the top corners of a
+  card. The control writes four values and the stylesheet fed them to
+  `border-top-left-radius`, which accepts at most two — so the
+  declaration was invalid and silently dropped. Affected the Elementor
+  widget's card-stack layout for both table types.
+
 ### 3.0.0
 
 **The Shortcode Style Engine.** `[kdna_table]` gains full styling parity
@@ -645,28 +681,6 @@ previously reach.
   API is present.
 - New shortcode attributes: `responsive`, `breakpoint`, `sticky`,
   `style_id`.
-- **The shortcode no longer needs Elementor.** The cell-render helpers
-  moved out of the widget class into
-  `KDNA_Tables_Cell_Renderer_Trait`, so the shortcode binds the render
-  templates to a plain object instead of to a widget. Previously,
-  rendering with Elementor deactivated was a fatal error, and the guard
-  against it made the shortcode render nothing at all. It now renders
-  identically with or without Elementor.
-- Fixed Line Height doing nothing to the space between wrapped lines.
-  The cell text sits in a span that hard-coded `line-height: 1.5`, which
-  beat the value inherited from the cell — so the control grew the cell's
-  line box, padding the text above and below, while the lines inside
-  stayed where they were. The default now lives on the cell and the span
-  inherits it. Affects the header row, first column and body cells, on
-  the widget as well as the shortcode.
-- Pivot Rows gains Row Background, Row Border, Row Padding and Row Border
-  Radius, so each pivoted row reads as a separate box rather than one
-  continuous column of text.
-- Fixed the Card Border Radius control squaring the top corners of a
-  card. The control writes four values and the stylesheet fed them to
-  `border-top-left-radius`, which accepts at most two — so the
-  declaration was invalid and silently dropped. Affected the Elementor
-  widget's card-stack layout for both table types.
 
 ### 2.3.1
 
