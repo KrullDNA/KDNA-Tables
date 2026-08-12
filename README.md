@@ -8,7 +8,7 @@ same table can be styled differently in different widget instances on
 different pages.
 
 - **Plugin slug:** kdna-tables
-- **Version:** 3.1.1
+- **Version:** 3.1.2
 - **Widget:** KDNA Table (Elementor category: KDNA Tables)
 - **Shortcode:** `[kdna_table id="123"]` (non-Elementor contexts)
 - **Custom post type:** `kdna_table` (admin only, not public)
@@ -18,7 +18,7 @@ different pages.
 ## Installation
 
 1. Download the latest `kdna-tables-vX.Y.Z.zip` from the repository root
-   (currently `kdna-tables-v3.1.1.zip`).
+   (currently `kdna-tables-v3.1.2.zip`).
 2. In WordPress, go to **Plugins, Add New, Upload Plugin** and choose the zip.
 3. Click **Install Now**, then **Activate**.
 4. A new top-level **KDNA Tables** menu appears in WP Admin (with submenus
@@ -618,6 +618,22 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 - UK English throughout code, labels, and documentation.
 
 ## Changelog
+
+### 3.1.2
+
+- Every control in **Responsive Modes** now says which mode it belongs
+  to: "Card Stack: Card Background", "Pivot Rows: Row Background". The
+  section holds two independent layouts and twenty-two controls, and
+  nothing said that Card Background does nothing in Pivot Rows while Row
+  Background does nothing in Card Stack.
+- Pivot Rows no longer inherits the **alternate row shading**. Odd/even
+  stripes are how you follow a row across a wide table; pivoted, each row
+  is its own block, so the stripe only showed up as one group being grey
+  and the next white, fighting the Row Background.
+- Fixed the **first column's injected heading sitting inset** on both
+  sides in Pivot Rows while every other heading ran full width. The First
+  Column padding rule was still winning in a layout where the first
+  column has stopped being a column.
 
 ### 3.1.1
 

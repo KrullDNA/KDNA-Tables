@@ -838,6 +838,42 @@
 		background: none;
 	}
 
+	/*
+	 * ── The first column is not a column here ──────────────────────────
+	 *
+	 * Pivoted, every cell is a full-width block and the first column has
+	 * stopped being a column at all. But the First Column padding rule
+	 * carries one class more than the rule above it, so it kept winning
+	 * and the first cell of each row stayed inset — its injected heading
+	 * visibly narrower than the ones under it.
+	 *
+	 * The extra .kdna-table__cell class here is what takes the specificity
+	 * past that rule. Padding only: a first column that has been given its
+	 * own colour or weight is still worth telling apart in this layout,
+	 * and the pivot block above has already cleared its borders.
+	 */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general .kdna-table__cell.kdna-table__cell.kdna-table__cell--first-col {
+		padding: 6px 0;
+	}
+
+	/*
+	 * ── No alternate row shading in this mode ──────────────────────────
+	 *
+	 * Odd/even stripes are how you follow a row across a wide table. There
+	 * are no rows to follow here — each one has become its own block — so
+	 * the stripe only ever showed up as one group being grey and the next
+	 * white, fighting whatever the Row Background was set to.
+	 *
+	 * The Body Cells odd/even rules carry four classes; the extra
+	 * .kdna-table__cell here is what gets past them. First-column cells
+	 * are excluded so a First Column background still paints, which is a
+	 * deliberate choice rather than a stripe.
+	 */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general tbody .kdna-table__row--odd > .kdna-table__cell:not(.kdna-table__cell--first-col),
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general tbody .kdna-table__row--even > .kdna-table__cell:not(.kdna-table__cell--first-col) {
+		background: none;
+	}
+
 	/* Column headings, tablet band. The real <thead> is hidden in this
 	 * mode and every cell injects its column label instead, so that label
 	 * IS the column heading here: it takes the header row's background
@@ -1154,6 +1190,42 @@
 		display: block;
 		border: 0 !important;
 		padding: 6px 0;
+		background: none;
+	}
+
+	/*
+	 * ── The first column is not a column here ──────────────────────────
+	 *
+	 * Pivoted, every cell is a full-width block and the first column has
+	 * stopped being a column at all. But the First Column padding rule
+	 * carries one class more than the rule above it, so it kept winning
+	 * and the first cell of each row stayed inset — its injected heading
+	 * visibly narrower than the ones under it.
+	 *
+	 * The extra .kdna-table__cell class here is what takes the specificity
+	 * past that rule. Padding only: a first column that has been given its
+	 * own colour or weight is still worth telling apart in this layout,
+	 * and the pivot block above has already cleared its borders.
+	 */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general .kdna-table__cell.kdna-table__cell.kdna-table__cell--first-col {
+		padding: 6px 0;
+	}
+
+	/*
+	 * ── No alternate row shading in this mode ──────────────────────────
+	 *
+	 * Odd/even stripes are how you follow a row across a wide table. There
+	 * are no rows to follow here — each one has become its own block — so
+	 * the stripe only ever showed up as one group being grey and the next
+	 * white, fighting whatever the Row Background was set to.
+	 *
+	 * The Body Cells odd/even rules carry four classes; the extra
+	 * .kdna-table__cell here is what gets past them. First-column cells
+	 * are excluded so a First Column background still paints, which is a
+	 * deliberate choice rather than a stripe.
+	 */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general tbody .kdna-table__row--odd > .kdna-table__cell:not(.kdna-table__cell--first-col),
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general tbody .kdna-table__row--even > .kdna-table__cell:not(.kdna-table__cell--first-col) {
 		background: none;
 	}
 
