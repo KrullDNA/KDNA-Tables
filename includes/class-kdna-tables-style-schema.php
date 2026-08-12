@@ -945,14 +945,23 @@ class KDNA_Tables_Style_Schema {
 				'description' => esc_html__( 'Unset, headings take the Header Row background.', 'kdna-tables' ),
 			),
 
+			/*
+			 * Unset by default so it can inherit, the same way the
+			 * heading's background and colour already do. Pivoted, the
+			 * real <thead> is hidden and this pseudo-element IS the
+			 * column heading — so Header Row → Padding should reach it,
+			 * and it could not while this carried a hard zero that always
+			 * won.
+			 */
 			'pivot_heading_padding' => array(
-				'label'      => esc_html__( 'Column Heading Padding', 'kdna-tables' ),
-				'section'    => 'card_stack',
-				'type'       => 'dimensions',
-				'css_var'    => '--kdna-pivot-heading-padding',
-				'units'      => array( 'px', 'em' ),
-				'responsive' => true,
-				'default'    => self::dimensions( 0, 0, 0, 0, 'px' ),
+				'label'       => esc_html__( 'Column Heading Padding', 'kdna-tables' ),
+				'section'     => 'card_stack',
+				'type'        => 'dimensions',
+				'css_var'     => '--kdna-pivot-heading-padding',
+				'units'       => array( 'px', 'em' ),
+				'responsive'  => true,
+				'default'     => null,
+				'description' => esc_html__( 'Unset, headings take the Header Row padding.', 'kdna-tables' ),
 			),
 
 			'pivot_heading_radius'  => array(
@@ -1059,8 +1068,11 @@ class KDNA_Tables_Style_Schema {
 				'max'         => 60,
 				'step'        => 1,
 				'responsive'  => true,
-				'default'     => array( 'size' => 12, 'unit' => 'px' ),
-				'description' => esc_html__( 'The gap between each cell inside a card. Card Padding sets the space around them all.', 'kdna-tables' ),
+				// Nothing by default: this is extra space ON TOP of the
+				// Body Cells padding, so a default here would be a second
+				// gap the padding control could not account for.
+				'default'     => array( 'size' => 0, 'unit' => 'px' ),
+				'description' => esc_html__( 'Extra gap between cells inside a card, on top of the Body Cells padding.', 'kdna-tables' ),
 			),
 
 			/*
