@@ -747,8 +747,35 @@ class KDNA_Tables_Style_Schema {
 
 	/* ─── Section: card_stack (responsive modes) ────────────────────── */
 
+	/**
+	 * Prefix every label in a set with the mode it belongs to.
+	 *
+	 * The Responsive Modes section holds two independent layouts, and
+	 * without this they read as one list: "Card Background" sits four rows
+	 * from "Row Background", and nothing said the first does nothing in
+	 * Pivot Rows and the second nothing in Card Stack. Applied to the
+	 * built array rather than written into each label, so a control added
+	 * later is prefixed without anyone having to remember.
+	 *
+	 * @param string $prefix   Mode name, e.g. 'Card Stack'.
+	 * @param array  $controls Control key => definition.
+	 */
+	private static function prefix_labels( $prefix, array $controls ) {
+		foreach ( $controls as $key => $control ) {
+			if ( isset( $control['label'] ) ) {
+				/* translators: 1: responsive mode name, 2: control label. */
+				$controls[ $key ]['label'] = sprintf(
+					esc_html__( '%1$s: %2$s', 'kdna-tables' ),
+					$prefix,
+					$control['label']
+				);
+			}
+		}
+		return $controls;
+	}
+
 	private static function responsive_controls() {
-		return array(
+		return self::prefix_labels( esc_html__( 'Card Stack', 'kdna-tables' ), array(
 			/* Card Stack */
 			'card_bg'               => array(
 				'label'      => esc_html__( 'Card Background', 'kdna-tables' ),
@@ -797,6 +824,7 @@ class KDNA_Tables_Style_Schema {
 				'responsive' => true,
 				'default'    => array( 'size' => 16, 'unit' => 'px' ),
 			),
+		) ) + self::prefix_labels( esc_html__( 'Pivot Rows', 'kdna-tables' ), array(
 
 			/* Pivot Rows */
 			'pivot_label_typography' => self::typography_group(
@@ -928,7 +956,7 @@ class KDNA_Tables_Style_Schema {
 			 * both meaningless and invalid — a dimensions value fed to the
 			 * border shorthand takes the whole declaration down with it.
 			 */
-		) + array(
+		) ) + self::prefix_labels( esc_html__( 'Pivot Rows', 'kdna-tables' ), array(
 			'pivot_row_bg'     => self::background_group(
 				esc_html__( 'Row Background', 'kdna-tables' ),
 				'card_stack',
@@ -944,21 +972,21 @@ class KDNA_Tables_Style_Schema {
 		 * border-bottom-width is invalid, and an invalid longhand resets
 		 * to medium rather than falling through to the shorthand.
 		 */
-		) + self::line_group(
+		) ) + self::prefix_labels( esc_html__( 'Pivot Rows', 'kdna-tables' ), self::line_group(
 			'pivot_row_border',
 			esc_html__( 'Row Border', 'kdna-tables' ),
 			'--kdna-pivot-row-border',
 			esc_html__( 'A border around each pivoted row. Set this, or a Row Background, to make each row a distinct box.', 'kdna-tables' ),
 			true,
 			'card_stack'
-		) + self::line_group(
+		) ) + self::prefix_labels( esc_html__( 'Pivot Rows', 'kdna-tables' ), self::line_group(
 			'pivot_divider',
 			esc_html__( 'Row Divider', 'kdna-tables' ),
 			'--kdna-pivot-divider',
 			esc_html__( 'The line under each pivoted row. Unset, rows are separated by spacing alone.', 'kdna-tables' ),
 			true,
 			'card_stack'
-		);
+		) );
 	}
 
 	/* ─── Section: sticky ───────────────────────────────────────────── */
