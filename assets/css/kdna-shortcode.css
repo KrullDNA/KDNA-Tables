@@ -228,12 +228,18 @@
 	--_kdna-pivot-row-border-style: var(--kdna-pivot-row-border-style, solid);
 	--_kdna-pivot-row-border-width: var(--kdna-pivot-row-border-width, 1px);
 	--_kdna-pivot-row-border-color: var(--kdna-pivot-row-border-color, #e5e7eb);
-	/* The gap between one cell and the next inside a card. A flex gap
-	 * rather than padding on each cell, so there is no doubling between
-	 * neighbours and no half-gap against the card's own padding. */
-	--_kdna-pivot-cell-spacing: var(--kdna-pivot-cell-spacing, 12px);
+	/* EXTRA gap between one cell and the next inside a card, on top of
+	 * the Body Cells padding. Zero by default: the padding is the base
+	 * spacing, and a default here would be a second gap the padding
+	 * control could not account for. A flex gap rather than more padding
+	 * so it does not double between neighbours or leave a half-gap
+	 * against the card's own padding at the two ends. */
+	--_kdna-pivot-cell-spacing: var(--kdna-pivot-cell-spacing, 0px);
 	--_kdna-pivot-heading-bg: var(--kdna-pivot-heading-bg, var(--_kdna-table-header-bg));
-	--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding, 0);
+	/* Pivoted, the real <thead> is hidden and this pseudo-element IS the
+	 * column heading, so unset it takes the Header Row padding — the same
+	 * inheritance its background and colour already use. */
+	--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding, var(--_kdna-table-header-padding));
 	--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius, 0);
 	--_kdna-pivot-heading-spacing: var(--kdna-pivot-heading-spacing, 2px);
 	--_kdna-pivot-label-font-family: var(--kdna-pivot-label-font-family, inherit);
@@ -753,8 +759,8 @@
 		--_kdna-pivot-row-border-style: var(--kdna-pivot-row-border-style, solid);
 		--_kdna-pivot-row-border-width: var(--kdna-pivot-row-border-width-tablet, var(--kdna-pivot-row-border-width, 1px));
 		--_kdna-pivot-row-border-color: var(--kdna-pivot-row-border-color, #e5e7eb);
-		--_kdna-pivot-cell-spacing: var(--kdna-pivot-cell-spacing-tablet, var(--kdna-pivot-cell-spacing, 12px));
-		--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding-tablet, var(--kdna-pivot-heading-padding, 0));
+		--_kdna-pivot-cell-spacing: var(--kdna-pivot-cell-spacing-tablet, var(--kdna-pivot-cell-spacing, 0px));
+		--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding-tablet, var(--kdna-pivot-heading-padding, var(--_kdna-table-header-padding)));
 		--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius-tablet, var(--kdna-pivot-heading-radius, 0));
 		--_kdna-pivot-heading-spacing: var(--kdna-pivot-heading-spacing-tablet, var(--kdna-pivot-heading-spacing, 2px));
 
@@ -874,10 +880,23 @@
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
 		display: block;
 		border: 0 !important;
-		/* No padding of its own: the card's padding holds the whole stack
-		 * off its edges and the card's gap holds the cells off each
-		 * other. Padding here would add to both. */
-		padding: 0;
+		/*
+		 * ── The Body Cells padding control, not a hardcoded value ──
+		 *
+		 * This was `padding: 0`, on the reasoning that the card's own
+		 * padding held the stack off its edges and the card's gap held
+		 * the cells off each other. That reasoning silently disabled the
+		 * Body Cells → Padding control in this mode: setting it moved
+		 * nothing, with no hint on the page as to why.
+		 *
+		 * A control that says Padding pads. All four sides, so nothing is
+		 * quietly dropped. The card padding is its own control sitting
+		 * outside this one, and either can be taken to zero.
+		 */
+		padding: var(--_kdna-table-body-padding);
+		/* No background: the card underneath IS the ground here, and a
+		 * per-cell background is what made pivoted rows read as banded
+		 * text rather than as one card. */
 		background: none;
 	}
 
@@ -894,9 +913,13 @@
 	 * past that rule. Padding only: a first column that has been given its
 	 * own colour or weight is still worth telling apart in this layout,
 	 * and the pivot block above has already cleared its borders.
+	 *
+	 * The same Body Cells padding as every other cell in the card, so the
+	 * stack lines up. Not the First Column padding, which is a gutter for
+	 * a column that has stopped existing here.
 	 */
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general .kdna-table__cell.kdna-table__cell.kdna-table__cell--first-col {
-		padding: 0;
+		padding: var(--_kdna-table-body-padding);
 	}
 
 	/*
@@ -908,12 +931,17 @@
 	 * white, fighting whatever the Row Background was set to.
 	 *
 	 * The Body Cells odd/even rules carry four classes; the extra
-	 * .kdna-table__cell here is what gets past them. First-column cells
-	 * are excluded so a First Column background still paints, which is a
-	 * deliberate choice rather than a stripe.
+	 * .kdna-table__cell here is what gets past them.
+	 *
+	 * First-column cells used to be excluded, so that a First Column
+	 * background would still paint. That exclusion is why a grey band was
+	 * still showing on the first cell of every odd card: the First Column
+	 * odd/even backgrounds are alternate shading too, and they were the
+	 * half left switched on. Every cell in a card is cleared now — the
+	 * card is the ground.
 	 */
-	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general tbody .kdna-table__row--odd > .kdna-table__cell:not(.kdna-table__cell--first-col),
-	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general tbody .kdna-table__row--even > .kdna-table__cell:not(.kdna-table__cell--first-col) {
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general tbody .kdna-table__row--odd > .kdna-table__cell.kdna-table__cell,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general tbody .kdna-table__row--even > .kdna-table__cell.kdna-table__cell {
 		background: none;
 	}
 
@@ -1080,8 +1108,8 @@
 		--_kdna-pivot-row-border-style: var(--kdna-pivot-row-border-style, solid);
 		--_kdna-pivot-row-border-width: var(--kdna-pivot-row-border-width-mobile, var(--kdna-pivot-row-border-width-tablet, var(--kdna-pivot-row-border-width, 1px)));
 		--_kdna-pivot-row-border-color: var(--kdna-pivot-row-border-color, #e5e7eb);
-		--_kdna-pivot-cell-spacing: var(--kdna-pivot-cell-spacing-mobile, var(--kdna-pivot-cell-spacing-tablet, var(--kdna-pivot-cell-spacing, 12px)));
-		--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding-mobile, var(--kdna-pivot-heading-padding-tablet, var(--kdna-pivot-heading-padding, 0)));
+		--_kdna-pivot-cell-spacing: var(--kdna-pivot-cell-spacing-mobile, var(--kdna-pivot-cell-spacing-tablet, var(--kdna-pivot-cell-spacing, 0px)));
+		--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding-mobile, var(--kdna-pivot-heading-padding-tablet, var(--kdna-pivot-heading-padding, var(--_kdna-table-header-padding))));
 		--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius-mobile, var(--kdna-pivot-heading-radius-tablet, var(--kdna-pivot-heading-radius, 0)));
 		--_kdna-pivot-heading-spacing: var(--kdna-pivot-heading-spacing-mobile, var(--kdna-pivot-heading-spacing-tablet, var(--kdna-pivot-heading-spacing, 2px)));
 
@@ -1242,10 +1270,23 @@
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
 		display: block;
 		border: 0 !important;
-		/* No padding of its own: the card's padding holds the whole stack
-		 * off its edges and the card's gap holds the cells off each
-		 * other. Padding here would add to both. */
-		padding: 0;
+		/*
+		 * ── The Body Cells padding control, not a hardcoded value ──
+		 *
+		 * This was `padding: 0`, on the reasoning that the card's own
+		 * padding held the stack off its edges and the card's gap held
+		 * the cells off each other. That reasoning silently disabled the
+		 * Body Cells → Padding control in this mode: setting it moved
+		 * nothing, with no hint on the page as to why.
+		 *
+		 * A control that says Padding pads. All four sides, so nothing is
+		 * quietly dropped. The card padding is its own control sitting
+		 * outside this one, and either can be taken to zero.
+		 */
+		padding: var(--_kdna-table-body-padding);
+		/* No background: the card underneath IS the ground here, and a
+		 * per-cell background is what made pivoted rows read as banded
+		 * text rather than as one card. */
 		background: none;
 	}
 
@@ -1262,9 +1303,13 @@
 	 * past that rule. Padding only: a first column that has been given its
 	 * own colour or weight is still worth telling apart in this layout,
 	 * and the pivot block above has already cleared its borders.
+	 *
+	 * The same Body Cells padding as every other cell in the card, so the
+	 * stack lines up. Not the First Column padding, which is a gutter for
+	 * a column that has stopped existing here.
 	 */
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general .kdna-table__cell.kdna-table__cell.kdna-table__cell--first-col {
-		padding: 0;
+		padding: var(--_kdna-table-body-padding);
 	}
 
 	/*
@@ -1276,12 +1321,17 @@
 	 * white, fighting whatever the Row Background was set to.
 	 *
 	 * The Body Cells odd/even rules carry four classes; the extra
-	 * .kdna-table__cell here is what gets past them. First-column cells
-	 * are excluded so a First Column background still paints, which is a
-	 * deliberate choice rather than a stripe.
+	 * .kdna-table__cell here is what gets past them.
+	 *
+	 * First-column cells used to be excluded, so that a First Column
+	 * background would still paint. That exclusion is why a grey band was
+	 * still showing on the first cell of every odd card: the First Column
+	 * odd/even backgrounds are alternate shading too, and they were the
+	 * half left switched on. Every cell in a card is cleared now — the
+	 * card is the ground.
 	 */
-	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general tbody .kdna-table__row--odd > .kdna-table__cell:not(.kdna-table__cell--first-col),
-	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general tbody .kdna-table__row--even > .kdna-table__cell:not(.kdna-table__cell--first-col) {
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general tbody .kdna-table__row--odd > .kdna-table__cell.kdna-table__cell,
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general tbody .kdna-table__row--even > .kdna-table__cell.kdna-table__cell {
 		background: none;
 	}
 

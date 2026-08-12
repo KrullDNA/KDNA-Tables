@@ -438,8 +438,26 @@ between them.
 | **Card Border** | `1px solid #e5e7eb` | Style, width and colour, one width for all four sides |
 | **Card Border Radius** | `12px` | Rounds the whole card; the cells inside stay square |
 | **Card Padding** | `16px` | Even inset between the card edge and its contents |
-| **Spacing Between Cells** | `12px` | The gap between one heading-and-value pair and the next, *inside* a card |
+| **Spacing Between Cells** | `0` | *Extra* gap between cells inside a card, on top of the Body Cells padding |
 | **Row Spacing** | `16px` | The gap between one card and the next |
+
+The spacing inside a card comes from three controls that stack, and each
+does exactly what its name says:
+
+- **Body Cells → Padding** pads each cell, all four sides. This is the
+  base spacing between one heading-and-value pair and the next, and it is
+  also what insets them from the card's sides. Set it to `0` left/right
+  for headings that run the full width of the card.
+- **Card Padding** insets the whole stack from the card edge.
+- **Spacing Between Cells** adds more space between cells and nothing
+  else. Zero by default, so it never contributes a gap the padding
+  control cannot account for.
+
+**Header Row → Padding** reaches the injected column headings. Pivoted,
+the real `<thead>` is hidden and the heading is a `::before` on each
+cell, so it inherits the header row's padding the same way it already
+inherits that row's background and colour. **Pivot Rows: Column Heading
+Padding** overrides it where the two should differ.
 
 These carry the card's own defaults rather than defaulting to nothing. A
 mode called Pivot Rows that renders as one undifferentiated column of
@@ -616,8 +634,8 @@ wrapper. Theme stylesheets or per-instance Custom CSS (via the
 | `--kdna-pivot-row-border-style` | `solid` | Pivot card border style |
 | `--kdna-pivot-row-border-width` | `1px` | Pivot card border width, one value for all four sides |
 | `--kdna-pivot-row-border-color` | `#e5e7eb` | Pivot card border colour |
-| `--kdna-pivot-cell-spacing` | `12px` | Gap between cells inside a pivot card |
-| `--kdna-pivot-heading-padding` | `0` | Pivot rows column heading padding |
+| `--kdna-pivot-cell-spacing` | `0` | Extra gap between cells inside a pivot card, on top of the body padding |
+| `--kdna-pivot-heading-padding` | undeclared | Pivot rows column heading padding. Unset, headings take `--kdna-table-header-padding` |
 | `--kdna-pivot-heading-radius` | `0` | Pivot rows column heading radius |
 | `--kdna-pivot-heading-spacing` | `2px` | Gap under a pivot rows column heading |
 | `--kdna-picker-bg` | `#ffffff` | Column picker background |
@@ -671,6 +689,37 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 - UK English throughout code, labels, and documentation.
 
 ## Changelog
+
+### 3.2.1
+
+Three faults introduced by the card work in 3.2.0, all in Pivot Rows.
+
+- **Body Cells → Padding did nothing.** The pivot cell rule set
+  `padding: 0`, on the reasoning that the card's padding and the card's
+  gap between cells were together enough. That silently disabled a
+  control: setting it moved nothing and the page gave no hint why. Cells
+  take the Body Cells padding again, all four sides. The first cell of
+  each card takes the same padding as its siblings rather than the First
+  Column gutter, which is a gutter for a column that has stopped existing
+  in this layout.
+- **Alternate shading was still visible** on the first cell of every odd
+  card. The rule that strips it excluded first-column cells so that a
+  First Column background could still paint — but the First Column
+  odd/even backgrounds *are* alternate shading, and they were the half
+  left switched on. Every cell in a card is cleared now; the card is the
+  ground.
+- **Header Row → Padding never reached the column headings.** Pivoted,
+  the real `<thead>` is hidden and the heading is a `::before` carrying a
+  pivot-specific padding that defaulted to a hard zero and always won.
+  That control is unset by default now, so the heading inherits the
+  header row's padding exactly as it already inherits that row's
+  background and colour, and the pivot-specific control still overrides
+  it where the two should differ.
+
+**Spacing Between Cells** now defaults to `0` rather than `12px`. With
+the Body Cells padding restored it is extra space on top of that padding,
+and a non-zero default would be a second gap the padding control could
+not account for.
 
 ### 3.2.0
 
