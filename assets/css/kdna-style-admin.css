@@ -1,0 +1,823 @@
+/*
+ * KDNA Tables, Shortcode Styles settings page.
+ *
+ * Two columns: a vertical tab list on the left, the control panel on the
+ * right, with a sticky save bar underneath. Uses the same
+ * --kdna-admin-* tokens as the table editor so the two screens read as
+ * one plugin, but declares its own copies because this page does not
+ * load kdna-admin.css.
+ */
+
+.kdna-style-admin {
+	--kdna-admin-surface: #f6f7f7;
+	--kdna-admin-border: #dcdcde;
+	--kdna-admin-border-strong: #c3c4c7;
+	--kdna-admin-text: #1d2327;
+	--kdna-admin-text-soft: #50575e;
+	--kdna-admin-accent: #2271b1;
+	--kdna-admin-accent-soft: rgba( 34, 113, 177, 0.12 );
+	--kdna-admin-ok: #007017;
+	--kdna-admin-warning: #8a6100;
+	--kdna-admin-danger: #b32d2e;
+	--kdna-admin-radius: 8px;
+
+	padding-bottom: 80px;
+}
+
+.kdna-style-admin [x-cloak],
+.kdna-style-admin[x-cloak] {
+	display: none !important;
+}
+
+.kdna-style-admin__intro {
+	max-width: 60em;
+	color: var(--kdna-admin-text-soft);
+}
+
+.kdna-style-admin__body {
+	display: grid;
+	grid-template-columns: 220px minmax(0, 1fr);
+	gap: 20px;
+	align-items: start;
+	margin-top: 16px;
+}
+
+/* ─── Tabs ─────────────────────────────────────────────────────────── */
+
+.kdna-style-tabs {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	position: sticky;
+	top: 46px;
+	background: #fff;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: var(--kdna-admin-radius);
+	padding: 6px;
+}
+
+.kdna-style-tab {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 10px;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--kdna-admin-text);
+	font-size: 13px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.kdna-style-tab:hover {
+	background: var(--kdna-admin-surface);
+}
+
+.kdna-style-tab.is-active {
+	background: var(--kdna-admin-accent-soft);
+	color: var(--kdna-admin-accent);
+	font-weight: 600;
+}
+
+.kdna-style-tab__count {
+	flex: 0 0 auto;
+	min-width: 20px;
+	padding: 1px 6px;
+	border-radius: 999px;
+	background: var(--kdna-admin-surface);
+	color: var(--kdna-admin-text-soft);
+	font-size: 11px;
+	font-weight: 600;
+	text-align: center;
+}
+
+.kdna-style-tab.is-active .kdna-style-tab__count {
+	background: #fff;
+	color: var(--kdna-admin-accent);
+}
+
+/* ─── Panel ────────────────────────────────────────────────────────── */
+
+.kdna-style-panel {
+	background: #fff;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: var(--kdna-admin-radius);
+	padding: 4px 20px 20px;
+	min-height: 320px;
+}
+
+.kdna-style-panel__heading {
+	margin: 16px 0 4px;
+	font-size: 15px;
+}
+
+.kdna-style-panel__empty {
+	color: var(--kdna-admin-text-soft);
+	font-style: italic;
+}
+
+/* ─── Fields ───────────────────────────────────────────────────────── */
+
+.kdna-style-field {
+	padding: 14px 0;
+	border-top: 1px solid var(--kdna-admin-border);
+}
+
+.kdna-style-field--nested {
+	padding: 10px 0;
+}
+
+.kdna-style-field__head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 6px;
+}
+
+.kdna-style-field__label {
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.kdna-style-field__key {
+	font-size: 11px;
+	color: var(--kdna-admin-text-soft);
+	background: var(--kdna-admin-surface);
+	padding: 1px 6px;
+	border-radius: 4px;
+}
+
+.kdna-style-field__reset {
+	margin-left: auto;
+	border: 0;
+	background: none;
+	padding: 0;
+	color: var(--kdna-admin-accent);
+	font-size: 12px;
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+.kdna-style-field__description {
+	margin: 0 0 8px;
+	color: var(--kdna-admin-text-soft);
+	font-size: 12px;
+}
+
+.kdna-style-input {
+	width: 100%;
+	max-width: 320px;
+}
+
+/* Everything to the right of a field label: the breakpoint switcher and
+ * the reset. */
+
+.kdna-style-field__tools {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-left: auto;
+}
+
+/* ─── Breakpoint switcher ──────────────────────────────────────────── */
+
+.kdna-style-devices {
+	display: inline-flex;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: 6px;
+	overflow: hidden;
+	background: #fff;
+}
+
+.kdna-style-devices__btn {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 24px;
+	padding: 0;
+	border: 0;
+	border-right: 1px solid var(--kdna-admin-border);
+	background: transparent;
+	color: var(--kdna-admin-text-soft);
+	cursor: pointer;
+}
+
+.kdna-style-devices__btn:last-child {
+	border-right: 0;
+}
+
+.kdna-style-devices__btn:hover {
+	background: var(--kdna-admin-surface);
+}
+
+.kdna-style-devices__btn.is-active {
+	background: var(--kdna-admin-accent-soft);
+	color: var(--kdna-admin-accent);
+}
+
+.kdna-style-devices__btn .dashicons {
+	width: 15px;
+	height: 15px;
+	font-size: 15px;
+	line-height: 1;
+}
+
+/* A breakpoint that already carries a value, so an override elsewhere in
+ * the cascade is visible without clicking through all three. */
+.kdna-style-devices__btn.has-value::after {
+	content: "";
+	position: absolute;
+	right: 3px;
+	top: 3px;
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: var(--kdna-admin-accent);
+}
+
+/* ─── Clear and link buttons ───────────────────────────────────────── */
+
+.kdna-style-clear,
+.kdna-style-link {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	flex: 0 0 auto;
+	padding: 0;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: 4px;
+	background: #fff;
+	color: var(--kdna-admin-text-soft);
+	cursor: pointer;
+}
+
+.kdna-style-clear:hover {
+	color: var(--kdna-admin-danger);
+	border-color: var(--kdna-admin-danger);
+}
+
+.kdna-style-link.is-linked {
+	background: var(--kdna-admin-accent-soft);
+	border-color: var(--kdna-admin-accent);
+	color: var(--kdna-admin-accent);
+}
+
+.kdna-style-clear .dashicons,
+.kdna-style-link .dashicons {
+	width: 16px;
+	height: 16px;
+	font-size: 16px;
+	line-height: 1;
+}
+
+/* ─── Colour ───────────────────────────────────────────────────────── */
+
+.kdna-style-color {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.kdna-style-color__picker {
+	width: 34px;
+	height: 28px;
+	padding: 2px;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: 4px;
+	background: #fff;
+	cursor: pointer;
+}
+
+.kdna-style-color__text {
+	width: 160px;
+	font-family: Menlo, Consolas, monospace;
+	font-size: 12px;
+}
+
+/* ─── Slider ───────────────────────────────────────────────────────── */
+
+.kdna-style-slider {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.kdna-style-slider__range {
+	flex: 1 1 auto;
+	max-width: 280px;
+	margin: 0;
+}
+
+.kdna-style-slider__number {
+	width: 84px;
+}
+
+/* ─── Number ───────────────────────────────────────────────────────── */
+
+.kdna-style-number {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.kdna-style-number input[type="number"] {
+	width: 110px;
+}
+
+.kdna-style-unit {
+	width: 76px;
+}
+
+.kdna-style-unit--fixed {
+	width: auto;
+	color: var(--kdna-admin-text-soft);
+	font-size: 12px;
+}
+
+/* ─── Dimensions ───────────────────────────────────────────────────── */
+
+.kdna-style-dimensions {
+	display: flex;
+	align-items: flex-start;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.kdna-style-dimensions__side {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	width: 74px;
+}
+
+.kdna-style-dimensions__side input {
+	width: 100%;
+}
+
+.kdna-style-dimensions__label {
+	font-size: 11px;
+	color: var(--kdna-admin-text-soft);
+	text-align: center;
+}
+
+.kdna-style-dimensions .kdna-style-unit {
+	margin-left: 4px;
+}
+
+/* WordPress supplies this in the admin; declared here so the page also
+ * holds together anywhere it is rendered without wp-admin.css. */
+.kdna-style-admin .screen-reader-text {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	border: 0;
+	white-space: nowrap;
+}
+
+/* ─── Groups ───────────────────────────────────────────────────────
+ * A group collapses to a single row. Closed, the row carries a summary
+ * of what is set inside it, which is what keeps a section of sixty
+ * controls readable.
+ */
+
+.kdna-style-group {
+	margin: 10px 0;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: var(--kdna-admin-radius);
+	background: var(--kdna-admin-surface);
+	overflow: hidden;
+}
+
+.kdna-style-group__heading {
+	margin: 0;
+	font-size: 13px;
+}
+
+.kdna-style-group__toggle {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 10px 12px;
+	border: 0;
+	background: transparent;
+	color: var(--kdna-admin-text);
+	font-size: 13px;
+	font-weight: 600;
+	text-align: left;
+	cursor: pointer;
+}
+
+.kdna-style-group__toggle:hover {
+	background: rgba( 0, 0, 0, 0.03 );
+}
+
+.kdna-style-group__chevron {
+	width: 16px;
+	height: 16px;
+	font-size: 16px;
+	line-height: 1;
+	color: var(--kdna-admin-text-soft);
+	flex: 0 0 auto;
+}
+
+.kdna-style-group__label {
+	flex: 0 0 auto;
+}
+
+/* The summary. Muted while the group is empty, since "Inherit" is
+ * information but not a setting; picked out once something is set. */
+.kdna-style-group__summary {
+	margin-left: auto;
+	padding-left: 12px;
+	overflow: hidden;
+	color: var(--kdna-admin-text-soft);
+	font-family: Menlo, Consolas, monospace;
+	font-size: 11px;
+	font-weight: 400;
+	font-style: italic;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.kdna-style-group__summary.is-set {
+	color: var(--kdna-admin-accent);
+	font-style: normal;
+}
+
+.kdna-style-group.is-open {
+	background: #fff;
+	border-color: var(--kdna-admin-border-strong);
+}
+
+.kdna-style-group.is-open .kdna-style-group__toggle {
+	border-bottom: 1px solid var(--kdna-admin-border);
+	background: var(--kdna-admin-surface);
+}
+
+.kdna-style-group__body {
+	padding: 0 14px 12px;
+}
+
+.kdna-style-group__actions {
+	display: flex;
+	justify-content: flex-end;
+	padding-top: 8px;
+}
+
+.kdna-style-group__body .kdna-style-field:first-of-type {
+	border-top: 0;
+}
+
+/* ─── Inherit and override, per-table panel ────────────────────────── */
+
+/* The panel is a meta box, not a page: no fixed save bar, no page
+ * chrome, and it has to sit inside the box's padding. */
+.kdna-style-admin--panel {
+	padding-bottom: 0;
+}
+
+.kdna-style-admin--panel .kdna-style-tabs {
+	top: 32px;
+}
+
+.kdna-style-field.is-inherited .kdna-style-field__label {
+	font-weight: 400;
+	color: var(--kdna-admin-text-soft);
+}
+
+/* What the control is inheriting, in place of the control itself. */
+.kdna-style-inherited {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	margin: 0;
+	color: var(--kdna-admin-text-soft);
+	font-size: 12px;
+}
+
+.kdna-style-inherited__label {
+	text-transform: uppercase;
+	font-size: 10px;
+	letter-spacing: 0.04em;
+}
+
+.kdna-style-inherited__value {
+	font-family: Menlo, Consolas, monospace;
+	font-size: 12px;
+}
+
+.kdna-style-field__override {
+	border: 0;
+	background: none;
+	padding: 0;
+	color: var(--kdna-admin-accent);
+	font-size: 12px;
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+.kdna-style-panel__header {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.kdna-style-savebar--panel {
+	position: static;
+	padding: 12px 0 0;
+	border-top: 1px solid var(--kdna-admin-border);
+}
+
+.kdna-style-savebar__reset {
+	margin-left: auto;
+}
+
+/* ─── Save bar ─────────────────────────────────────────────────────── */
+
+.kdna-style-savebar {
+	position: fixed;
+	left: 160px;
+	right: 0;
+	bottom: 0;
+	z-index: 9;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 20px;
+	background: #fff;
+	border-top: 1px solid var(--kdna-admin-border-strong);
+}
+
+.folded .kdna-style-savebar {
+	left: 36px;
+}
+
+.kdna-style-savebar__status {
+	font-size: 13px;
+}
+
+.kdna-style-savebar__status.is-ok {
+	color: var(--kdna-admin-ok);
+}
+
+.kdna-style-savebar__status.is-warning {
+	color: var(--kdna-admin-warning);
+}
+
+.kdna-style-savebar__status.is-error {
+	color: var(--kdna-admin-danger);
+}
+
+.kdna-style-savebar__dirty {
+	color: var(--kdna-admin-text-soft);
+	font-size: 12px;
+	font-style: italic;
+}
+
+/* ── Presets and reset ─────────────────────────────────────────── */
+
+.kdna-style-tools {
+	margin: 16px 0 0;
+}
+
+.kdna-style-tools__row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.kdna-style-tools__row .button .dashicons {
+	margin: 3px 2px 0 -4px;
+	font-size: 16px;
+	line-height: 1;
+	width: 16px;
+	height: 16px;
+}
+
+/* Destructive, so it sits away from the other two and reads differently. */
+.kdna-style-tools__reset {
+	margin-left: auto;
+	color: var(--kdna-admin-danger);
+}
+
+.kdna-style-tools__panel {
+	margin-top: 12px;
+	padding: 14px;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: 6px;
+	background: #fff;
+}
+
+.kdna-style-tools__hint {
+	margin: 0 0 10px;
+	color: var(--kdna-admin-text-soft);
+	font-size: 12px;
+}
+
+.kdna-style-tools__file {
+	display: block;
+	margin-bottom: 10px;
+	font-size: 12px;
+}
+
+.kdna-style-tools__textarea {
+	width: 100%;
+	font-family: Menlo, Consolas, monospace;
+	font-size: 12px;
+}
+
+.kdna-style-tools__actions {
+	margin-top: 10px;
+}
+
+.kdna-style-tools__discarded {
+	margin-top: 12px;
+	padding: 10px 12px;
+	border-left: 3px solid var(--kdna-admin-warning);
+	background: #fcf9e8;
+	font-size: 12px;
+}
+
+.kdna-style-tools__discarded p {
+	margin: 0 0 6px;
+	font-weight: 600;
+}
+
+.kdna-style-tools__discarded ul {
+	margin: 0;
+	padding-left: 16px;
+	list-style: disc;
+}
+
+/* ── Live preview ──────────────────────────────────────────────────
+ *
+ * The stage is a scroller and the frame inside it has an explicit width,
+ * so a 1200px preview inside a narrower admin column scrolls sideways
+ * rather than being squashed. Squashing it would defeat the point: the
+ * frame's width is the viewport the media queries read.
+ */
+
+.kdna-style-preview {
+	margin: 16px 0 24px;
+	border: 1px solid var(--kdna-admin-border);
+	border-radius: 6px;
+	background: #fff;
+}
+
+.kdna-style-preview__bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 12px;
+	padding: 12px 14px;
+	border-bottom: 1px solid var(--kdna-admin-border);
+	background: #f6f7f7;
+	border-radius: 6px 6px 0 0;
+}
+
+.kdna-style-preview__control {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.kdna-style-preview__control--check {
+	flex-direction: row;
+	align-items: center;
+	gap: 6px;
+	padding-bottom: 5px;
+	font-size: 13px;
+}
+
+.kdna-style-preview__label {
+	color: var(--kdna-admin-text-soft);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
+.kdna-style-preview__control select {
+	min-width: 150px;
+	max-width: 260px;
+}
+
+.kdna-style-preview__devices {
+	display: inline-flex;
+	margin-left: auto;
+	border: 1px solid var(--kdna-admin-border-strong);
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.kdna-style-preview__device {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1px;
+	padding: 5px 12px;
+	border: 0;
+	border-right: 1px solid var(--kdna-admin-border);
+	background: #fff;
+	color: var(--kdna-admin-text-soft);
+	cursor: pointer;
+	font-size: 12px;
+	line-height: 1.2;
+}
+
+.kdna-style-preview__device:last-child {
+	border-right: 0;
+}
+
+.kdna-style-preview__device.is-active {
+	background: var(--kdna-admin-accent-soft);
+	color: var(--kdna-admin-accent);
+	font-weight: 600;
+}
+
+.kdna-style-preview__width {
+	font-size: 10px;
+	opacity: 0.75;
+}
+
+.kdna-style-preview__status {
+	align-self: center;
+	color: var(--kdna-admin-text-soft);
+	font-size: 12px;
+}
+
+.kdna-style-preview__status.is-error {
+	color: var(--kdna-admin-danger);
+}
+
+.kdna-style-preview__notice {
+	margin: 0;
+	padding: 8px 14px;
+	border-bottom: 1px solid var(--kdna-admin-border);
+	background: #fcf9e8;
+	color: #674f16;
+	font-size: 12px;
+}
+
+.kdna-style-preview__stage {
+	display: flex;
+	justify-content: center;
+	padding: 16px;
+	overflow-x: auto;
+	background:
+		repeating-conic-gradient(#f0f0f1 0% 25%, #fff 0% 50%) 50% / 16px 16px;
+}
+
+.kdna-style-preview__frame {
+	flex: 0 0 auto;
+	/* A starting height only: the pane measures its content and sets a
+	 * real one as soon as the markup is in. */
+	height: 320px;
+	max-height: 900px;
+	border: 1px solid var(--kdna-admin-border-strong);
+	border-radius: 4px;
+	background: #fff;
+}
+
+.kdna-style-preview__empty {
+	margin: 16px 0 24px;
+	padding: 24px;
+	border: 1px dashed var(--kdna-admin-border-strong);
+	border-radius: 6px;
+	color: var(--kdna-admin-text-soft);
+	text-align: center;
+}
+
+@media screen and (max-width: 782px) {
+	.kdna-style-admin__body {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.kdna-style-preview__devices {
+		margin-left: 0;
+	}
+
+	.kdna-style-tabs {
+		position: static;
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+
+	.kdna-style-savebar {
+		left: 0;
+	}
+}

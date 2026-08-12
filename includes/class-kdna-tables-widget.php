@@ -14,7 +14,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once KDNA_TABLES_PATH . 'includes/trait-kdna-tables-cell-renderer.php';
+
 class KDNA_Tables_Widget extends \Elementor\Widget_Base {
+
+	/*
+	 * The cell-render helpers the templates call on $this. They live in a
+	 * trait so the shortcode can bind the same templates to a plain
+	 * object — this class extends \Elementor\Widget_Base, so including
+	 * its file at all is a fatal error with Elementor deactivated.
+	 */
+	use KDNA_Tables_Cell_Renderer_Trait;
 
 	/**
 	 * Selector for the first-column body cells of a general table.
@@ -609,7 +619,12 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'name'     => 'header_bg',
 				'label'    => esc_html__( 'Background', 'kdna-tables' ),
 				'types'    => array( 'classic', 'gradient' ),
-				'selector' => '{{WRAPPER}} .kdna-table--general thead .kdna-table__cell',
+				// Also paints the column headings Pivot Rows injects on
+				// mobile. The real <thead> is hidden in that mode, so those
+				// injected labels ARE the header row there and follow it
+				// rather than silently losing its background. The Pivot Rows
+				// Mode section can override them on their own.
+				'selector' => '{{WRAPPER}} .kdna-table--general thead .kdna-table__cell, {{WRAPPER}} [data-responsive-mode="pivot_rows"] .kdna-table--general .kdna-table__cell::before',
 			)
 		);
 
@@ -2616,12 +2631,14 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 						'icon'  => 'eicon-text-align-right',
 					),
 				),
-				'selectors' => array(
+				'selectors'   => array(
+					// Desktop selector only. The high-specificity variant that
+					// used to sit alongside it pinned this alignment through
+					// card_stack and pivot_rows as well; those modes now always
+					// centre, so it would fight them.
 					'{{WRAPPER}} .kdna-comparison tbody .kdna-comparison__cell--value' => 'text-align: {{VALUE}};',
-					// High-specificity variant so the card_stack/pivot_rows
-					// mobile rules (0-5-0) cannot pin the alignment.
-					'{{WRAPPER}} .kdna-table__wrapper[data-responsive-mode][data-responsive-breakpoint] .kdna-comparison tbody .kdna-comparison__cell--value' => 'text-align: {{VALUE}};',
 				),
+				'description' => esc_html__( 'Applies to the desktop layout. Responsive modes centre their cells.', 'kdna-tables' ),
 			)
 		);
 
@@ -3284,11 +3301,27 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			)
 		);
 
+		/*
+		 * In Pivot Rows the real <thead> is hidden and every cell injects
+		 * its column label instead, so that label is the column heading at
+		 * this breakpoint. It inherits the Header Row background and text
+		 * colour by default; the controls below restyle it for mobile
+		 * without touching the desktop header.
+		 */
+		$this->add_control(
+			'pivot_label_heading',
+			array(
+				'label'     => esc_html__( 'Column Headings', 'kdna-tables' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
 		$this->add_group_control(
 			\Elementor\Group_Control_Typography::get_type(),
 			array(
 				'name'     => 'pivot_label_typography',
-				'label'    => esc_html__( 'Label Typography', 'kdna-tables' ),
+				'label'    => esc_html__( 'Typography', 'kdna-tables' ),
 				'selector' => '{{WRAPPER}} [data-responsive-mode="pivot_rows"] .kdna-table__cell::before, {{WRAPPER}} [data-responsive-mode="pivot_rows"] .kdna-comparison__cell--value::before',
 			)
 		);
@@ -3296,11 +3329,65 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		$this->add_control(
 			'pivot_label_color',
 			array(
-				'label'     => esc_html__( 'Label Colour', 'kdna-tables' ),
-				'type'      => \Elementor\Controls_Manager::COLOR,
-				'selectors' => array(
+				'label'       => esc_html__( 'Text Colour', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::COLOR,
+				'selectors'   => array(
 					'{{WRAPPER}}' => '--kdna-pivot-label-color: {{VALUE}};',
 				),
+				'description' => esc_html__( 'Unset, headings use the Header Row text colour.', 'kdna-tables' ),
+			)
+		);
+
+		$this->add_control(
+			'pivot_heading_bg',
+			array(
+				'label'       => esc_html__( 'Background Colour', 'kdna-tables' ),
+				'type'        => \Elementor\Controls_Manager::COLOR,
+				'selectors'   => array(
+					// One class more than the Header Row Background control's
+					// pivot selector, so setting this overrides the header
+					// background for the mobile headings only.
+					'{{WRAPPER}} .kdna-table__wrapper[data-responsive-mode="pivot_rows"] .kdna-table--general .kdna-table__cell::before' => 'background: {{VALUE}};',
+				),
+				'description' => esc_html__( 'Unset, headings use the Header Row background.', 'kdna-tables' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'pivot_heading_padding',
+			array(
+				'label'      => esc_html__( 'Padding', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em' ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-pivot-heading-padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'pivot_heading_radius',
+			array(
+				'label'      => esc_html__( 'Border Radius', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-pivot-heading-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'pivot_heading_spacing',
+			array(
+				'label'      => esc_html__( 'Spacing Below Heading', 'kdna-tables' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40, 'step' => 1 ) ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => '--kdna-pivot-heading-spacing: {{SIZE}}{{UNIT}};',
+				),
+				'condition'  => array( 'pivot_label_position' => 'above' ),
 			)
 		);
 
@@ -3501,281 +3588,6 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		$this->end_controls_section();
 	}
 
-	/*
-	 * Comparison render helpers. Public where the template files need to
-	 * call them via $this->method().
-	 */
-
-	public function kdna_render_comparison_value( $feature_row, $slot, $settings ) {
-		$indicator_key = 'cell_' . $slot . '_indicator';
-		$indicator     = isset( $feature_row[ $indicator_key ] ) ? $feature_row[ $indicator_key ] : 'available';
-
-		if ( 'available' === $indicator ) {
-			return $this->kdna_render_available_indicator( $settings );
-		}
-
-		if ( 'unavailable' === $indicator ) {
-			return $this->kdna_render_unavailable_indicator( $settings );
-		}
-
-		if ( 'custom' === $indicator ) {
-			$arrangement = $feature_row[ 'cell_' . $slot . '_arrangement' ] ?? 'icon-text';
-			$cell_type   = $feature_row[ 'cell_' . $slot . '_custom_type' ] ?? 'text';
-
-			// Widget-level override: when set, swap icon/text order globally
-			// for every mixed cell. Only applies to two-piece icon+text mixes
-			// to avoid mangling three-piece arrangements that include image.
-			$position_override = isset( $settings['cmp_cell_icon_position'] ) ? (string) $settings['cmp_cell_icon_position'] : 'inherit';
-			if ( 'mixed' === $cell_type && in_array( $position_override, array( 'before', 'after' ), true ) ) {
-				if ( 'icon-text' === $arrangement || 'text-icon' === $arrangement ) {
-					$arrangement = ( 'before' === $position_override ) ? 'icon-text' : 'text-icon';
-				}
-			}
-
-			$normalized = array(
-				'cell_type'        => $cell_type,
-				'cell_text'        => $feature_row[ 'cell_' . $slot . '_text' ] ?? '',
-				'cell_icon'        => $feature_row[ 'cell_' . $slot . '_icon' ] ?? array(),
-				'cell_image'       => $feature_row[ 'cell_' . $slot . '_image' ] ?? array(),
-				'cell_image_size'  => $feature_row[ 'cell_' . $slot . '_image_size' ] ?? 'medium',
-				'cell_arrangement' => $arrangement,
-			);
-			return $this->kdna_render_cell_inner( $normalized );
-		}
-
-		return '';
-	}
-
-	public function kdna_render_available_indicator( $settings ) {
-		$icon = isset( $settings['available_icon'] ) ? $settings['available_icon'] : null;
-		if ( empty( $icon ) || ( empty( $icon['value'] ) && empty( $icon['library'] ) ) ) {
-			return '';
-		}
-
-		ob_start();
-		echo '<span class="kdna-comparison__indicator kdna-comparison__indicator--available">';
-		\Elementor\Icons_Manager::render_icon( $icon, array( 'aria-hidden' => 'true' ) );
-		echo '<span class="kdna-table__sr-only">' . esc_html__( 'Available', 'kdna-tables' ) . '</span>';
-		echo '</span>';
-		return ob_get_clean();
-	}
-
-	public function kdna_render_unavailable_indicator( $settings ) {
-		$mode = isset( $settings['unavailable_mode'] ) ? $settings['unavailable_mode'] : 'icon';
-
-		if ( 'hidden' === $mode ) {
-			return '<span class="kdna-table__sr-only">' . esc_html__( 'Not available', 'kdna-tables' ) . '</span>';
-		}
-
-		if ( 'icon' === $mode ) {
-			$icon       = isset( $settings['unavailable_icon'] ) ? $settings['unavailable_icon'] : null;
-			$icon_empty = empty( $icon ) || ( empty( $icon['value'] ) && empty( $icon['library'] ) );
-
-			ob_start();
-			echo '<span class="kdna-comparison__indicator kdna-comparison__indicator--unavailable">';
-
-			if ( $icon_empty ) {
-				// No icon picked. Try the plugin-bundled default SVG first
-				// (assets/icons/cross.svg) so the visual default is the KDNA
-				// glyph. Fall back to fas fa-minus when the file is missing
-				// so behaviour stays safe between deploys.
-				$bundled = self::get_bundled_default_unavailable_svg();
-				if ( '' !== $bundled ) {
-					echo $bundled;
-				} else {
-					\Elementor\Icons_Manager::render_icon(
-						array( 'value' => 'fas fa-minus', 'library' => 'fa-solid' ),
-						array( 'aria-hidden' => 'true' )
-					);
-				}
-			} else {
-				\Elementor\Icons_Manager::render_icon( $icon, array( 'aria-hidden' => 'true' ) );
-			}
-
-			echo '<span class="kdna-table__sr-only">' . esc_html__( 'Not available', 'kdna-tables' ) . '</span>';
-			echo '</span>';
-			return ob_get_clean();
-		}
-
-		if ( 'text' === $mode ) {
-			$text = isset( $settings['unavailable_text'] ) ? (string) $settings['unavailable_text'] : '-';
-			return '<span class="kdna-comparison__indicator kdna-comparison__indicator--unavailable kdna-comparison__indicator--text" aria-label="' . esc_attr__( 'Not available', 'kdna-tables' ) . '">'
-				. esc_html( $text )
-				. '</span>';
-		}
-
-		return '';
-	}
-
-	/**
-	 * Load the plugin-bundled default Unavailable SVG and inline it. The
-	 * file lives at assets/cross.svg and is expected to use
-	 * fill="currentColor" so the Style > Unavailable Indicator > Colour
-	 * cascades into it. Returns an empty string if the file is missing,
-	 * so callers can fall back to a Font Awesome glyph.
-	 *
-	 * Cached statically per request, and only sanitised lightly with
-	 * wp_kses so embedded <script> or external xlink:href refs cannot
-	 * leak in if someone replaces the bundled file.
-	 */
-	public static function get_bundled_default_unavailable_svg() {
-		static $cached = null;
-		if ( null !== $cached ) {
-			return $cached;
-		}
-		$path = KDNA_TABLES_PATH . 'assets/cross.svg';
-		if ( ! file_exists( $path ) || ! is_readable( $path ) ) {
-			$cached = '';
-			return $cached;
-		}
-		$raw = file_get_contents( $path );
-		if ( false === $raw || '' === trim( $raw ) ) {
-			$cached = '';
-			return $cached;
-		}
-		$allowed = array(
-			'svg'      => array(
-				'xmlns'       => true,
-				'viewbox'     => true,
-				'fill'        => true,
-				'stroke'      => true,
-				'aria-hidden' => true,
-				'role'        => true,
-				'focusable'   => true,
-				'class'       => true,
-				'width'       => true,
-				'height'      => true,
-				'preserveaspectratio' => true,
-			),
-			'path'     => array( 'd' => true, 'fill' => true, 'stroke' => true, 'stroke-width' => true, 'stroke-linecap' => true, 'stroke-linejoin' => true, 'fill-rule' => true, 'clip-rule' => true, 'opacity' => true ),
-			'g'        => array( 'fill' => true, 'stroke' => true, 'opacity' => true, 'transform' => true ),
-			'rect'     => array( 'x' => true, 'y' => true, 'width' => true, 'height' => true, 'rx' => true, 'ry' => true, 'fill' => true, 'stroke' => true ),
-			'circle'   => array( 'cx' => true, 'cy' => true, 'r' => true, 'fill' => true, 'stroke' => true ),
-			'line'     => array( 'x1' => true, 'y1' => true, 'x2' => true, 'y2' => true, 'stroke' => true, 'stroke-width' => true, 'stroke-linecap' => true ),
-			'polyline' => array( 'points' => true, 'fill' => true, 'stroke' => true, 'stroke-width' => true, 'stroke-linecap' => true, 'stroke-linejoin' => true ),
-			'polygon'  => array( 'points' => true, 'fill' => true, 'stroke' => true ),
-			'title'    => array(),
-			'desc'     => array(),
-		);
-		$svg = wp_kses( $raw, $allowed );
-		// Drop any width / height attribute on the root <svg> so the CSS
-		// shape size controls the rendered footprint, not whatever the
-		// designer baked into the file.
-		$svg = preg_replace( '/<svg([^>]*)\s(width|height)="[^"]*"/i', '<svg$1', $svg );
-		// Tag the svg with the same e-font-icon-svg-style class set the
-		// available indicator uses so existing CSS (width:1em; height:1em)
-		// applies without a special case.
-		if ( false === stripos( $svg, 'class="' ) ) {
-			$svg = preg_replace( '/<svg\b/i', '<svg class="kdna-comparison__indicator-svg" aria-hidden="true"', $svg, 1 );
-		} else {
-			$svg = preg_replace( '/<svg([^>]*\bclass=")([^"]*)"/i', '<svg$1$2 kdna-comparison__indicator-svg"', $svg, 1 );
-		}
-		$cached = $svg;
-		return $cached;
-	}
-
-	/*
-	 * Cell render helpers. Public so the template files can call them via
-	 * $this->method() while included from the render method.
-	 */
-
-	public function kdna_cell_modifier_class( $cell ) {
-		$type = isset( $cell['cell_type'] ) ? $cell['cell_type'] : '';
-		if ( '' === $type ) {
-			return '';
-		}
-		return 'kdna-table__cell--' . sanitize_html_class( $type );
-	}
-
-	public function kdna_resolve_cell_alignment( $cell, $column ) {
-		$override = isset( $cell['cell_alignment_override'] ) ? $cell['cell_alignment_override'] : 'inherit';
-		if ( in_array( $override, array( 'left', 'center', 'right' ), true ) ) {
-			return $override;
-		}
-		$col_align = isset( $column['column_alignment'] ) ? $column['column_alignment'] : 'left';
-		if ( ! in_array( $col_align, array( 'left', 'center', 'right' ), true ) ) {
-			$col_align = 'left';
-		}
-		return $col_align;
-	}
-
-	public function kdna_render_cell_inner( $cell ) {
-		if ( empty( $cell ) || empty( $cell['cell_type'] ) ) {
-			return '';
-		}
-
-		$type   = $cell['cell_type'];
-		$pieces = array();
-
-		if ( 'text' === $type ) {
-			$pieces['text'] = $this->kdna_render_cell_text_piece( $cell );
-		} elseif ( 'icon' === $type ) {
-			$pieces['icon'] = $this->kdna_render_cell_icon_piece( $cell );
-		} elseif ( 'image' === $type ) {
-			$pieces['image'] = $this->kdna_render_cell_image_piece( $cell );
-		} elseif ( 'mixed' === $type ) {
-			$arrangement = isset( $cell['cell_arrangement'] ) ? $cell['cell_arrangement'] : 'icon-text';
-			foreach ( $this->kdna_arrangement_order( $arrangement ) as $piece ) {
-				if ( 'text' === $piece ) {
-					$pieces['text'] = $this->kdna_render_cell_text_piece( $cell );
-				} elseif ( 'icon' === $piece ) {
-					$pieces['icon'] = $this->kdna_render_cell_icon_piece( $cell );
-				} elseif ( 'image' === $piece ) {
-					$pieces['image'] = $this->kdna_render_cell_image_piece( $cell );
-				}
-			}
-		}
-
-		return implode( '', array_filter( $pieces ) );
-	}
-
-	protected function kdna_arrangement_order( $arrangement ) {
-		switch ( $arrangement ) {
-			case 'text-icon':
-				return array( 'text', 'icon' );
-			case 'icon-text-image':
-				return array( 'icon', 'text', 'image' );
-			case 'image-text-icon':
-				return array( 'image', 'text', 'icon' );
-			case 'icon-text':
-			default:
-				return array( 'icon', 'text' );
-		}
-	}
-
-	protected function kdna_render_cell_text_piece( $cell ) {
-		$text = isset( $cell['cell_text'] ) ? $cell['cell_text'] : '';
-		if ( '' === $text ) {
-			return '';
-		}
-		return '<span class="kdna-table__cell-text">' . wp_kses_post( $text ) . '</span>';
-	}
-
-	protected function kdna_render_cell_icon_piece( $cell ) {
-		if ( empty( $cell['cell_icon'] ) ) {
-			return '';
-		}
-		$icon = $cell['cell_icon'];
-		if ( empty( $icon['value'] ) && empty( $icon['library'] ) ) {
-			return '';
-		}
-		ob_start();
-		echo '<span class="kdna-table__cell-icon">';
-		\Elementor\Icons_Manager::render_icon( $icon, array( 'aria-hidden' => 'true' ) );
-		echo '</span>';
-		return ob_get_clean();
-	}
-
-	protected function kdna_render_cell_image_piece( $cell ) {
-		if ( empty( $cell['cell_image']['id'] ) && empty( $cell['cell_image']['url'] ) ) {
-			return '';
-		}
-		$image_html = \Elementor\Group_Control_Image_Size::get_attachment_image_html( $cell, 'cell_image_size', 'cell_image' );
-		if ( '' === $image_html ) {
-			return '';
-		}
-		return '<span class="kdna-table__cell-image">' . $image_html . '</span>';
-	}
 
 	protected function render() {
 		// Wrap the settings read in try/catch for the same reason as in

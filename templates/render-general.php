@@ -117,6 +117,13 @@ if ( $first_col_header ) {
 					//   1. per-cell alignment override if set (advanced)
 					//   2. per-column header alignment (top L/C/R toolbar)
 					//   3. fall back to centre when neither is set
+					//
+					// The resolved value is emitted only as the custom property
+					// --kdna-table-cell-text-align, never as an inline
+					// text-align. kdna-tables.css turns the property into the
+					// real declaration at zero-ish specificity, which is what
+					// lets the responsive modes re-centre every cell without
+					// resorting to !important against an inline style.
 					$cell_override = isset( $cell['cell_alignment_override'] ) ? (string) $cell['cell_alignment_override'] : 'inherit';
 					$col_header    = isset( $column['column_header_alignment'] ) ? (string) $column['column_header_alignment'] : '';
 					if ( in_array( $cell_override, array( 'left', 'center', 'right' ), true ) ) {
@@ -132,7 +139,7 @@ if ( $first_col_header ) {
 						$cell_classes .= ' ' . $modifier;
 					}
 					?>
-					<th scope="col" class="<?php echo esc_attr( $cell_classes ); ?>" data-column-label="<?php echo esc_attr( isset( $column['column_label'] ) ? $column['column_label'] : '' ); ?>" style="text-align: <?php echo esc_attr( $align ); ?>; --kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>; --kdna-card-row: <?php echo (int) ( $c * $rows_per_card + 1 ); ?>;">
+					<th scope="col" class="<?php echo esc_attr( $cell_classes ); ?>" data-column-label="<?php echo esc_attr( isset( $column['column_label'] ) ? $column['column_label'] : '' ); ?>" style="--kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>; --kdna-card-row: <?php echo (int) ( $c * $rows_per_card + 1 ); ?>;">
 						<?php
 						$inner = $this->kdna_render_cell_inner( $cell );
 						echo '' !== $inner ? $inner : '&nbsp;';
@@ -176,7 +183,7 @@ if ( $first_col_header ) {
 					$grid_row_for_cell = $c * $rows_per_card + $row_index + 2;
 					$row_label_for_card = isset( $row_labels[ $row_index ] ) ? (string) $row_labels[ $row_index ] : '';
 					?>
-					<<?php echo $tag; ?><?php echo $is_row_header ? ' scope="row"' : ''; ?> class="<?php echo esc_attr( $cell_classes ); ?>" data-column-label="<?php echo esc_attr( isset( $column['column_label'] ) ? $column['column_label'] : '' ); ?>"<?php if ( $first_col_header && '' !== $row_label_for_card ) : ?> data-row-label="<?php echo esc_attr( $row_label_for_card ); ?>"<?php endif; ?> style="text-align: <?php echo esc_attr( $align ); ?>; --kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>; --kdna-card-row: <?php echo (int) $grid_row_for_cell; ?>;">
+					<<?php echo $tag; ?><?php echo $is_row_header ? ' scope="row"' : ''; ?> class="<?php echo esc_attr( $cell_classes ); ?>" data-column-label="<?php echo esc_attr( isset( $column['column_label'] ) ? $column['column_label'] : '' ); ?>"<?php if ( $first_col_header && '' !== $row_label_for_card ) : ?> data-row-label="<?php echo esc_attr( $row_label_for_card ); ?>"<?php endif; ?> style="--kdna-table-cell-text-align: <?php echo esc_attr( $align ); ?>; --kdna-card-row: <?php echo (int) $grid_row_for_cell; ?>;">
 						<?php echo $this->kdna_render_cell_inner( $cell ); ?>
 					</<?php echo $tag; ?>>
 				<?php endfor; ?>

@@ -21,9 +21,17 @@
 	--kdna-card-radius: 12px;
 	--kdna-card-padding: 16px;
 	--kdna-card-spacing: 0;
-	--kdna-pivot-label-color: inherit;
+	/* --kdna-pivot-label-color is deliberately NOT declared here. Each
+	 * place that reads it supplies its own fallback, which is how the
+	 * general table's pivot headings can default to the header row's
+	 * text colour while the comparison item labels default to inherit. */
 	--kdna-pivot-label-width: 30%;
 	--kdna-pivot-row-spacing: 16px;
+	/* Pivot Rows column headings (the label each cell injects, which is
+	 * that column's heading once the table has been pivoted). */
+	--kdna-pivot-heading-padding: 0;
+	--kdna-pivot-heading-radius: 0;
+	--kdna-pivot-heading-spacing: 2px;
 	--kdna-picker-bg: #ffffff;
 	--kdna-picker-padding: 12px;
 	--kdna-picker-radius: 12px;
@@ -180,8 +188,15 @@
 		 * so existing themes still get a sensible header foreground. */
 		color: var(--kdna-comparison-header-color);
 		justify-content: center;
-		border-top-left-radius: var(--kdna-card-radius);
-		border-top-right-radius: var(--kdna-card-radius);
+		/* Only the top corners round, since this cell is the top of its
+		 * card. Written as the shorthand and then squared off, NOT as the
+		 * two top longhands: the Card Border Radius control writes four
+		 * values, border-top-left-radius accepts at most two, and a
+		 * longhand fed four is invalid — the whole declaration is dropped
+		 * and the corner silently goes square. */
+		border-radius: var(--kdna-card-radius);
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
 	}
 
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-comparison .kdna-comparison__cell--value,
@@ -280,8 +295,11 @@
 	 * text-align centres the heading text. */
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell--header,
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell--header {
-		border-top-left-radius: var(--kdna-card-radius);
-		border-top-right-radius: var(--kdna-card-radius);
+		/* Shorthand then squared off rather than the two top longhands —
+		 * see the comparison item header above for why. */
+		border-radius: var(--kdna-card-radius);
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
 	}
 
 	/* When the user marked the first column as a row-label column, body
@@ -292,31 +310,28 @@
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell[data-row-label]:not(.kdna-table__cell--header):not(.kdna-table__cell--row-header) {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
+		/* Centred like every other cell in a responsive mode. This rule
+		 * carries (0,8,0) so the centring block at the end of the query
+		 * cannot reach it — it has to be set here. */
+		justify-content: center;
 		gap: 12px;
-		/* Inline text-align doesn't apply to flex items, so we map the
-		 * cell's text-align to justify-content via attribute selectors
-		 * below. */
 	}
 
-	/* Map inline text-align onto justify-content for the flex layout
-	 * (only relevant when row-label injection is active). */
-	.kdna-table__wrapper[data-responsive-mode="card_stack"] .kdna-table--general .kdna-table__cell[data-row-label][style*="text-align: left"]:not(.kdna-table__cell--header):not(.kdna-table__cell--row-header) {
-		justify-content: flex-start;
-	}
-	.kdna-table__wrapper[data-responsive-mode="card_stack"] .kdna-table--general .kdna-table__cell[data-row-label][style*="text-align: right"]:not(.kdna-table__cell--header):not(.kdna-table__cell--row-header) {
-		justify-content: flex-end;
-	}
-	.kdna-table__wrapper[data-responsive-mode="card_stack"] .kdna-table--general .kdna-table__cell[data-row-label][style*="text-align: center"]:not(.kdna-table__cell--header):not(.kdna-table__cell--row-header) {
-		justify-content: center;
-	}
+	/* The desktop alignment used to be mapped onto justify-content here by
+	 * sniffing the cell's inline style="text-align: ...". Both the inline
+	 * style and the mapping are gone: every responsive mode centres, and
+	 * the centring block at the end of this media query handles it. */
 
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell[data-row-label]:not(.kdna-table__cell--header):not(.kdna-table__cell--row-header)::before,
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell[data-row-label]:not(.kdna-table__cell--header):not(.kdna-table__cell--row-header)::before {
 		content: attr(data-row-label);
-		flex: 1 1 auto;
+		/* Sized to its text, not to the free space: growing would push the
+		 * value to the right edge and undo the centring. Set here because
+		 * this rule's (0,8,1) is out of reach of the centring block at the
+		 * end of the query. */
+		flex: 0 0 auto;
 		font-weight: 600;
-		color: var(--kdna-pivot-label-color);
+		color: var(--kdna-pivot-label-color, inherit);
 	}
 
 	/* ── Pivot Rows, Comparison ── */
@@ -400,13 +415,29 @@
 		padding: 6px 0;
 	}
 
+	/* The label each cell injects IS that column's heading once the table
+	 * has been pivoted — the real <thead> is hidden above. So it wears the
+	 * header row's clothes: the header background and header text colour
+	 * by default, with its own padding, radius and spacing for mobile.
+	 *
+	 * Kept at (0,5,1), one class below the label-position rules that
+	 * follow, so both the Header Row Background control (which extends its
+	 * selector to this pseudo-element) and the Pivot Rows Heading
+	 * Background override can beat it. */
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell::before,
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
+		background: var(--kdna-table-header-bg);
+		padding: var(--kdna-pivot-heading-padding);
+		border-radius: var(--kdna-pivot-heading-radius);
+	}
+
 	.kdna-table__wrapper[data-pivot-label-position="above"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell::before,
 	.kdna-table__wrapper[data-pivot-label-position="above"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
 		content: attr(data-column-label);
 		display: block;
 		font-weight: 700;
-		color: var(--kdna-pivot-label-color, inherit);
-		margin-bottom: 2px;
+		color: var(--kdna-pivot-label-color, var(--kdna-table-header-color));
+		margin-bottom: var(--kdna-pivot-heading-spacing);
 	}
 
 	.kdna-table__wrapper[data-pivot-label-position="inline"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell,
@@ -421,7 +452,7 @@
 	.kdna-table__wrapper[data-pivot-label-position="inline"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
 		content: attr(data-column-label);
 		font-weight: 700;
-		color: var(--kdna-pivot-label-color, inherit);
+		color: var(--kdna-pivot-label-color, var(--kdna-table-header-color));
 	}
 
 	/* ── Column Picker ── */
@@ -437,6 +468,46 @@
 	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-sticky-first-column="yes"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison__cell {
 		position: static;
 		box-shadow: none;
+	}
+
+	/* ── Every active responsive mode centres its text ──────────────
+	 * Left and right alignment is a property of the desktop column
+	 * grid: once the table has reflowed into cards or stacked rows
+	 * there is no grid left for it to line up against, and a table
+	 * whose columns were mixed left/centre/right reads as broken once
+	 * they are all stacked in one narrow column. So Card Stack, Pivot
+	 * Rows and Column Picker all centre at their breakpoint, whatever
+	 * the column, per-cell or Style-tab alignment says for desktop.
+	 * Mode "none" is excluded — it keeps the desktop layout, so it
+	 * keeps the desktop alignment.
+	 *
+	 * This block sits last in the media query on purpose: it shares
+	 * (0,5,0) with the per-mode rules above that set text-align, so
+	 * source order is what settles it. No !important is used, which
+	 * leaves per-instance Custom CSS able to opt back out.
+	 */
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="mobile"] .kdna-table__cell,
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell,
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="mobile"] .kdna-comparison__cell,
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison__cell {
+		text-align: center;
+		/* Cells that became flex rows (the label/value pairs in Card
+		 * Stack) distribute with space-between, which would keep the
+		 * label hard left and the value hard right however the text
+		 * inside them is aligned. */
+		justify-content: center;
+	}
+
+	/* The injected column / feature / row labels are the other half of
+	 * those pairs. flex is reset so they size to their text instead of
+	 * claiming the free space and pushing the value off centre. */
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="mobile"] .kdna-table__cell::before,
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell::before,
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="mobile"] .kdna-comparison__cell::before,
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison__cell::before {
+		text-align: center;
+		flex: 0 0 auto;
+		margin-right: 0;
 	}
 }
 
@@ -476,8 +547,11 @@
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison thead .kdna-comparison__cell--item {
 		background: var(--kdna-comparison-header-bg);
 		color: var(--kdna-comparison-header-color);
-		border-top-left-radius: var(--kdna-card-radius);
-		border-top-right-radius: var(--kdna-card-radius);
+		/* Shorthand then squared off rather than the two top longhands —
+		 * see the mobile block above for why. */
+		border-radius: var(--kdna-card-radius);
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
 	}
 
 	.kdna-table__wrapper[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison .kdna-comparison__cell--value {
@@ -534,7 +608,7 @@
 		flex: 0 0 auto;
 		font-weight: 700;
 		margin-right: 12px;
-		color: var(--kdna-pivot-label-color);
+		color: var(--kdna-pivot-label-color, inherit);
 	}
 
 	/* ── Pivot Rows, Comparison ── */
@@ -604,12 +678,20 @@
 		padding: 6px 0;
 	}
 
+	/* See the mobile query for why this sits one class below the
+	 * label-position rules. */
+	.kdna-table__wrapper[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
+		background: var(--kdna-table-header-bg);
+		padding: var(--kdna-pivot-heading-padding);
+		border-radius: var(--kdna-pivot-heading-radius);
+	}
+
 	.kdna-table__wrapper[data-pivot-label-position="above"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
 		content: attr(data-column-label);
 		display: block;
 		font-weight: 700;
-		color: var(--kdna-pivot-label-color, inherit);
-		margin-bottom: 2px;
+		color: var(--kdna-pivot-label-color, var(--kdna-table-header-color));
+		margin-bottom: var(--kdna-pivot-heading-spacing);
 	}
 
 	.kdna-table__wrapper[data-pivot-label-position="inline"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
@@ -622,7 +704,7 @@
 	.kdna-table__wrapper[data-pivot-label-position="inline"][data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell::before {
 		content: attr(data-column-label);
 		font-weight: 700;
-		color: var(--kdna-pivot-label-color, inherit);
+		color: var(--kdna-pivot-label-color, var(--kdna-table-header-color));
 	}
 
 	/* ── Column Picker ── */
@@ -635,5 +717,21 @@
 	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-sticky-first-column="yes"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison__cell {
 		position: static;
 		box-shadow: none;
+	}
+
+	/* ── Every active responsive mode centres its text ──────────────
+	 * The tablet half of the rule; see the mobile query for the full
+	 * reasoning and for why this block sits last. */
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell,
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison__cell {
+		text-align: center;
+		justify-content: center;
+	}
+
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell::before,
+	.kdna-table__wrapper[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-comparison__cell::before {
+		text-align: center;
+		flex: 0 0 auto;
+		margin-right: 0;
 	}
 }

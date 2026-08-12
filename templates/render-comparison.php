@@ -121,7 +121,10 @@ $sticky        = ! empty( $settings['__sticky_first_column'] );
 				$has_image = ( ! empty( $item['item_image']['id'] ) || ! empty( $item['item_image']['url'] ) );
 				$image_html = '';
 				if ( $has_image ) {
-					$image_html = \Elementor\Group_Control_Image_Size::get_attachment_image_html( $item, 'item_image_size', 'item_image' );
+					// Through the trait rather than the namespaced class directly:
+					// the shortcode binds these templates to a plain renderer,
+					// which has no page builder to call.
+					$image_html = $this->kdna_render_attachment_image( $item, 'item_image_size', 'item_image' );
 				}
 				?>
 				<th class="<?php echo esc_attr( implode( ' ', $cell_classes ) ); ?>" scope="col" data-slot="<?php echo (int) $slot; ?>" data-item-label="<?php echo esc_attr( isset( $item['item_label'] ) ? $item['item_label'] : '' ); ?>" style="--kdna-card-row: <?php echo (int) ( ( $slot - 1 ) * ( $feature_count + 1 ) + 1 ); ?>;">
@@ -253,13 +256,13 @@ $sticky        = ! empty( $settings['__sticky_first_column'] );
 						<?php if ( $cta_can_render ) : ?>
 							<a href="<?php echo esc_url( $cta_url ); ?>" class="kdna-comparison__cta kdna-comparison__cta--icon-<?php echo esc_attr( $cta_icon_position ); ?>"<?php echo $target_attr . $rel_attr; ?><?php if ( '' !== $cta_aria_label ) : ?> aria-label="<?php echo esc_attr( $cta_aria_label ); ?>"<?php endif; ?>>
 								<?php if ( $cta_has_icon && 'before' === $cta_icon_position ) : ?>
-									<span class="kdna-comparison__cta-icon" aria-hidden="true"><?php \Elementor\Icons_Manager::render_icon( $cta_icon, array( 'aria-hidden' => 'true' ) ); ?></span>
+									<span class="kdna-comparison__cta-icon" aria-hidden="true"><?php echo $this->kdna_render_icon( $cta_icon ); ?></span>
 								<?php endif; ?>
 								<?php if ( $cta_has_text ) : ?>
 									<span class="kdna-comparison__cta-text"><?php echo esc_html( $cta_text ); ?></span>
 								<?php endif; ?>
 								<?php if ( $cta_has_icon && 'after' === $cta_icon_position ) : ?>
-									<span class="kdna-comparison__cta-icon" aria-hidden="true"><?php \Elementor\Icons_Manager::render_icon( $cta_icon, array( 'aria-hidden' => 'true' ) ); ?></span>
+									<span class="kdna-comparison__cta-icon" aria-hidden="true"><?php echo $this->kdna_render_icon( $cta_icon ); ?></span>
 								<?php endif; ?>
 							</a>
 						<?php endif; ?>

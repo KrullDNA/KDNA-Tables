@@ -15,10 +15,30 @@ require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-data.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-admin.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-editor.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-migration.php';
+// The cell-render helpers the templates call, shared by the widget and
+// the shortcode. Extends nothing, so it loads with or without Elementor.
+require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-cell-renderer.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-shortcode.php';
+// Shortcode Style Engine.
+require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-style-schema.php';
+require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-style-resolver.php';
+require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-style-admin.php';
 
 KDNA_Tables_CPT::init();
 KDNA_Tables_Shortcode::init();
+/*
+ * Cache invalidation for writes this plugin did not make: WP-CLI, an
+ * importer, another plugin touching the option or the meta. The settings
+ * page invalidates directly after its own saves.
+ */
+KDNA_Tables_Style_Resolver::register_invalidation();
+/*
+ * Not inside is_admin(): the settings page's REST route has to register
+ * on rest_api_init, and a /wp-json/ request is not an admin request. The
+ * admin_menu and admin_enqueue_scripts hooks inside simply never fire
+ * outside the admin.
+ */
+KDNA_Tables_Style_Admin::init();
 if ( is_admin() ) {
 	KDNA_Tables_Admin::init();
 	KDNA_Tables_Editor::init();
