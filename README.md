@@ -365,6 +365,22 @@ options table and nothing to miss on a site using an object cache. A
 per-table save deletes just that table's key, since one table's overrides
 cannot change what another resolves to.
 
+The **plugin version is also part of the key**, and for a reason that is
+easy to miss: what is cached is the *output* of the schema, with every
+default baked into a string. An update that changes a default, adds a
+control or fixes which variable a control writes makes every cached
+string wrong — and no save has happened, so the generation has not moved.
+Without the version in the key, an updated site kept serving the previous
+version's CSS for up to a week while the settings page, which resolves
+from the schema live, showed the new one. Both were correct and they
+disagreed. With it, an update misses every entry and each table rebuilds
+once on first view; the stale entries expire on their own TTL rather than
+being swept.
+
+While debugging a site whose styles look stale, `add_filter(
+'kdna_tables_cache_styles', '__return_false' )` turns the cache off
+entirely.
+
 Writes this plugin did not make are covered too: `update_option` on the
 global key and `updated_post_meta` on `_kdna_table_style_overrides` both
 invalidate, so WP-CLI, an importer or another plugin cannot leave a site
@@ -693,6 +709,36 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 - UK English throughout code, labels, and documentation.
 
 ## Changelog
+
+### 3.2.3
+
+**The front end kept serving the previous version's CSS after an update.**
+The resolved style attribute is cached per table for a week, and what is
+cached is the *output* of the schema — every default baked into a string.
+The key was the invalidation generation plus the table id, and the
+generation only moves when someone saves on the settings page. So an
+update that changed a default, added a control or fixed which variable a
+control writes left every cached string wrong, and nothing said so.
+
+That is why an updated site could show a live table that did not match
+its own preview: the preview resolves from the schema on every keystroke,
+the front end was serving a week-old string built by the schema of the
+version before. Both halves were behaving correctly, which is why it was
+invisible from either side.
+
+The plugin version is now part of the cache key, so an update misses
+every entry and each table rebuilds once on first view. Saving still
+moves the generation within a version, exactly as before. If you ever
+need to rule the cache out while debugging, `add_filter(
+'kdna_tables_cache_styles', '__return_false' )` turns it off.
+
+**The preview now says when it is showing unsaved changes.** It renders
+from the editor's live values, so an edit appears the moment it is made
+while the front end keeps the saved ones — correct, and previously
+silent. The only hint was the words "Unsaved changes" beside the save
+button, well below the fold on a long section, which reads as a save
+reminder rather than as the explanation for why the live table looks
+different. There is a notice above the frame now.
 
 ### 3.2.2
 

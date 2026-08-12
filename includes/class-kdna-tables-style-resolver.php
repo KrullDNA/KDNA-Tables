@@ -253,8 +253,34 @@ class KDNA_Tables_Style_Resolver {
 		return (bool) apply_filters( 'kdna_tables_cache_styles', true );
 	}
 
+	/*
+	 * ── Why the plugin version is part of the key ─────────────────────
+	 *
+	 * What is cached here is the RESOLVED output of the schema — every
+	 * default baked into a string. So a plugin update that changes a
+	 * default, adds a control or fixes which variable a control writes
+	 * makes every cached string wrong, and nothing in the old key said
+	 * so: the generation only moves when someone saves on the settings
+	 * page, and the TTL is a week.
+	 *
+	 * That is why an upgraded site could show a live table that did not
+	 * match its own preview. The preview resolves from the schema on
+	 * every keystroke; the front end was serving a week-old string built
+	 * by the schema of the version before. Both were "working".
+	 *
+	 * With the version in the key, an update misses every entry and each
+	 * table rebuilds once on first view. The old entries are left to
+	 * expire on their TTL rather than swept — a LIKE query over the
+	 * options table is expensive, and an external object cache would not
+	 * see it anyway.
+	 */
 	private static function cache_key( $table_id ) {
-		return self::CACHE_PREFIX . self::generation() . '_' . (int) $table_id;
+		$version = defined( 'KDNA_TABLES_VERSION' ) ? KDNA_TABLES_VERSION : '0';
+
+		return self::CACHE_PREFIX
+			. str_replace( '.', '', (string) $version ) . '_'
+			. self::generation() . '_'
+			. (int) $table_id;
 	}
 
 	private static function generation() {

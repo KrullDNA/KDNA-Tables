@@ -107,6 +107,21 @@ $kdna_bands       = isset( $kdna_preview['breakpoints'] ) ? $kdna_preview['break
 		<span class="kdna-style-preview__status is-error" x-show="previewError" x-text="previewError"></span>
 	</div>
 
+	<?php
+	/*
+	 * The pane renders from the editor's live values, so an edit shows
+	 * here the moment it is made — and the front end keeps the last saved
+	 * ones until Save Styles is pressed. That is the right behaviour and
+	 * it was completely silent: the only hint was the words "Unsaved
+	 * changes" by the save button, well below the fold on a long section,
+	 * which reads as a save reminder rather than as an explanation of why
+	 * the live table looks different.
+	 */
+	?>
+	<p class="kdna-style-preview__notice is-warning" x-show="dirty">
+		<?php esc_html_e( 'Showing unsaved changes. The live table keeps its saved styles until you press Save Styles.', 'kdna-tables' ); ?>
+	</p>
+
 	<?php /* The front end additionally applies this table's own overrides. */ ?>
 	<p class="kdna-style-preview__notice" x-show="previewHasOverrides()">
 		<?php esc_html_e( 'This table has its own style overrides. The preview shows the global defaults only, so the live table will differ where it overrides them.', 'kdna-tables' ); ?>
