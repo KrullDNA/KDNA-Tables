@@ -17,7 +17,8 @@ different pages.
 
 ## Installation
 
-1. Download the latest `kdna-tables.zip` release.
+1. Download the latest `kdna-tables-vX.Y.Z.zip` from the repository root
+   (currently `kdna-tables-v3.1.0.zip`).
 2. In WordPress, go to **Plugins, Add New, Upload Plugin** and choose the zip.
 3. Click **Install Now**, then **Activate**.
 4. A new top-level **KDNA Tables** menu appears in WP Admin (with submenus
