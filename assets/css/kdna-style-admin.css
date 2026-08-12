@@ -787,6 +787,17 @@
 	font-size: 12px;
 }
 
+/*
+ * Louder than the other notices on purpose. This one explains why the
+ * live table does not match what is on screen, which is the single most
+ * confusing thing the pane can do.
+ */
+.kdna-style-preview__notice.is-warning {
+	background: #fde7e9;
+	color: #8a2424;
+	font-weight: 600;
+}
+
 .kdna-style-preview__stage {
 	display: flex;
 	justify-content: center;
