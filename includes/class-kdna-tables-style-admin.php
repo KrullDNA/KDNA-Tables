@@ -65,7 +65,27 @@ class KDNA_Tables_Style_Admin {
 	private static $hook_suffix = '';
 
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'register_menu' ) );
+		/*
+		 * Priority 11, and it matters.
+		 *
+		 * The parent menu is KDNA_Tables_Admin's add_menu_page() call,
+		 * whose slug is 'edit.php?post_type=kdna_table'. add_menu_page()
+		 * is what registers that slug in the global $admin_page_hooks,
+		 * and add_submenu_page() reads $admin_page_hooks to work out the
+		 * load hook to register the page callback against.
+		 *
+		 * Registering first — which is what happened, because this class
+		 * boots before KDNA_Tables_Admin so its REST routes are available
+		 * outside the admin — meant the parent was not there yet. The
+		 * hook came out as 'admin_page_kdna-tables-styles' instead of
+		 * 'kdna-tables_page_kdna-tables-styles'. WordPress then recomputes
+		 * the name when it prints the menu, finds nothing hooked to it,
+		 * and falls back to linking the bare slug: /wp-admin/kdna-tables-
+		 * styles, which is not an admin URL at all and lands on the theme
+		 * 404. The same mismatch also stopped this page's assets loading,
+		 * since the returned hook suffix was the wrong one.
+		 */
+		add_action( 'admin_menu', array( __CLASS__, 'register_menu' ), 11 );
 		add_action( 'add_meta_boxes', array( __CLASS__, 'register_meta_box' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
 		add_action( 'rest_api_init', array( __CLASS__, 'register_rest_routes' ) );
@@ -81,6 +101,21 @@ class KDNA_Tables_Style_Admin {
 			'manage_options',
 			self::MENU_SLUG,
 			array( __CLASS__, 'render_page' )
+		);
+	}
+
+	/**
+	 * The settings page's admin URL.
+	 *
+	 * Built from the parent slug, which is what WordPress itself links to
+	 * once the menu is registered in the right order. The obvious
+	 * 'admin.php?page=…' does not reliably resolve for a page parented to
+	 * a post-type menu: admin.php looks the page up against admin.php as
+	 * the parent, which is not where it was registered.
+	 */
+	public static function page_url() {
+		return admin_url(
+			KDNA_Tables_Admin::MENU_SLUG_LIST . '&page=' . self::MENU_SLUG
 		);
 	}
 

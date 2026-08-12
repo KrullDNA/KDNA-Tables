@@ -30,7 +30,7 @@ $kdna_renderers = require KDNA_TABLES_PATH . 'templates/admin-style-controls.php
 		printf(
 			/* translators: %s: link to the Shortcode Styles settings page. */
 			esc_html__( 'This table follows the %s until you override something here. Overrides apply wherever this table is rendered by a shortcode.', 'kdna-tables' ),
-			'<a href="' . esc_url( admin_url( 'admin.php?page=' . KDNA_Tables_Style_Admin::MENU_SLUG ) ) . '">'
+			'<a href="' . esc_url( KDNA_Tables_Style_Admin::page_url() ) . '">'
 				. esc_html__( 'global Shortcode Styles', 'kdna-tables' ) . '</a>'
 		);
 		?>
