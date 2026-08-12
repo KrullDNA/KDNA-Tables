@@ -455,7 +455,7 @@ between them.
 | **Card Border Radius** | `12px` | Rounds the whole card; the cells inside stay square |
 | **Card Padding** | `16px` | Even inset between the card edge and its contents |
 | **Spacing Between Cells** | `0` | *Extra* gap between cells inside a card, on top of the Body Cells padding |
-| **Row Spacing** | `16px` | The gap between one card and the next |
+| **Space Between Cards** | `16px` | The gap between one card and the next. Not applied under the last card |
 
 The spacing inside a card comes from three controls that stack, and each
 does exactly what its name says:
@@ -468,6 +468,13 @@ does exactly what its name says:
 - **Spacing Between Cells** adds more space between cells and nothing
   else. Zero by default, so it never contributes a gap the padding
   control cannot account for.
+
+The space around the *whole table* is separate, in **Table Wrapper**:
+**Space Above Table** and **Space Below Table**, both responsive, both
+applying in every mode. Between the cards themselves is **Space Between
+Cards** here. The last card gets no bottom gap, so raising the card
+spacing does not also add dead space under the table and leave the two
+controls fighting.
 
 **The whole Header Row section reaches the injected column headings.**
 Pivoted or stacked, the real `<thead>` is hidden and the heading is a
@@ -709,6 +716,24 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 - UK English throughout code, labels, and documentation.
 
 ## Changelog
+
+### 3.2.4
+
+- **The last pivot card no longer keeps its bottom gap.** The space
+  between cards is a margin under each one, and the last card has nothing
+  to clear — so raising it to 40px also put 40px of dead space under the
+  table. Space Below Table then read as adding more than it was set to,
+  and the two controls looked like they were fighting each other.
+- **"Row Spacing" is now "Space Between Cards".** The old name described
+  the markup rather than what is on screen: pivoted, a row *is* a card,
+  and nobody looking for the gap between two cards found it under a
+  heading about rows. It also now points at Table Wrapper for the space
+  around the whole table, which is where the two page-level margins live.
+
+Both controls this names already existed and both worked — verified on a
+page with real siblings above and below, since a margin's effect on
+screen depends on what it collapses against, not on what the declaration
+says. What did not work was the two of them together.
 
 ### 3.2.3
 

@@ -384,7 +384,7 @@ class KDNA_Tables_Style_Schema {
 				'step'        => 1,
 				'responsive'  => true,
 				'default'     => array( 'size' => 0, 'unit' => 'px' ),
-				'description' => esc_html__( 'Margin between the table and whatever sits above it on the page.', 'kdna-tables' ),
+				'description' => esc_html__( 'Margin between the whole table and whatever sits above it on the page. Applies in every responsive mode.', 'kdna-tables' ),
 			),
 
 			'wrapper_margin_bottom' => array(
@@ -398,7 +398,7 @@ class KDNA_Tables_Style_Schema {
 				'step'        => 1,
 				'responsive'  => true,
 				'default'     => array( 'size' => 0, 'unit' => 'px' ),
-				'description' => esc_html__( 'Margin between the table and whatever sits below it on the page.', 'kdna-tables' ),
+				'description' => esc_html__( 'Margin between the whole table and whatever sits below it on the page. Applies in every responsive mode.', 'kdna-tables' ),
 			),
 
 			/*
@@ -1007,17 +1007,24 @@ class KDNA_Tables_Style_Schema {
 				'description' => esc_html__( 'Only applies to the inline label position.', 'kdna-tables' ),
 			),
 
+			/*
+			 * "Row Spacing" named the markup rather than what is on
+			 * screen. Pivoted, a row IS a card, and someone looking for
+			 * the gap between two cards did not find it under a heading
+			 * that talked about rows.
+			 */
 			'pivot_row_spacing'     => array(
-				'label'      => esc_html__( 'Row Spacing', 'kdna-tables' ),
-				'section'    => 'card_stack',
-				'type'       => 'slider',
-				'css_var'    => '--kdna-pivot-row-spacing',
-				'units'      => array( 'px' ),
-				'min'        => 0,
-				'max'        => 80,
-				'step'       => 1,
-				'responsive' => true,
-				'default'    => array( 'size' => 16, 'unit' => 'px' ),
+				'label'       => esc_html__( 'Space Between Cards', 'kdna-tables' ),
+				'section'     => 'card_stack',
+				'type'        => 'slider',
+				'css_var'     => '--kdna-pivot-row-spacing',
+				'units'       => array( 'px' ),
+				'min'         => 0,
+				'max'         => 80,
+				'step'        => 1,
+				'responsive'  => true,
+				'default'     => array( 'size' => 16, 'unit' => 'px' ),
+				'description' => esc_html__( 'The gap between one card and the next. Not applied under the last card. For the space above and below the whole table, see Table Wrapper.', 'kdna-tables' ),
 			),
 
 			/*

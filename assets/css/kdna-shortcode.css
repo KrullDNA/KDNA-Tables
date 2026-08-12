@@ -954,6 +954,19 @@
 	}
 
 	/*
+	 * ── No trailing gap under the last card ───────────────────────────
+	 *
+	 * The gap between cards is a margin below each one, and the last card
+	 * has nothing to clear. Left on, raising Space Between Cards to 40px
+	 * also put 40px of dead space under the table — so Space Below Table
+	 * read as adding more than it was set to, and the two controls looked
+	 * like they were fighting each other.
+	 */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general tbody tr:last-child {
+		margin-bottom: 0;
+	}
+
+	/*
 	 * ── No alternate row shading in this mode ──────────────────────────
 	 *
 	 * Odd/even stripes are how you follow a row across a wide table. There
@@ -1366,6 +1379,19 @@
 	 */
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general .kdna-table__cell.kdna-table__cell.kdna-table__cell--first-col {
 		padding: var(--_kdna-table-body-padding);
+	}
+
+	/*
+	 * ── No trailing gap under the last card ───────────────────────────
+	 *
+	 * The gap between cards is a margin below each one, and the last card
+	 * has nothing to clear. Left on, raising Space Between Cards to 40px
+	 * also put 40px of dead space under the table — so Space Below Table
+	 * read as adding more than it was set to, and the two controls looked
+	 * like they were fighting each other.
+	 */
+	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"] .kdna-table--general tbody tr:last-child {
+		margin-bottom: 0;
 	}
 
 	/*
