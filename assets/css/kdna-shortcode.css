@@ -121,7 +121,7 @@
 	--_kdna-table-header-text-transform: var(--kdna-table-header-text-transform, none);
 	--_kdna-table-header-font-style: var(--kdna-table-header-font-style, normal);
 	--_kdna-table-header-text-decoration: var(--kdna-table-header-text-decoration, none);
-	--_kdna-table-header-line-height: var(--kdna-table-header-line-height, normal);
+	--_kdna-table-header-line-height: var(--kdna-table-header-line-height, 1.5);
 	--_kdna-table-header-letter-spacing: var(--kdna-table-header-letter-spacing, normal);
 	--_kdna-table-header-word-spacing: var(--kdna-table-header-word-spacing, normal);
 
@@ -137,7 +137,7 @@
 	--_kdna-table-body-text-transform: var(--kdna-table-body-text-transform, none);
 	--_kdna-table-body-font-style: var(--kdna-table-body-font-style, normal);
 	--_kdna-table-body-text-decoration: var(--kdna-table-body-text-decoration, none);
-	--_kdna-table-body-line-height: var(--kdna-table-body-line-height, normal);
+	--_kdna-table-body-line-height: var(--kdna-table-body-line-height, 1.5);
 	--_kdna-table-body-letter-spacing: var(--kdna-table-body-letter-spacing, normal);
 	--_kdna-table-body-word-spacing: var(--kdna-table-body-word-spacing, normal);
 	--_kdna-table-row-hover-bg: var(--kdna-table-row-hover-bg, transparent);
@@ -160,7 +160,7 @@
 	--_kdna-table-first-col-text-transform: var(--kdna-table-first-col-text-transform, none);
 	--_kdna-table-first-col-font-style: var(--kdna-table-first-col-font-style, normal);
 	--_kdna-table-first-col-text-decoration: var(--kdna-table-first-col-text-decoration, none);
-	--_kdna-table-first-col-line-height: var(--kdna-table-first-col-line-height, normal);
+	--_kdna-table-first-col-line-height: var(--kdna-table-first-col-line-height, 1.5);
 	--_kdna-table-first-col-letter-spacing: var(--kdna-table-first-col-letter-spacing, normal);
 	--_kdna-table-first-col-word-spacing: var(--kdna-table-first-col-word-spacing, normal);
 	/* Row-header cells only, i.e. when the table marks its first column
@@ -214,6 +214,14 @@
 	--_kdna-pivot-label-color: var(--kdna-pivot-label-color, var(--_kdna-table-header-color));
 	--_kdna-pivot-label-width: var(--kdna-pivot-label-width, 30%);
 	--_kdna-pivot-row-spacing: var(--kdna-pivot-row-spacing, 16px);
+	/* The pivoted row as a box of its own. All inert by default, so a
+	 * pivot table that has not asked for a box does not grow one. */
+	--_kdna-pivot-row-bg: var(--kdna-pivot-row-bg, transparent);
+	--_kdna-pivot-row-padding: var(--kdna-pivot-row-padding, 0);
+	--_kdna-pivot-row-radius: var(--kdna-pivot-row-radius, 0);
+	--_kdna-pivot-row-border-style: var(--kdna-pivot-row-border-style, none);
+	--_kdna-pivot-row-border-width: var(--kdna-pivot-row-border-width, 0px);
+	--_kdna-pivot-row-border-color: var(--kdna-pivot-row-border-color, #e5e7eb);
 	--_kdna-pivot-heading-bg: var(--kdna-pivot-heading-bg, var(--_kdna-table-header-bg));
 	--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding, 0);
 	--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius, 0);
@@ -227,11 +235,25 @@
 	--_kdna-pivot-label-line-height: var(--kdna-pivot-label-line-height, normal);
 	--_kdna-pivot-label-letter-spacing: var(--kdna-pivot-label-letter-spacing, normal);
 	--_kdna-pivot-label-word-spacing: var(--kdna-pivot-label-word-spacing, normal);
-	/* The row divider under each pivoted row. None by default: the rows
-	 * are separated by spacing, not a rule. */
-	--_kdna-pivot-divider-style: var(--kdna-pivot-divider-style, none);
-	--_kdna-pivot-divider-width: var(--kdna-pivot-divider-width, 0);
-	--_kdna-pivot-divider-color: var(--kdna-pivot-divider-color, #e5e7eb);
+	/*
+	 * The row divider under each pivoted row.
+	 *
+	 * Both this and the Row Border want the bottom edge, so unset, each
+	 * of these falls back to the Row Border's own value. A row with a
+	 * border and no divider gets an unbroken box; a row with a divider
+	 * gets the divider on the bottom whatever the border says; a row with
+	 * neither gets nothing, which is what an unstyled pivot row has
+	 * always looked like.
+	 *
+	 * The Row Border is a line trio, not a border group, so its width is
+	 * a single value and can be handed straight to border-bottom-width.
+	 * A four-sided dimensions value there would be invalid, and an
+	 * invalid longhand resets to medium rather than falling through to
+	 * the shorthand above it.
+	 */
+	--_kdna-pivot-divider-style: var(--kdna-pivot-divider-style, var(--_kdna-pivot-row-border-style));
+	--_kdna-pivot-divider-width: var(--kdna-pivot-divider-width, var(--_kdna-pivot-row-border-width));
+	--_kdna-pivot-divider-color: var(--kdna-pivot-divider-color, var(--_kdna-pivot-row-border-color));
 
 	/* Column Picker */
 	--_kdna-picker-bg: var(--kdna-picker-bg, #ffffff);
@@ -657,20 +679,20 @@
 		--_kdna-table-header-padding: var(--kdna-table-header-padding-tablet, var(--kdna-table-header-padding, 14px 16px));
 		--_kdna-table-header-text-align: var(--kdna-table-header-text-align-tablet, var(--kdna-table-header-text-align));
 		--_kdna-table-header-font-size: var(--kdna-table-header-font-size-tablet, var(--kdna-table-header-font-size, inherit));
-		--_kdna-table-header-line-height: var(--kdna-table-header-line-height-tablet, var(--kdna-table-header-line-height, normal));
+		--_kdna-table-header-line-height: var(--kdna-table-header-line-height-tablet, var(--kdna-table-header-line-height, 1.5));
 		--_kdna-table-header-letter-spacing: var(--kdna-table-header-letter-spacing-tablet, var(--kdna-table-header-letter-spacing, normal));
 
 		/* Body */
 		--_kdna-table-body-padding: var(--kdna-table-body-padding-tablet, var(--kdna-table-body-padding, 12px 16px));
 		--_kdna-table-body-text-align: var(--kdna-table-body-text-align-tablet, var(--kdna-table-body-text-align));
 		--_kdna-table-body-font-size: var(--kdna-table-body-font-size-tablet, var(--kdna-table-body-font-size, inherit));
-		--_kdna-table-body-line-height: var(--kdna-table-body-line-height-tablet, var(--kdna-table-body-line-height, normal));
+		--_kdna-table-body-line-height: var(--kdna-table-body-line-height-tablet, var(--kdna-table-body-line-height, 1.5));
 		--_kdna-table-body-letter-spacing: var(--kdna-table-body-letter-spacing-tablet, var(--kdna-table-body-letter-spacing, normal));
 
 		/* First column */
 		--_kdna-table-first-col-padding: var(--kdna-table-first-col-padding-tablet, var(--kdna-table-first-col-padding, var(--_kdna-table-body-padding)));
 		--_kdna-table-first-col-font-size: var(--kdna-table-first-col-font-size-tablet, var(--kdna-table-first-col-font-size, inherit));
-		--_kdna-table-first-col-line-height: var(--kdna-table-first-col-line-height-tablet, var(--kdna-table-first-col-line-height, normal));
+		--_kdna-table-first-col-line-height: var(--kdna-table-first-col-line-height-tablet, var(--kdna-table-first-col-line-height, 1.5));
 		--_kdna-table-first-col-letter-spacing: var(--kdna-table-first-col-letter-spacing-tablet, var(--kdna-table-first-col-letter-spacing, normal));
 		--_kdna-table-first-col-edge-width: var(--kdna-table-first-col-edge-width-tablet, var(--kdna-table-first-col-edge-width, var(--_kdna-table-v-line-width)));
 
@@ -693,6 +715,12 @@
 		/* Pivot Rows */
 		--_kdna-pivot-label-width: var(--kdna-pivot-label-width-tablet, var(--kdna-pivot-label-width, 30%));
 		--_kdna-pivot-row-spacing: var(--kdna-pivot-row-spacing-tablet, var(--kdna-pivot-row-spacing, 16px));
+		--_kdna-pivot-row-bg: var(--kdna-pivot-row-bg, transparent);
+		--_kdna-pivot-row-padding: var(--kdna-pivot-row-padding-tablet, var(--kdna-pivot-row-padding, 0));
+		--_kdna-pivot-row-radius: var(--kdna-pivot-row-radius-tablet, var(--kdna-pivot-row-radius, 0));
+		--_kdna-pivot-row-border-style: var(--kdna-pivot-row-border-style, none);
+		--_kdna-pivot-row-border-width: var(--kdna-pivot-row-border-width-tablet, var(--kdna-pivot-row-border-width, 0px));
+		--_kdna-pivot-row-border-color: var(--kdna-pivot-row-border-color, #e5e7eb);
 		--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding-tablet, var(--kdna-pivot-heading-padding, 0));
 		--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius-tablet, var(--kdna-pivot-heading-radius, 0));
 		--_kdna-pivot-heading-spacing: var(--kdna-pivot-heading-spacing-tablet, var(--kdna-pivot-heading-spacing, 2px));
@@ -700,7 +728,7 @@
 		--_kdna-table-image-height: var(--kdna-table-image-height-tablet, var(--kdna-table-image-height, auto));
 		--_kdna-table-image-radius: var(--kdna-table-image-radius-tablet, var(--kdna-table-image-radius, 0));
 		--_kdna-card-border-width: var(--kdna-card-border-width-tablet, var(--kdna-card-border-width, 0));
-		--_kdna-pivot-divider-width: var(--kdna-pivot-divider-width-tablet, var(--kdna-pivot-divider-width, 0));
+		--_kdna-pivot-divider-width: var(--kdna-pivot-divider-width-tablet, var(--kdna-pivot-divider-width, var(--_kdna-pivot-row-border-width)));
 		--_kdna-pivot-label-font-size: var(--kdna-pivot-label-font-size-tablet, var(--kdna-pivot-label-font-size, inherit));
 		--_kdna-pivot-label-line-height: var(--kdna-pivot-label-line-height-tablet, var(--kdna-pivot-label-line-height, normal));
 		--_kdna-pivot-label-letter-spacing: var(--kdna-pivot-label-letter-spacing-tablet, var(--kdna-pivot-label-letter-spacing, normal));
@@ -780,12 +808,27 @@
 	}
 
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
-		padding-bottom: var(--_kdna-pivot-row-spacing);
+		background: var(--_kdna-pivot-row-bg);
+		border-radius: var(--_kdna-pivot-row-radius);
+		/* Padding, then the row spacing on top of its bottom edge, so a
+		 * boxed row keeps an even inset and still clears the next one. */
+		padding: var(--_kdna-pivot-row-padding);
+		padding-bottom: calc(var(--_kdna-pivot-row-spacing) + 0px);
 		margin-bottom: var(--_kdna-pivot-row-spacing);
 		/* !important because the theme reset near the top of this file
 		 * zeroes tr borders with !important of its own. Defaults to 0
 		 * none, so an unstyled pivot row is unchanged. */
-		border-bottom: var(--_kdna-pivot-divider-width) var(--_kdna-pivot-divider-style) var(--_kdna-pivot-divider-color) !important;
+		border-style: var(--_kdna-pivot-row-border-style) !important;
+		border-width: var(--_kdna-pivot-row-border-width) !important;
+		border-color: var(--_kdna-pivot-row-border-color) !important;
+		/* After the four sides, so a divider that IS set wins the bottom
+		 * edge. Longhands rather than the border-bottom shorthand: the
+		 * width can legitimately be invalid (see the note by the variable
+		 * declarations) and that must drop the width alone, not take the
+		 * style and colour down with it. */
+		border-bottom-style: var(--_kdna-pivot-divider-style) !important;
+		border-bottom-width: var(--_kdna-pivot-divider-width) !important;
+		border-bottom-color: var(--_kdna-pivot-divider-color) !important;
 	}
 
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell {
@@ -914,20 +957,20 @@
 		--_kdna-table-header-padding: var(--kdna-table-header-padding-mobile, var(--kdna-table-header-padding-tablet, var(--kdna-table-header-padding, 14px 16px)));
 		--_kdna-table-header-text-align: var(--kdna-table-header-text-align-mobile, var(--kdna-table-header-text-align-tablet, var(--kdna-table-header-text-align)));
 		--_kdna-table-header-font-size: var(--kdna-table-header-font-size-mobile, var(--kdna-table-header-font-size-tablet, var(--kdna-table-header-font-size, inherit)));
-		--_kdna-table-header-line-height: var(--kdna-table-header-line-height-mobile, var(--kdna-table-header-line-height-tablet, var(--kdna-table-header-line-height, normal)));
+		--_kdna-table-header-line-height: var(--kdna-table-header-line-height-mobile, var(--kdna-table-header-line-height-tablet, var(--kdna-table-header-line-height, 1.5)));
 		--_kdna-table-header-letter-spacing: var(--kdna-table-header-letter-spacing-mobile, var(--kdna-table-header-letter-spacing-tablet, var(--kdna-table-header-letter-spacing, normal)));
 
 		/* Body */
 		--_kdna-table-body-padding: var(--kdna-table-body-padding-mobile, var(--kdna-table-body-padding-tablet, var(--kdna-table-body-padding, 12px 16px)));
 		--_kdna-table-body-text-align: var(--kdna-table-body-text-align-mobile, var(--kdna-table-body-text-align-tablet, var(--kdna-table-body-text-align)));
 		--_kdna-table-body-font-size: var(--kdna-table-body-font-size-mobile, var(--kdna-table-body-font-size-tablet, var(--kdna-table-body-font-size, inherit)));
-		--_kdna-table-body-line-height: var(--kdna-table-body-line-height-mobile, var(--kdna-table-body-line-height-tablet, var(--kdna-table-body-line-height, normal)));
+		--_kdna-table-body-line-height: var(--kdna-table-body-line-height-mobile, var(--kdna-table-body-line-height-tablet, var(--kdna-table-body-line-height, 1.5)));
 		--_kdna-table-body-letter-spacing: var(--kdna-table-body-letter-spacing-mobile, var(--kdna-table-body-letter-spacing-tablet, var(--kdna-table-body-letter-spacing, normal)));
 
 		/* First column */
 		--_kdna-table-first-col-padding: var(--kdna-table-first-col-padding-mobile, var(--kdna-table-first-col-padding-tablet, var(--kdna-table-first-col-padding, var(--_kdna-table-body-padding))));
 		--_kdna-table-first-col-font-size: var(--kdna-table-first-col-font-size-mobile, var(--kdna-table-first-col-font-size-tablet, var(--kdna-table-first-col-font-size, inherit)));
-		--_kdna-table-first-col-line-height: var(--kdna-table-first-col-line-height-mobile, var(--kdna-table-first-col-line-height-tablet, var(--kdna-table-first-col-line-height, normal)));
+		--_kdna-table-first-col-line-height: var(--kdna-table-first-col-line-height-mobile, var(--kdna-table-first-col-line-height-tablet, var(--kdna-table-first-col-line-height, 1.5)));
 		--_kdna-table-first-col-letter-spacing: var(--kdna-table-first-col-letter-spacing-mobile, var(--kdna-table-first-col-letter-spacing-tablet, var(--kdna-table-first-col-letter-spacing, normal)));
 		--_kdna-table-first-col-edge-width: var(--kdna-table-first-col-edge-width-mobile, var(--kdna-table-first-col-edge-width-tablet, var(--kdna-table-first-col-edge-width, var(--_kdna-table-v-line-width))));
 
@@ -950,6 +993,12 @@
 		/* Pivot Rows */
 		--_kdna-pivot-label-width: var(--kdna-pivot-label-width-mobile, var(--kdna-pivot-label-width-tablet, var(--kdna-pivot-label-width, 30%)));
 		--_kdna-pivot-row-spacing: var(--kdna-pivot-row-spacing-mobile, var(--kdna-pivot-row-spacing-tablet, var(--kdna-pivot-row-spacing, 16px)));
+		--_kdna-pivot-row-bg: var(--kdna-pivot-row-bg, transparent);
+		--_kdna-pivot-row-padding: var(--kdna-pivot-row-padding-mobile, var(--kdna-pivot-row-padding-tablet, var(--kdna-pivot-row-padding, 0)));
+		--_kdna-pivot-row-radius: var(--kdna-pivot-row-radius-mobile, var(--kdna-pivot-row-radius-tablet, var(--kdna-pivot-row-radius, 0)));
+		--_kdna-pivot-row-border-style: var(--kdna-pivot-row-border-style, none);
+		--_kdna-pivot-row-border-width: var(--kdna-pivot-row-border-width-mobile, var(--kdna-pivot-row-border-width-tablet, var(--kdna-pivot-row-border-width, 0px)));
+		--_kdna-pivot-row-border-color: var(--kdna-pivot-row-border-color, #e5e7eb);
 		--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding-mobile, var(--kdna-pivot-heading-padding-tablet, var(--kdna-pivot-heading-padding, 0)));
 		--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius-mobile, var(--kdna-pivot-heading-radius-tablet, var(--kdna-pivot-heading-radius, 0)));
 		--_kdna-pivot-heading-spacing: var(--kdna-pivot-heading-spacing-mobile, var(--kdna-pivot-heading-spacing-tablet, var(--kdna-pivot-heading-spacing, 2px)));
@@ -957,7 +1006,7 @@
 		--_kdna-table-image-height: var(--kdna-table-image-height-mobile, var(--kdna-table-image-height-tablet, var(--kdna-table-image-height, auto)));
 		--_kdna-table-image-radius: var(--kdna-table-image-radius-mobile, var(--kdna-table-image-radius-tablet, var(--kdna-table-image-radius, 0)));
 		--_kdna-card-border-width: var(--kdna-card-border-width-mobile, var(--kdna-card-border-width-tablet, var(--kdna-card-border-width, 0)));
-		--_kdna-pivot-divider-width: var(--kdna-pivot-divider-width-mobile, var(--kdna-pivot-divider-width-tablet, var(--kdna-pivot-divider-width, 0)));
+		--_kdna-pivot-divider-width: var(--kdna-pivot-divider-width-mobile, var(--kdna-pivot-divider-width-tablet, var(--kdna-pivot-divider-width, var(--_kdna-pivot-row-border-width))));
 		--_kdna-pivot-label-font-size: var(--kdna-pivot-label-font-size-mobile, var(--kdna-pivot-label-font-size-tablet, var(--kdna-pivot-label-font-size, inherit)));
 		--_kdna-pivot-label-line-height: var(--kdna-pivot-label-line-height-mobile, var(--kdna-pivot-label-line-height-tablet, var(--kdna-pivot-label-line-height, normal)));
 		--_kdna-pivot-label-letter-spacing: var(--kdna-pivot-label-letter-spacing-mobile, var(--kdna-pivot-label-letter-spacing-tablet, var(--kdna-pivot-label-letter-spacing, normal)));
@@ -1077,12 +1126,27 @@
 
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general tr,
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general tr {
-		padding-bottom: var(--_kdna-pivot-row-spacing);
+		background: var(--_kdna-pivot-row-bg);
+		border-radius: var(--_kdna-pivot-row-radius);
+		/* Padding, then the row spacing on top of its bottom edge, so a
+		 * boxed row keeps an even inset and still clears the next one. */
+		padding: var(--_kdna-pivot-row-padding);
+		padding-bottom: calc(var(--_kdna-pivot-row-spacing) + 0px);
 		margin-bottom: var(--_kdna-pivot-row-spacing);
 		/* !important because the theme reset near the top of this file
 		 * zeroes tr borders with !important of its own. Defaults to 0
 		 * none, so an unstyled pivot row is unchanged. */
-		border-bottom: var(--_kdna-pivot-divider-width) var(--_kdna-pivot-divider-style) var(--_kdna-pivot-divider-color) !important;
+		border-style: var(--_kdna-pivot-row-border-style) !important;
+		border-width: var(--_kdna-pivot-row-border-width) !important;
+		border-color: var(--_kdna-pivot-row-border-color) !important;
+		/* After the four sides, so a divider that IS set wins the bottom
+		 * edge. Longhands rather than the border-bottom shorthand: the
+		 * width can legitimately be invalid (see the note by the variable
+		 * declarations) and that must drop the width alone, not take the
+		 * style and colour down with it. */
+		border-bottom-style: var(--_kdna-pivot-divider-style) !important;
+		border-bottom-width: var(--_kdna-pivot-divider-width) !important;
+		border-bottom-color: var(--_kdna-pivot-divider-color) !important;
 	}
 
 	.kdna-table__wrapper--shortcode[data-responsive-mode="pivot_rows"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell,
