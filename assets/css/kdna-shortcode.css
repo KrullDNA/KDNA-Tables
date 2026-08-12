@@ -242,15 +242,29 @@
 	--_kdna-pivot-heading-padding: var(--kdna-pivot-heading-padding, var(--_kdna-table-header-padding));
 	--_kdna-pivot-heading-radius: var(--kdna-pivot-heading-radius, 0);
 	--_kdna-pivot-heading-spacing: var(--kdna-pivot-heading-spacing, 2px);
-	--_kdna-pivot-label-font-family: var(--kdna-pivot-label-font-family, inherit);
-	--_kdna-pivot-label-font-size: var(--kdna-pivot-label-font-size, inherit);
-	--_kdna-pivot-label-font-weight: var(--kdna-pivot-label-font-weight, 700);
-	--_kdna-pivot-label-text-transform: var(--kdna-pivot-label-text-transform, none);
-	--_kdna-pivot-label-font-style: var(--kdna-pivot-label-font-style, normal);
-	--_kdna-pivot-label-text-decoration: var(--kdna-pivot-label-text-decoration, none);
-	--_kdna-pivot-label-line-height: var(--kdna-pivot-label-line-height, normal);
-	--_kdna-pivot-label-letter-spacing: var(--kdna-pivot-label-letter-spacing, normal);
-	--_kdna-pivot-label-word-spacing: var(--kdna-pivot-label-word-spacing, normal);
+	/*
+	 * ── The pivot heading IS the header row, one layout over ──────────
+	 *
+	 * Pivoted, the real <thead> is hidden and this pseudo-element carries
+	 * the column name. So every one of these falls back to the Header Row
+	 * value rather than to a literal — the same inheritance the heading's
+	 * colour and background already used, extended to the rest of it.
+	 *
+	 * These used to end at `inherit`, `700`, `normal` and so on, which
+	 * meant Header Row → Typography could not reach the headings at all:
+	 * setting the size to 100px moved nothing, and nothing on the page
+	 * said why. Pivot Rows: Column Heading Typography still overrides
+	 * where the two should differ.
+	 */
+	--_kdna-pivot-label-font-family: var(--kdna-pivot-label-font-family, var(--_kdna-table-header-font-family));
+	--_kdna-pivot-label-font-size: var(--kdna-pivot-label-font-size, var(--_kdna-table-header-font-size));
+	--_kdna-pivot-label-font-weight: var(--kdna-pivot-label-font-weight, var(--_kdna-table-header-font-weight));
+	--_kdna-pivot-label-text-transform: var(--kdna-pivot-label-text-transform, var(--_kdna-table-header-text-transform));
+	--_kdna-pivot-label-font-style: var(--kdna-pivot-label-font-style, var(--_kdna-table-header-font-style));
+	--_kdna-pivot-label-text-decoration: var(--kdna-pivot-label-text-decoration, var(--_kdna-table-header-text-decoration));
+	--_kdna-pivot-label-line-height: var(--kdna-pivot-label-line-height, var(--_kdna-table-header-line-height));
+	--_kdna-pivot-label-letter-spacing: var(--kdna-pivot-label-letter-spacing, var(--_kdna-table-header-letter-spacing));
+	--_kdna-pivot-label-word-spacing: var(--kdna-pivot-label-word-spacing, var(--_kdna-table-header-word-spacing));
 	/*
 	 * The row divider under each pivoted row.
 	 *
@@ -768,9 +782,18 @@
 		--_kdna-table-image-radius: var(--kdna-table-image-radius-tablet, var(--kdna-table-image-radius, 0));
 		--_kdna-card-border-width: var(--kdna-card-border-width-tablet, var(--kdna-card-border-width, 0));
 		--_kdna-pivot-divider-width: var(--kdna-pivot-divider-width-tablet, var(--kdna-pivot-divider-width, var(--_kdna-pivot-row-border-width)));
-		--_kdna-pivot-label-font-size: var(--kdna-pivot-label-font-size-tablet, var(--kdna-pivot-label-font-size, inherit));
-		--_kdna-pivot-label-line-height: var(--kdna-pivot-label-line-height-tablet, var(--kdna-pivot-label-line-height, normal));
-		--_kdna-pivot-label-letter-spacing: var(--kdna-pivot-label-letter-spacing-tablet, var(--kdna-pivot-label-letter-spacing, normal));
+		/* The whole set, not just the responsive three: each ends at the
+		 * Header Row value for this band. See the note by the base
+		 * declarations. */
+		--_kdna-pivot-label-font-family: var(--kdna-pivot-label-font-family, var(--_kdna-table-header-font-family));
+		--_kdna-pivot-label-font-size: var(--kdna-pivot-label-font-size-tablet, var(--kdna-pivot-label-font-size, var(--_kdna-table-header-font-size)));
+		--_kdna-pivot-label-font-weight: var(--kdna-pivot-label-font-weight, var(--_kdna-table-header-font-weight));
+		--_kdna-pivot-label-text-transform: var(--kdna-pivot-label-text-transform, var(--_kdna-table-header-text-transform));
+		--_kdna-pivot-label-font-style: var(--kdna-pivot-label-font-style, var(--_kdna-table-header-font-style));
+		--_kdna-pivot-label-text-decoration: var(--kdna-pivot-label-text-decoration, var(--_kdna-table-header-text-decoration));
+		--_kdna-pivot-label-line-height: var(--kdna-pivot-label-line-height-tablet, var(--kdna-pivot-label-line-height, var(--_kdna-table-header-line-height)));
+		--_kdna-pivot-label-letter-spacing: var(--kdna-pivot-label-letter-spacing-tablet, var(--kdna-pivot-label-letter-spacing, var(--_kdna-table-header-letter-spacing)));
+		--_kdna-pivot-label-word-spacing: var(--kdna-pivot-label-word-spacing, var(--_kdna-table-header-word-spacing));
 		--_kdna-table-border-spacing: var(--kdna-table-border-spacing-tablet, var(--kdna-table-border-spacing, 0));
 
 		/* Sticky */
@@ -832,6 +855,14 @@
 		text-decoration: var(--_kdna-pivot-label-text-decoration);
 		letter-spacing: var(--_kdna-pivot-label-letter-spacing);
 		color: var(--_kdna-pivot-label-color);
+		/* Same as the pivot heading: unset, these take the Header Row's
+		 * own background and padding. Without them, Header Row →
+		 * Background and → Padding did nothing at all in this band —
+		 * the <thead> is hidden and this pseudo-element is the only
+		 * heading on screen. */
+		background: var(--_kdna-pivot-heading-bg);
+		padding: var(--_kdna-pivot-heading-padding);
+		border-radius: var(--_kdna-pivot-heading-radius);
 	}
 
 	/* ── Pivot Rows, tablet band ── */
@@ -1020,12 +1051,25 @@
 	 * specificity with the per-mode rules above, so source order settles
 	 * it. */
 	.kdna-table__wrapper--shortcode[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell {
-		text-align: center;
-		justify-content: center;
+		/*
+		 * Centred by DEFAULT, not by force. This was a hardcoded
+		 * `text-align: center`, which meant Body Cells → Text Alignment
+		 * silently did nothing in any responsive mode: the control was
+		 * there, it stored a value, and no rule ever read it.
+		 *
+		 * Centring is still the right default — a stack of mixed left,
+		 * centre and right reads as broken in one narrow strip — so it
+		 * is the fallback rather than the value. Set the control and it
+		 * wins; leave it alone and nothing changes.
+		 */
+		text-align: var(--_kdna-table-body-text-align, center);
+		justify-content: var(--_kdna-table-body-text-align, center);
 	}
 
 	.kdna-table__wrapper--shortcode[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell::before {
-		text-align: center;
+		/* The heading takes the Header Row alignment, same reasoning as
+		 * the rule above: centred unless the control says otherwise. */
+		text-align: var(--_kdna-table-header-text-align, center);
 		flex: 0 0 auto;
 		margin-right: 0;
 	}
@@ -1117,9 +1161,16 @@
 		--_kdna-table-image-radius: var(--kdna-table-image-radius-mobile, var(--kdna-table-image-radius-tablet, var(--kdna-table-image-radius, 0)));
 		--_kdna-card-border-width: var(--kdna-card-border-width-mobile, var(--kdna-card-border-width-tablet, var(--kdna-card-border-width, 0)));
 		--_kdna-pivot-divider-width: var(--kdna-pivot-divider-width-mobile, var(--kdna-pivot-divider-width-tablet, var(--kdna-pivot-divider-width, var(--_kdna-pivot-row-border-width))));
-		--_kdna-pivot-label-font-size: var(--kdna-pivot-label-font-size-mobile, var(--kdna-pivot-label-font-size-tablet, var(--kdna-pivot-label-font-size, inherit)));
-		--_kdna-pivot-label-line-height: var(--kdna-pivot-label-line-height-mobile, var(--kdna-pivot-label-line-height-tablet, var(--kdna-pivot-label-line-height, normal)));
-		--_kdna-pivot-label-letter-spacing: var(--kdna-pivot-label-letter-spacing-mobile, var(--kdna-pivot-label-letter-spacing-tablet, var(--kdna-pivot-label-letter-spacing, normal)));
+		/* The whole set, as in the tablet band above. */
+		--_kdna-pivot-label-font-family: var(--kdna-pivot-label-font-family, var(--_kdna-table-header-font-family));
+		--_kdna-pivot-label-font-size: var(--kdna-pivot-label-font-size-mobile, var(--kdna-pivot-label-font-size-tablet, var(--kdna-pivot-label-font-size, var(--_kdna-table-header-font-size))));
+		--_kdna-pivot-label-font-weight: var(--kdna-pivot-label-font-weight, var(--_kdna-table-header-font-weight));
+		--_kdna-pivot-label-text-transform: var(--kdna-pivot-label-text-transform, var(--_kdna-table-header-text-transform));
+		--_kdna-pivot-label-font-style: var(--kdna-pivot-label-font-style, var(--_kdna-table-header-font-style));
+		--_kdna-pivot-label-text-decoration: var(--kdna-pivot-label-text-decoration, var(--_kdna-table-header-text-decoration));
+		--_kdna-pivot-label-line-height: var(--kdna-pivot-label-line-height-mobile, var(--kdna-pivot-label-line-height-tablet, var(--kdna-pivot-label-line-height, var(--_kdna-table-header-line-height))));
+		--_kdna-pivot-label-letter-spacing: var(--kdna-pivot-label-letter-spacing-mobile, var(--kdna-pivot-label-letter-spacing-tablet, var(--kdna-pivot-label-letter-spacing, var(--_kdna-table-header-letter-spacing))));
+		--_kdna-pivot-label-word-spacing: var(--kdna-pivot-label-word-spacing, var(--_kdna-table-header-word-spacing));
 		--_kdna-table-border-spacing: var(--kdna-table-border-spacing-mobile, var(--kdna-table-border-spacing-tablet, var(--kdna-table-border-spacing, 0)));
 
 		/* Sticky */
@@ -1186,6 +1237,11 @@
 	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="mobile"] .kdna-table--general .kdna-table__cell--header,
 	.kdna-table__wrapper--shortcode[data-responsive-mode="card_stack"][data-responsive-breakpoint="tablet_and_mobile"] .kdna-table--general .kdna-table__cell--header {
 		background: var(--_kdna-table-header-bg);
+		/* Its own padding, not the card's. The cell rule above gives every
+		 * cell the card padding, and with one class more than that rule
+		 * this is what lets Header Row → Padding reach the heading cell
+		 * instead of being overwritten by it. */
+		padding: var(--_kdna-table-header-padding);
 		/* The heading cell is the top of its card, so only its top corners
 		 * round. Written as the shorthand and then squared off, because
 		 * border-top-left-radius takes at most two values and the card
@@ -1403,13 +1459,26 @@
 	 * per-mode rule above at equal specificity. */
 	.kdna-table__wrapper--shortcode[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="mobile"] .kdna-table__cell,
 	.kdna-table__wrapper--shortcode[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell {
-		text-align: center;
-		justify-content: center;
+		/*
+		 * Centred by DEFAULT, not by force. This was a hardcoded
+		 * `text-align: center`, which meant Body Cells → Text Alignment
+		 * silently did nothing in any responsive mode: the control was
+		 * there, it stored a value, and no rule ever read it.
+		 *
+		 * Centring is still the right default — a stack of mixed left,
+		 * centre and right reads as broken in one narrow strip — so it
+		 * is the fallback rather than the value. Set the control and it
+		 * wins; leave it alone and nothing changes.
+		 */
+		text-align: var(--_kdna-table-body-text-align, center);
+		justify-content: var(--_kdna-table-body-text-align, center);
 	}
 
 	.kdna-table__wrapper--shortcode[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="mobile"] .kdna-table__cell::before,
 	.kdna-table__wrapper--shortcode[data-responsive-mode]:not([data-responsive-mode="none"])[data-responsive-breakpoint="tablet_and_mobile"] .kdna-table__cell::before {
-		text-align: center;
+		/* The heading takes the Header Row alignment, same reasoning as
+		 * the rule above: centred unless the control says otherwise. */
+		text-align: var(--_kdna-table-header-text-align, center);
 		flex: 0 0 auto;
 		margin-right: 0;
 	}

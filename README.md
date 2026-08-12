@@ -453,11 +453,15 @@ does exactly what its name says:
   else. Zero by default, so it never contributes a gap the padding
   control cannot account for.
 
-**Header Row → Padding** reaches the injected column headings. Pivoted,
-the real `<thead>` is hidden and the heading is a `::before` on each
-cell, so it inherits the header row's padding the same way it already
-inherits that row's background and colour. **Pivot Rows: Column Heading
-Padding** overrides it where the two should differ.
+**The whole Header Row section reaches the injected column headings.**
+Pivoted or stacked, the real `<thead>` is hidden and the heading is a
+`::before` on each cell, so it inherits the header row's background,
+colour, typography, padding and alignment. The **Pivot Rows: Column
+Heading** controls override any of it where the two should differ.
+
+Alignment is centred by default in every responsive mode — a stack of
+mixed left, centre and right reads as broken in one narrow strip — but it
+is a default, not a lock: set Text Alignment and it wins.
 
 These carry the card's own defaults rather than defaulting to nothing. A
 mode called Pivot Rows that renders as one undifferentiated column of
@@ -689,6 +693,55 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 - UK English throughout code, labels, and documentation.
 
 ## Changelog
+
+### 3.2.2
+
+**Header Row → Typography did nothing in the responsive modes.** Pivoted
+or stacked, the real `<thead>` is hidden and the column name is a
+`::before` on each cell. That pseudo-element's font chain ended at
+literals — `inherit`, `700`, `normal` — so setting the header size to
+100px moved nothing and nothing on the page said why. Every field now
+falls back to the Header Row's own value: family, size, weight, style,
+transform, decoration, line height, letter spacing, word spacing.
+
+Pivot Rows: Column Heading Typography no longer pre-sets a weight of
+`700`, which was overriding Header Row → Weight. Unset, it inherits;
+set, it still wins.
+
+**Text Alignment did nothing in any responsive mode.** Both the cells and
+the injected headings carried a hardcoded `text-align: center`. Centring
+is still the default — a stack of mixed left, centre and right reads as
+broken in one narrow strip — but it is now the *fallback*, so Header Row
+→ Text Alignment and Body Cells → Text Alignment work when set.
+
+**Card Stack had the same two faults as Pivot Rows.** In the tablet band
+the injected heading had no background and no padding of its own, so
+Header Row → Background and → Padding were inert. At mobile the card
+padding overwrote the heading cell's own padding. Both fixed.
+
+#### The audit that let all of this through
+
+`control-audit.js` sets each control's variable and requires the target
+element to move. It tried each responsive mode only until it found one
+where the selector matched, checked the control *there*, and moved on —
+which in practice meant desktop. A control verified at desktop was
+reported as working even where a responsive-mode rule shadowed it.
+
+It now checks **every** mode in which the selector matches, and each
+result is one of three things:
+
+- **passed** — the named element moves;
+- **relocated** — that element does not move, but something else in the
+  table does. The effect legitimately moves between modes: the heading is
+  a `::before` when pivoted, the card background is on the `<tr>` at
+  tablet and on the cell at mobile;
+- **inert** — nothing in the table moves at all. That is the bug, and it
+  fails the audit unless the pair is listed in `EXPECTED_INERT` with a
+  written reason. There are 32 such entries — no columns to rule a line
+  between once every cell is a full-width block, alternate shading
+  stripped by design in Pivot Rows, and so on.
+
+633 checks, 0 unexpectedly inert.
 
 ### 3.2.1
 
