@@ -918,11 +918,17 @@ class KDNA_Tables_Style_Schema {
 		) ) + self::prefix_labels( esc_html__( 'Pivot Rows', 'kdna-tables' ), array(
 
 			/* Pivot Rows */
+			/*
+			 * No pre-set defaults. A weight of 700 here always won against
+			 * the Header Row weight, so Header Row → Typography → Weight
+			 * could not reach the headings. Unset, every field falls back
+			 * to the header row's own value in the stylesheet, which is
+			 * what this pseudo-element is standing in for.
+			 */
 			'pivot_label_typography' => self::typography_group(
 				esc_html__( 'Column Heading Typography', 'kdna-tables' ),
 				'card_stack',
-				'--kdna-pivot-label',
-				array( 'font_weight' => '700' )
+				'--kdna-pivot-label'
 			),
 
 			'pivot_label_color'     => array(
