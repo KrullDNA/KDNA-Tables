@@ -723,6 +723,23 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 
 ## Changelog
 
+### 3.4.0
+
+- **The caption is outside the table frame now.** It was the first child
+  of the wrapper, which carries the background, border, radius and an
+  `overflow: hidden` that clips the header row's corners to that radius —
+  so the caption was clipped by the same rule, the first letter sliced
+  off by the corner, and painted over the radius on the way past. Caption
+  and wrapper are siblings inside a `.kdna-table__unit` that draws
+  nothing. The style attribute moved to the unit: custom properties
+  inherit, so the wrapper resolves exactly as before and the caption can
+  see the variables too.
+- **New Elementor control: Show Caption**, in Source Table. **Off by
+  default**, because an Elementor page usually has its own Heading widget
+  above the table and a second one appearing on update would be a
+  regression on every existing instance. Shortcodes always show the
+  caption when the table has one.
+
 ### 3.3.3
 
 - **The "editor did not load" notice now diagnoses itself.** It reports
@@ -832,6 +849,12 @@ notice.
 
 An empty caption renders no markup at all — not an empty heading with a
 margin, which would leave an unexplained gap above the table.
+
+**Where it renders.** Outside the wrapper, as a sibling of it inside a
+`.kdna-table__unit`. Inside the wrapper it was clipped by the frame's own
+`overflow: hidden`. Shortcodes always render it when the table has a
+caption; the Elementor widget has a **Show Caption** toggle, off by
+default.
 
 **Accessibility.** Moving the caption out of the table would leave the
 table unnamed, so the heading carries an id and the table is

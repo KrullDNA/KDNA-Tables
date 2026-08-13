@@ -89,11 +89,11 @@ if ( $first_col_header ) {
 ?>
 <?php
 /*
- * Above the scroll container, not inside it: the caption is a heading for
- * the table, not a thing that scrolls sideways with a wide one. Sets
- * $kdna_caption_id, or leaves it empty when there is no caption.
+ * The caption is rendered by the CALLER, outside this wrapper entirely —
+ * the wrapper clips to its own radius and was cutting the first letter
+ * off. All that is left here is the id to point aria-labelledby at.
  */
-include KDNA_TABLES_PATH . 'templates/render-caption.php';
+$kdna_caption_id = isset( $settings['__caption_id'] ) ? (string) $settings['__caption_id'] : '';
 ?>
 <?php if ( $sticky ) : ?><div class="kdna-table__scroll"><?php endif; ?>
 <table class="kdna-table kdna-table--general"<?php

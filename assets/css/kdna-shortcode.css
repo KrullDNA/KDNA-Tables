@@ -78,6 +78,14 @@
  * alignment survives until an Alignment control is actually set.
  */
 
+/*
+ * Declared on the outer unit as well as on the wrapper. The caption is a
+ * sibling of the wrapper now rather than a child — it had to move,
+ * because the wrapper clips to its own radius and was cutting the first
+ * letter off — so it needs these in scope too. Custom properties
+ * inherit, so declaring them on the parent serves both.
+ */
+.kdna-table__unit,
 .kdna-table__wrapper--shortcode {
 	/* Wrapper frame */
 	--_kdna-table-wrapper-bg: var(--kdna-table-wrapper-bg, transparent);
@@ -312,6 +320,17 @@
 
 /* ═══ Wrapper frame ═════════════════════════════════════════════════ */
 
+/*
+ * The unit is caption + framed table. It draws nothing itself — no
+ * background, no border, no clipping — so the caption sits outside
+ * everything the wrapper draws and clips. The wrapper's overflow:hidden
+ * is what was cutting the first letter off a caption inside it.
+ */
+.kdna-table__unit {
+	display: block;
+}
+
+
 .kdna-table__wrapper--shortcode {
 	box-sizing: border-box;
 	background: var(--_kdna-table-wrapper-bg);
@@ -409,6 +428,7 @@
  * markup from before the change — or an Elementor widget instance that
  * has not been re-rendered — does not lose its styling mid-upgrade.
  */
+.kdna-table__unit > .kdna-table__caption,
 .kdna-table__wrapper--shortcode .kdna-table__caption,
 .kdna-table__wrapper--shortcode .kdna-table--general .kdna-table__caption {
 	display: block;
@@ -739,6 +759,7 @@
 
 @media (max-width: 1024px) {
 
+	.kdna-table__unit,
 	.kdna-table__wrapper--shortcode {
 		/* Wrapper */
 		--_kdna-table-wrapper-padding: var(--kdna-table-wrapper-padding-tablet, var(--kdna-table-wrapper-padding, 0));
@@ -1135,6 +1156,7 @@
 
 @media (max-width: 767px) {
 
+	.kdna-table__unit,
 	.kdna-table__wrapper--shortcode {
 		/* Wrapper */
 		--_kdna-table-wrapper-padding: var(--kdna-table-wrapper-padding-mobile, var(--kdna-table-wrapper-padding-tablet, var(--kdna-table-wrapper-padding, 0)));

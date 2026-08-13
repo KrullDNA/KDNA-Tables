@@ -38,6 +38,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $kdna_caption = isset( $settings['caption'] ) ? trim( (string) $settings['caption'] ) : '';
 
+/*
+ * Opt-in on the Elementor widget, always on for shortcodes. An Elementor
+ * page usually already has a Heading widget above the table, so a second
+ * one appearing the day the plugin updates would be a regression on every
+ * existing instance. A shortcode has no such editor, so it shows the
+ * caption whenever the table has one. Both callers set this explicitly;
+ * absent, it does not show.
+ */
+if ( empty( $settings['show_caption'] ) ) {
+	$kdna_caption_id = '';
+	return;
+}
+
 if ( '' === $kdna_caption ) {
 	// Nothing to show. $kdna_caption_id stays unset, and the table that
 	// includes this omits aria-labelledby rather than pointing at an
