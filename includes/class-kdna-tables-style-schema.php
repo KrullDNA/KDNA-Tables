@@ -475,16 +475,93 @@ class KDNA_Tables_Style_Schema {
 			),
 
 			'caption_spacing'    => array(
-				'label'      => esc_html__( 'Spacing Below', 'kdna-tables' ),
+				'label'       => esc_html__( 'Space Below', 'kdna-tables' ),
+				'section'     => 'caption',
+				'type'        => 'slider',
+				'css_var'     => '--kdna-table-caption-spacing',
+				'units'       => array( 'px' ),
+				'min'         => 0,
+				'max'         => 100,
+				'step'        => 1,
+				'responsive'  => true,
+				'default'     => array( 'size' => 12, 'unit' => 'px' ),
+				'description' => esc_html__( 'The gap between the caption and the top of the table.', 'kdna-tables' ),
+			),
+
+			'caption_margin_top' => array(
+				'label'      => esc_html__( 'Space Above', 'kdna-tables' ),
 				'section'    => 'caption',
 				'type'       => 'slider',
-				'css_var'    => '--kdna-table-caption-spacing',
-				'units'      => array( 'px' ),
+				'css_var'    => '--kdna-table-caption-margin-top',
+				'units'      => array( 'px', 'em', 'rem' ),
 				'min'        => 0,
-				'max'        => 100,
+				'max'        => 200,
 				'step'       => 1,
 				'responsive' => true,
-				'default'    => array( 'size' => 12, 'unit' => 'px' ),
+				'default'    => array( 'size' => 0, 'unit' => 'px' ),
+			),
+
+			'caption_padding'    => array(
+				'label'      => esc_html__( 'Padding', 'kdna-tables' ),
+				'section'    => 'caption',
+				'type'       => 'dimensions',
+				'css_var'    => '--kdna-table-caption-padding',
+				'units'      => array( 'px', 'em', '%' ),
+				'responsive' => true,
+				'default'    => self::dimensions( 0, 0, 0, 0, 'px' ),
+			),
+
+			'caption_background' => self::background_group(
+				esc_html__( 'Background', 'kdna-tables' ),
+				'caption',
+				'--kdna-table-caption-bg',
+				'transparent'
+			),
+
+			'caption_border'     => self::border_group(
+				esc_html__( 'Border', 'kdna-tables' ),
+				'caption',
+				'--kdna-table-caption-border'
+			),
+
+			'caption_radius'     => array(
+				'label'      => esc_html__( 'Border Radius', 'kdna-tables' ),
+				'section'    => 'caption',
+				'type'       => 'dimensions',
+				'css_var'    => '--kdna-table-caption-radius',
+				'units'      => array( 'px', '%' ),
+				'responsive' => true,
+				'default'    => self::dimensions( 0, 0, 0, 0, 'px' ),
+			),
+
+			/*
+			 * ── Which element the heading is ─────────────────────────
+			 *
+			 * The caption is rendered above the table as a real heading,
+			 * so the level is a content decision rather than a style one:
+			 * a page with an <h1> and this table under an <h2> wants an
+			 * <h3> here, and getting that wrong is an outline error a
+			 * screen reader and a search engine both notice.
+			 *
+			 * Not responsive: an element cannot change per breakpoint.
+			 */
+			'caption_tag'        => array(
+				'label'       => esc_html__( 'Heading Level', 'kdna-tables' ),
+				'section'     => 'caption',
+				'type'        => 'select',
+				'css_var'     => null,
+				'responsive'  => false,
+				'default'     => 'h3',
+				'options'     => array(
+					'h2'  => esc_html__( 'Heading 2', 'kdna-tables' ),
+					'h3'  => esc_html__( 'Heading 3', 'kdna-tables' ),
+					'h4'  => esc_html__( 'Heading 4', 'kdna-tables' ),
+					'h5'  => esc_html__( 'Heading 5', 'kdna-tables' ),
+					'h6'  => esc_html__( 'Heading 6', 'kdna-tables' ),
+					'p'   => esc_html__( 'Paragraph', 'kdna-tables' ),
+					'div' => esc_html__( 'Plain block (no heading)', 'kdna-tables' ),
+				),
+				'description' => esc_html__( 'Pick the level that fits the page it sits on. The table is labelled by this heading either way.', 'kdna-tables' ),
 			),
 		);
 	}

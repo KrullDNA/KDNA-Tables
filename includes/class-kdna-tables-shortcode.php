@@ -235,6 +235,15 @@ class KDNA_Tables_Shortcode {
 		// table in the horizontal scroll container.
 		$settings['__sticky_first_column'] = $sticky;
 
+		/*
+		 * The caption heading's element is a saved style setting rather
+		 * than a shortcode attribute — which level fits the page is a
+		 * decision about the page, not about one shortcode. Passed through
+		 * to the render partial, which allow-lists it again before it goes
+		 * anywhere near a tag name.
+		 */
+		$settings['caption_tag'] = isset( $saved['caption_tag'] ) ? (string) $saved['caption_tag'] : 'h3';
+
 		self::enqueue_assets( $settings['table_type'], $responsive_mode, $sticky );
 
 		$render_instance = self::cell_renderer();

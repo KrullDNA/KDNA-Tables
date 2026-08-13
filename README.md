@@ -251,6 +251,12 @@ being spread across Header Row, First Column and Body Cells.
 | Table Layout → Border Collapse | `border_collapse` | `--kdna-table-border-collapse` |
 | Table Layout → Border Spacing | `border_spacing` | `--kdna-table-border-spacing` |
 | Table Wrapper → Caption Typography | `caption_typography` | `--kdna-table-caption-font-*` |
+| Caption → Padding | `caption_padding` | `--kdna-table-caption-padding` |
+| Caption → Background | `caption_background` | `--kdna-table-caption-bg` |
+| Caption → Border | `caption_border` | `--kdna-table-caption-border-style` / `-width` / `-color` |
+| Caption → Border Radius | `caption_radius` | `--kdna-table-caption-radius` |
+| Caption → Space Above | `caption_margin_top` | `--kdna-table-caption-margin-top` |
+| Caption → Heading Level | `caption_tag` | *(none — chooses the element)* |
 | Table Wrapper → Caption Colour | `caption_color` | `--kdna-table-caption-color` |
 | Table Wrapper → Caption Alignment | `caption_alignment` | `--kdna-table-caption-align` |
 | Table Wrapper → Caption Spacing | `caption_spacing` | `--kdna-table-caption-spacing` |
@@ -716,6 +722,48 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 - UK English throughout code, labels, and documentation.
 
 ## Changelog
+
+### 3.3.0
+
+**The caption is a heading above the table.** It was a `<caption>` element
+inside the `<table>`, which is very hard to style and very easy to lose:
+it cannot take a margin separating it from the frame, it sits inside the
+wrapper's overflow clipping, and in the responsive modes the table itself
+becomes `display: block` or a grid — at which point the caption's layout
+is whatever the browser decides.
+
+**It was also dropped entirely on comparison tables.** The comparison
+editor collected a caption, saved it, and `render-comparison.php` never
+output one. Typed, stored and invisible — which is exactly what "the
+caption doesn't save" looks like from the outside. Both table types now
+render the same partial.
+
+**Full style controls**, all responsive except the heading level:
+Typography, Colour, Alignment, Padding, Background, Border, Border
+Radius, Space Above, Space Below, and **Heading Level** — `h2` to `h6`,
+`p`, or a plain block. The level is a content decision rather than a
+style one: a table under an `<h2>` wants an `<h3>` here, and getting it
+wrong is an outline error a screen reader and a search engine both
+notice.
+
+An empty caption renders no markup at all — not an empty heading with a
+margin, which would leave an unexplained gap above the table.
+
+**Accessibility.** Moving the caption out of the table would leave the
+table unnamed, so the heading carries an id and the table is
+`aria-labelledby` it. A screen reader announces the same text it did
+before, once. The stored heading level is allow-listed again at render,
+because it is interpolated into a tag name and a sanitiser on the way in
+is not the right place to rely on for that.
+
+**On the caption not saving:** the save path itself checks out. The
+editor writes the caption into the state input on every keystroke and
+again on submit, and `save_post` reads it, sanitises it and stores it — a
+round trip through the real save handler and the real seed builder keeps
+its value, changes it, clears it, and survives a quick-edit save with no
+editor state. If it still goes missing on a general table after
+installing this, that is a different fault from the one fixed here and
+worth reporting with the table type.
 
 ### 3.2.4
 

@@ -105,6 +105,13 @@
 	--_kdna-table-caption-color: var(--kdna-table-caption-color, var(--_kdna-table-body-color));
 	--_kdna-table-caption-align: var(--kdna-table-caption-align, left);
 	--_kdna-table-caption-spacing: var(--kdna-table-caption-spacing, 12px);
+	--_kdna-table-caption-margin-top: var(--kdna-table-caption-margin-top, 0);
+	--_kdna-table-caption-padding: var(--kdna-table-caption-padding, 0);
+	--_kdna-table-caption-bg: var(--kdna-table-caption-bg, transparent);
+	--_kdna-table-caption-radius: var(--kdna-table-caption-radius, 0);
+	--_kdna-table-caption-border-style: var(--kdna-table-caption-border-style, none);
+	--_kdna-table-caption-border-width: var(--kdna-table-caption-border-width, 0);
+	--_kdna-table-caption-border-color: var(--kdna-table-caption-border-color, #e5e7eb);
 	--_kdna-table-caption-font-family: var(--kdna-table-caption-font-family, inherit);
 	--_kdna-table-caption-font-size: var(--kdna-table-caption-font-size, inherit);
 	--_kdna-table-caption-font-weight: var(--kdna-table-caption-font-weight, 600);
@@ -392,9 +399,31 @@
 
 /* ═══ Caption ═══════════════════════════════════════════════════════ */
 
+/*
+ * The caption is a heading above the table now, not a <caption> inside
+ * it, so this selector no longer names the table: it is a direct child of
+ * the wrapper and belongs to both table types. See render-caption.php for
+ * why it moved.
+ *
+ * The old selector is kept alongside so a page still serving cached
+ * markup from before the change — or an Elementor widget instance that
+ * has not been re-rendered — does not lose its styling mid-upgrade.
+ */
+.kdna-table__wrapper--shortcode .kdna-table__caption,
 .kdna-table__wrapper--shortcode .kdna-table--general .kdna-table__caption {
+	display: block;
 	caption-side: top;
-	padding: 0;
+	box-sizing: border-box;
+	padding: var(--_kdna-table-caption-padding);
+	background: var(--_kdna-table-caption-bg);
+	border-radius: var(--_kdna-table-caption-radius);
+	/* Longhands, not the shorthand: the width is a four-sided dimensions
+	 * value, which the border shorthand rejects outright — taking the
+	 * whole declaration with it. */
+	border-style: var(--_kdna-table-caption-border-style);
+	border-width: var(--_kdna-table-caption-border-width);
+	border-color: var(--_kdna-table-caption-border-color);
+	margin-top: var(--_kdna-table-caption-margin-top);
 	margin-bottom: var(--_kdna-table-caption-spacing);
 	color: var(--_kdna-table-caption-color);
 	text-align: var(--_kdna-table-caption-align);
@@ -723,6 +752,10 @@
 		/* Caption */
 		--_kdna-table-caption-align: var(--kdna-table-caption-align-tablet, var(--kdna-table-caption-align, left));
 		--_kdna-table-caption-spacing: var(--kdna-table-caption-spacing-tablet, var(--kdna-table-caption-spacing, 12px));
+		--_kdna-table-caption-margin-top: var(--kdna-table-caption-margin-top-tablet, var(--kdna-table-caption-margin-top, 0));
+		--_kdna-table-caption-padding: var(--kdna-table-caption-padding-tablet, var(--kdna-table-caption-padding, 0));
+		--_kdna-table-caption-radius: var(--kdna-table-caption-radius-tablet, var(--kdna-table-caption-radius, 0));
+		--_kdna-table-caption-border-width: var(--kdna-table-caption-border-width-tablet, var(--kdna-table-caption-border-width, 0));
 		--_kdna-table-caption-font-size: var(--kdna-table-caption-font-size-tablet, var(--kdna-table-caption-font-size, inherit));
 		--_kdna-table-caption-line-height: var(--kdna-table-caption-line-height-tablet, var(--kdna-table-caption-line-height, normal));
 		--_kdna-table-caption-letter-spacing: var(--kdna-table-caption-letter-spacing-tablet, var(--kdna-table-caption-letter-spacing, normal));
@@ -1115,6 +1148,10 @@
 		/* Caption */
 		--_kdna-table-caption-align: var(--kdna-table-caption-align-mobile, var(--kdna-table-caption-align-tablet, var(--kdna-table-caption-align, left)));
 		--_kdna-table-caption-spacing: var(--kdna-table-caption-spacing-mobile, var(--kdna-table-caption-spacing-tablet, var(--kdna-table-caption-spacing, 12px)));
+		--_kdna-table-caption-margin-top: var(--kdna-table-caption-margin-top-mobile, var(--kdna-table-caption-margin-top-tablet, var(--kdna-table-caption-margin-top, 0)));
+		--_kdna-table-caption-padding: var(--kdna-table-caption-padding-mobile, var(--kdna-table-caption-padding-tablet, var(--kdna-table-caption-padding, 0)));
+		--_kdna-table-caption-radius: var(--kdna-table-caption-radius-mobile, var(--kdna-table-caption-radius-tablet, var(--kdna-table-caption-radius, 0)));
+		--_kdna-table-caption-border-width: var(--kdna-table-caption-border-width-mobile, var(--kdna-table-caption-border-width-tablet, var(--kdna-table-caption-border-width, 0)));
 		--_kdna-table-caption-font-size: var(--kdna-table-caption-font-size-mobile, var(--kdna-table-caption-font-size-tablet, var(--kdna-table-caption-font-size, inherit)));
 		--_kdna-table-caption-line-height: var(--kdna-table-caption-line-height-mobile, var(--kdna-table-caption-line-height-tablet, var(--kdna-table-caption-line-height, normal)));
 		--_kdna-table-caption-letter-spacing: var(--kdna-table-caption-letter-spacing-mobile, var(--kdna-table-caption-letter-spacing-tablet, var(--kdna-table-caption-letter-spacing, normal)));

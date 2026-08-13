@@ -87,11 +87,23 @@ if ( $first_col_header ) {
 	}
 }
 ?>
+<?php
+/*
+ * Above the scroll container, not inside it: the caption is a heading for
+ * the table, not a thing that scrolls sideways with a wide one. Sets
+ * $kdna_caption_id, or leaves it empty when there is no caption.
+ */
+include KDNA_TABLES_PATH . 'templates/render-caption.php';
+?>
 <?php if ( $sticky ) : ?><div class="kdna-table__scroll"><?php endif; ?>
-<table class="kdna-table kdna-table--general">
-	<?php if ( '' !== $caption ) : ?>
-		<caption class="kdna-table__caption"><?php echo esc_html( $caption ); ?></caption>
-	<?php endif; ?>
+<table class="kdna-table kdna-table--general"<?php
+	// The caption used to be a <caption> inside this table, which is what
+	// named it. It is a heading above the table now, so the table points
+	// at it instead — same announcement, once.
+	if ( ! empty( $kdna_caption_id ) ) {
+		printf( ' aria-labelledby="%s"', esc_attr( $kdna_caption_id ) );
+	}
+?>>
 
 	<colgroup>
 		<?php foreach ( $columns as $column ) :
