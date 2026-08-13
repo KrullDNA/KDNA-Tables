@@ -76,8 +76,20 @@ $feature_count = count( $feature_rows );
 $table_style   = sprintf( '--kdna-items-count: %d; --kdna-feature-count: %d;', (int) $item_count, (int) $feature_count );
 $sticky        = ! empty( $settings['__sticky_first_column'] );
 ?>
+<?php
+/*
+ * A comparison table collected a caption in the editor, saved it, and
+ * dropped it here — this template never rendered one. Same partial as
+ * the general table now, so the two behave alike.
+ */
+include KDNA_TABLES_PATH . 'templates/render-caption.php';
+?>
 <?php if ( $sticky ) : ?><div class="kdna-table__scroll"><?php endif; ?>
-<table class="<?php echo esc_attr( implode( ' ', $table_classes ) ); ?>" data-item-count="<?php echo (int) $item_count; ?>" style="<?php echo esc_attr( $table_style ); ?>">
+<table class="<?php echo esc_attr( implode( ' ', $table_classes ) ); ?>" data-item-count="<?php echo (int) $item_count; ?>" style="<?php echo esc_attr( $table_style ); ?>"<?php
+	if ( ! empty( $kdna_caption_id ) ) {
+		printf( ' aria-labelledby="%s"', esc_attr( $kdna_caption_id ) );
+	}
+?>>
 	<colgroup>
 		<col class="kdna-comparison__col kdna-comparison__col--label" />
 		<?php for ( $col_index = 1; $col_index <= $item_count; $col_index++ ) : ?>
