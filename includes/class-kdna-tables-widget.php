@@ -167,6 +167,34 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			)
 		);
 
+		/*
+		 * ── Off by default in the widget, on for the shortcode ────────
+		 *
+		 * The caption renders as a heading above the table. On a page
+		 * built in Elementor that heading is usually already there as a
+		 * Heading widget, so a second one appearing the day the plugin
+		 * updates would be a regression on every existing instance. The
+		 * shortcode has no such editor to put a heading in, so it shows
+		 * the caption whenever the table has one.
+		 *
+		 * Rendering is decided by 'show_caption' in the settings array,
+		 * which both callers set explicitly — see render-caption.php. A
+		 * default of "not set means do not show" is what keeps existing
+		 * widget instances rendering exactly as they did.
+		 */
+		$this->add_control(
+			'caption_show',
+			array(
+				'label'        => esc_html__( 'Show Caption', 'kdna-tables' ),
+				'type'         => \Elementor\Controls_Manager::SWITCHER,
+				'label_on'     => esc_html__( 'Show', 'kdna-tables' ),
+				'label_off'    => esc_html__( 'Hide', 'kdna-tables' ),
+				'return_value' => 'yes',
+				'default'      => '',
+				'description'  => esc_html__( "Renders the table's caption as a heading above it. Off by default here, because an Elementor page usually has its own heading above the table. Shortcodes always show it when the table has one.", 'kdna-tables' ),
+			)
+		);
+
 		$this->add_control(
 			'selected_table_manage_link',
 			array(
@@ -3676,20 +3704,38 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		// table in the horizontal scroll container.
 		$settings['__sticky_first_column'] = $sticky_first_column;
 
+		// The caption heading is opt-in here and always on for shortcodes.
+		// See the control's note in section_source.
+		$settings['show_caption'] = ( isset( $settings['caption_show'] ) && 'yes' === $settings['caption_show'] );
+
 		$attr_string = '';
 		foreach ( $wrapper_attrs as $name => $value ) {
 			$attr_string .= sprintf( ' %s="%s"', esc_attr( $name ), esc_attr( $value ) );
 		}
 
+		/*
+		 * Caption outside the frame — the wrapper clips to its own radius
+		 * and would slice the first letter off. See the note in the
+		 * shortcode's render() for the full reasoning; the structure is
+		 * the same on both paths so one stylesheet serves them.
+		 */
+		$kdna_caption_id = '';
+		ob_start();
+		include KDNA_TABLES_PATH . 'templates/render-caption.php';
+		$caption_html             = ob_get_clean();
+		$settings['__caption_id'] = $kdna_caption_id;
 		?>
-		<div<?php echo $attr_string; ?>>
-			<?php
-			if ( 'general' === $table_type ) {
-				include KDNA_TABLES_PATH . 'templates/render-general.php';
-			} elseif ( 'comparison' === $table_type ) {
-				include KDNA_TABLES_PATH . 'templates/render-comparison.php';
-			}
-			?>
+		<div class="kdna-table__unit">
+			<?php echo $caption_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built and escaped in render-caption.php. ?>
+			<div<?php echo $attr_string; ?>>
+				<?php
+				if ( 'general' === $table_type ) {
+					include KDNA_TABLES_PATH . 'templates/render-general.php';
+				} elseif ( 'comparison' === $table_type ) {
+					include KDNA_TABLES_PATH . 'templates/render-comparison.php';
+				}
+				?>
+			</div>
 		</div>
 		<?php
 	}

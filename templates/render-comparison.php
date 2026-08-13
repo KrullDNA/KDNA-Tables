@@ -78,11 +78,11 @@ $sticky        = ! empty( $settings['__sticky_first_column'] );
 ?>
 <?php
 /*
- * A comparison table collected a caption in the editor, saved it, and
- * dropped it here — this template never rendered one. Same partial as
- * the general table now, so the two behave alike.
+ * The caption is rendered by the CALLER, outside this wrapper entirely —
+ * the wrapper clips to its own radius and was cutting the first letter
+ * off. All that is left here is the id to point aria-labelledby at.
  */
-include KDNA_TABLES_PATH . 'templates/render-caption.php';
+$kdna_caption_id = isset( $settings['__caption_id'] ) ? (string) $settings['__caption_id'] : '';
 ?>
 <?php if ( $sticky ) : ?><div class="kdna-table__scroll"><?php endif; ?>
 <table class="<?php echo esc_attr( implode( ' ', $table_classes ) ); ?>" data-item-count="<?php echo (int) $item_count; ?>" style="<?php echo esc_attr( $table_style ); ?>"<?php

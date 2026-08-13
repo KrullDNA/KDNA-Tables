@@ -282,6 +282,39 @@ class KDNA_Tables_Shortcode {
 		}
 
 		ob_start();
+
+		/*
+		 * ── Caption outside the frame ─────────────────────────────────
+		 *
+		 * The wrapper carries the background, border, radius and an
+		 * overflow:hidden that clips the header row's corners to that
+		 * radius. A caption inside it was clipped by the same rule — the
+		 * first letter sliced off by the corner — and painted over the
+		 * radius on the way past.
+		 *
+		 * So the two are siblings inside a plain unit that draws nothing.
+		 * The style attribute goes on the unit rather than the wrapper:
+		 * custom properties inherit, so the wrapper and everything in it
+		 * still resolve exactly as before, and the caption can see them
+		 * too.
+		 */
+		$settings['show_caption'] = true;
+		$kdna_caption_id          = '';
+
+		$unit_attrs = ' class="kdna-table__unit"';
+		if ( '' !== $style_attribute ) {
+			$unit_attrs .= sprintf( ' style="%s"', esc_attr( $style_attribute ) );
+			unset( $wrapper_attrs['style'] );
+			$attr_string = '';
+			foreach ( $wrapper_attrs as $name => $value ) {
+				$attr_string .= sprintf( ' %s="%s"', esc_attr( $name ), esc_attr( $value ) );
+			}
+		}
+
+		echo '<div' . $unit_attrs . '>';
+		include KDNA_TABLES_PATH . 'templates/render-caption.php';
+		$settings['__caption_id'] = $kdna_caption_id;
+
 		echo '<div' . $attr_string . '>';
 		// Wrap in a closure so the include scope sees both $settings and
 		// $this bound to the cell renderer, which is what the templates
@@ -294,7 +327,7 @@ class KDNA_Tables_Shortcode {
 		};
 		$bound = Closure::bind( $render, $render_instance, get_class( $render_instance ) );
 		$bound();
-		echo '</div>';
+		echo '</div></div>';
 		return ob_get_clean();
 	}
 
