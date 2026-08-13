@@ -1477,11 +1477,38 @@
 	 * warning stays up and nothing half-initialises.
 	 */
 	function bootAlpine( url ) {
-		if ( window.Alpine || window.__kdnaAlpineBooting || ! url ) { return; }
+		if ( ! url || window.__kdnaAlpineBooting ) { return; }
 		window.__kdnaAlpineBooting = true;
-		var el = document.createElement( 'script' );
-		el.src = url;
-		( document.head || document.documentElement ).appendChild( el );
+
+		/*
+		 * Deferred to DOMContentLoaded rather than fired here, and that
+		 * is the whole point of it.
+		 *
+		 * On the table edit screen TWO of our scripts run: the editor and
+		 * the per-table styles panel. Injecting immediately means
+		 * whichever executes first starts Alpine, and an injected script
+		 * can execute in the gap between two classic ones — so Alpine
+		 * could still walk the DOM before the second script had
+		 * registered its component. That is the same race in a new
+		 * costume.
+		 *
+		 * By DOMContentLoaded every classic script in the document has
+		 * executed, so every component is registered before Alpine has
+		 * any chance to look for one. The flag above makes it idempotent,
+		 * so it does not matter which of the two gets here first.
+		 */
+		var inject = function () {
+			if ( window.Alpine ) { return; }
+			var el = document.createElement( 'script' );
+			el.src = url;
+			( document.head || document.documentElement ).appendChild( el );
+		};
+
+		if ( 'loading' === document.readyState ) {
+			document.addEventListener( 'DOMContentLoaded', inject );
+		} else {
+			inject();
+		}
 	}
 
 	bootAlpine( ( window.KDNATablesStyles || {} ).alpineUrl );
