@@ -281,6 +281,10 @@ class KDNA_Tables_Data {
 
 		// Responsive controls.
 		$pass_through = array(
+			// Carried so anything reading $settings sees the same answer
+			// the widget's render does. The widget sets 'show_caption'
+			// from this; without it here the key is absent downstream.
+			'caption_show',
 			'responsive_mode',
 			'responsive_breakpoint',
 			'pivot_label_position',

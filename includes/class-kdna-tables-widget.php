@@ -3704,9 +3704,16 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 		// table in the horizontal scroll container.
 		$settings['__sticky_first_column'] = $sticky_first_column;
 
-		// The caption heading is opt-in here and always on for shortcodes.
-		// See the control's note in section_source.
-		$settings['show_caption'] = ( isset( $settings['caption_show'] ) && 'yes' === $settings['caption_show'] );
+		/*
+		 * Read from $widget_settings, NOT from $settings.
+		 *
+		 * $settings is rebuilt by KDNA_Tables_Data from the table's meta
+		 * plus an explicit pass-through list of widget controls — it is
+		 * not the Elementor settings array. A control missing from that
+		 * list simply is not there, which is why the toggle switched on
+		 * and nothing happened. $widget_settings is the real thing.
+		 */
+		$settings['show_caption'] = ( isset( $widget_settings['caption_show'] ) && 'yes' === $widget_settings['caption_show'] );
 
 		$attr_string = '';
 		foreach ( $wrapper_attrs as $name => $value ) {

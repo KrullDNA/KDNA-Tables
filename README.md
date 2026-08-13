@@ -723,6 +723,25 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 
 ## Changelog
 
+### 3.4.1
+
+**The Show Caption toggle did nothing.** The widget read
+`$settings['caption_show']`, but `$settings` is not the Elementor
+settings array — `KDNA_Tables_Data` rebuilds it from the table's meta
+plus an *explicit pass-through list* of widget controls, and a control
+missing from that list simply is not in it. The toggle stored `yes` and
+the render read null.
+
+The widget reads `$widget_settings` now, which is the real thing, and
+`caption_show` is in the pass-through list so anything downstream sees
+the same answer.
+
+Worth naming, because it is the fourth time this shape has appeared here:
+every earlier caption test drove the render partial directly with
+`show_caption` already set. They proved the partial works and said
+nothing about whether anything sets it. The new checks drive the toggle
+the way the widget does — Elementor settings in, markup out.
+
 ### 3.4.0
 
 - **The caption is outside the table frame now.** It was the first child
