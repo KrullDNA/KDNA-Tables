@@ -111,6 +111,23 @@
 		} catch ( e ) { /* old browser, ignore */ }
 	}
 
+	/*
+	 * Clear the "editor did not load" notice, but only on a real boot.
+	 *
+	 * Real means the seed arrived: state.post_id is the id the server put
+	 * in it, and the fallback state carries 0 — which is exactly what the
+	 * save handler refuses. So if we are on the fallback, the warning is
+	 * telling the truth and it stays up.
+	 */
+	function confirmBoot( self ) {
+		var seeded = self.state && parseInt( self.state.post_id, 10 ) > 0;
+		if ( ! seeded ) { return; }
+		[ 'kdna-editor-boot-warning', 'kdna-editor-boot-counts' ].forEach( function ( id ) {
+			var el = document.getElementById( id );
+			if ( el && el.parentNode ) { el.parentNode.removeChild( el ); }
+		} );
+	}
+
 	function bindFormFlush( self ) {
 		var form = document.getElementById( 'post' );
 		if ( form ) {
@@ -291,6 +308,7 @@
 					self.queueSerialise();
 				} );
 				bindFormFlush( this );
+				confirmBoot( this );
 				this.serialise();
 				loadIconCatalogue( function ( catalogue ) {
 					self.iconCatalogue = catalogue || { libraries: [], icons: [] };
@@ -786,6 +804,7 @@
 					self.queueSerialise();
 				} );
 				bindFormFlush( this );
+				confirmBoot( this );
 				this.serialise();
 				loadIconCatalogue( function ( catalogue ) {
 					self.iconCatalogue = catalogue || { libraries: [], icons: [] };

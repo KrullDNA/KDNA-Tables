@@ -723,6 +723,39 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 
 ## Changelog
 
+### 3.3.1
+
+**A table editor that fails to load can no longer destroy the table.**
+
+Everything in the Table data box is Alpine. If its scripts do not run —
+blocked, reordered by an optimiser, 404ing behind a CDN — the markup
+still renders, but Alpine falls back to `defaultGeneralState()`: one
+empty column, one empty row, both header checkboxes off. That is
+indistinguishable from a brand new table. Pressing Update on it wrote the
+blank over the real one, silently and completely.
+
+Two changes, either of which is enough on its own:
+
+- **The save refuses a state the editor never seeded.** The seed carries
+  the post id; the fallback state carries `0`. A mismatch is an exact
+  statement that this state did not come from this post's data, so
+  nothing is written and the refusal is recorded in a transient. It is
+  deliberately not a "did the table shrink?" heuristic — deleting rows is
+  something people do on purpose, and a guard that second-guesses that
+  loses edits instead of saving them. Emptying a table on purpose still
+  works; so does a state arriving for the wrong post id, which is refused
+  for the same reason.
+- **The editor says when it has not loaded.** A notice sits in the page
+  from the start, along with the row and column counts read straight from
+  the database, and the editor removes it only on a boot that actually
+  received the seed. The failure state is now the one that talks.
+
+If you see that notice: your data is safe and still in the database, and
+the screen simply cannot show it. Hard-refresh first. If it persists,
+look in the browser console for an error on `kdna-admin.js` — the
+signature is `kdnaTablesGeneralEditor is not defined` — and disable
+JavaScript optimisation, deferral, delay or minification for the admin.
+
 ### 3.3.0
 
 **The caption is a heading above the table.** It was a `<caption>` element
