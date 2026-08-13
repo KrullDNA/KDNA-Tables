@@ -131,6 +131,43 @@ class KDNA_Tables_Editor {
 			esc_attr( self::STATE_INPUT )
 		);
 
+		/*
+		 * ── Say so when the editor has not booted ─────────────────────
+		 *
+		 * Everything below this is Alpine. If its scripts do not run —
+		 * blocked, reordered by an optimiser, 404ing behind a CDN — the
+		 * markup still renders, but as an empty grid that looks exactly
+		 * like a brand new table. Someone then presses Update on what
+		 * they reasonably believe is their table.
+		 *
+		 * This notice is in the page from the start and removed by the
+		 * editor on a successful boot, so the failure state is the one
+		 * that talks. The save handler refuses that post regardless; this
+		 * is so nobody has to find that out by losing an afternoon.
+		 */
+		printf(
+			'<div class="notice notice-error kdna-editor__boot-warning" id="kdna-editor-boot-warning">'
+			. '<p><strong>%1$s</strong></p><p>%2$s</p><p>%3$s</p></div>',
+			esc_html__( 'The table editor did not load.', 'kdna-tables' ),
+			esc_html__( 'Your table data is safe and still in the database — this screen just cannot show it. Do not press Update: a save from here is refused rather than allowed to overwrite your rows, but there is no reason to try.', 'kdna-tables' ),
+			esc_html__( 'This is almost always a script that failed to load or ran out of order. Reload with a hard refresh first; if it persists, check the browser console for an error on kdna-admin.js and disable JavaScript optimisation, deferral or minification for the admin.', 'kdna-tables' )
+		);
+
+		$counts = self::stored_counts( $post->ID );
+		if ( $counts ) {
+			printf(
+				'<p class="kdna-editor__boot-counts" id="kdna-editor-boot-counts">%s</p>',
+				esc_html(
+					sprintf(
+						/* translators: 1: number of rows, 2: number of columns. */
+						__( 'Stored in the database right now: %1$d rows, %2$d columns.', 'kdna-tables' ),
+						$counts['rows'],
+						$counts['columns']
+					)
+				)
+			);
+		}
+
 		if ( 'general' === $type ) {
 			include KDNA_TABLES_PATH . 'templates/admin-editor-general.php';
 			return;
@@ -222,7 +259,16 @@ class KDNA_Tables_Editor {
 			true
 		);
 
-		wp_enqueue_script(
+		/*
+		 * Alpine is NOT enqueued here. kdna-admin.js injects it once it
+		 * has registered its components, so the ordering is structural
+		 * rather than a dependency any script optimiser can reorder. The
+		 * URL is handed over in the bootstrap object below.
+		 *
+		 * wp_register_script keeps the handle known — the styles page
+		 * looks for it — without putting a second racing tag on the page.
+		 */
+		wp_register_script(
 			self::SCRIPT_HANDLE_ALPINE,
 			KDNA_TABLES_URL . 'assets/js/alpine.min.js',
 			array( self::SCRIPT_HANDLE_ADMIN ),
@@ -247,11 +293,39 @@ class KDNA_Tables_Editor {
 			self::SCRIPT_HANDLE_ADMIN,
 			'window.KDNATablesAdmin = ' . wp_json_encode(
 				array(
-					'iconsUrl' => KDNA_TABLES_URL . 'assets/js/kdna-icons.json?ver=' . KDNA_TABLES_VERSION,
+					'iconsUrl'  => KDNA_TABLES_URL . 'assets/js/kdna-icons.json?ver=' . KDNA_TABLES_VERSION,
+					'alpineUrl' => KDNA_TABLES_URL . 'assets/js/alpine.min.js?ver=3.15.12',
 				)
 			) . ';',
 			'before'
 		);
+	}
+
+	/**
+	 * Row and column counts straight from meta, for the boot warning.
+	 *
+	 * Read here rather than taken from the editor state, because the
+	 * whole point is to say what is in the database when the editor
+	 * cannot.
+	 */
+	private static function stored_counts( $post_id ) {
+		$type = KDNA_Tables_CPT::get_type( $post_id );
+		$key  = ( 'comparison' === $type ) ? KDNA_Tables_CPT::META_COMPARISON : KDNA_Tables_CPT::META_GENERAL;
+		$data = get_post_meta( $post_id, $key, true );
+
+		if ( ! is_array( $data ) ) {
+			return null;
+		}
+
+		$rows    = isset( $data['rows'] ) && is_array( $data['rows'] ) ? count( $data['rows'] ) : 0;
+		$columns = isset( $data['columns'] ) && is_array( $data['columns'] ) ? count( $data['columns'] ) : 0;
+
+		if ( 'comparison' === $type ) {
+			$rows    = isset( $data['feature_rows'] ) && is_array( $data['feature_rows'] ) ? count( $data['feature_rows'] ) : 0;
+			$columns = isset( $data['items'] ) && is_array( $data['items'] ) ? count( $data['items'] ) : 0;
+		}
+
+		return array( 'rows' => $rows, 'columns' => $columns );
 	}
 
 	/**
@@ -370,6 +444,40 @@ class KDNA_Tables_Editor {
 
 		$decoded = json_decode( $raw, true );
 		if ( ! is_array( $decoded ) ) {
+			return;
+		}
+
+		/*
+		 * ── Refuse a state the editor never seeded ────────────────────
+		 *
+		 * The editor seeds itself from window.kdnaTablesInitialState. If
+		 * that never arrives — the script blocked, reordered by an
+		 * optimiser, 404ing behind a CDN — Alpine falls back to
+		 * defaultGeneralState(), which is one empty column and one empty
+		 * row. The screen then looks like a brand new table, and pressing
+		 * Update writes that 1x1 blank over a real one. Silent, total,
+		 * and indistinguishable from "my rows have disappeared".
+		 *
+		 * The seed carries the post id; the fallback state carries 0. So
+		 * a mismatch is an exact statement that this state did not come
+		 * from this post's data, and the only safe thing to do with it is
+		 * nothing. A genuinely empty table posts its real id and saves as
+		 * it always did.
+		 *
+		 * Deliberately not a "did it shrink?" heuristic: deleting rows is
+		 * a thing people do on purpose, and a guard that second-guesses
+		 * that is a guard that loses edits instead of saving them.
+		 */
+		$state_post_id = isset( $decoded['post_id'] ) ? (int) $decoded['post_id'] : 0;
+		if ( $state_post_id !== (int) $post_id ) {
+			set_transient(
+				'kdna_tables_seed_failure_' . (int) $post_id,
+				array(
+					'expected' => (int) $post_id,
+					'received' => $state_post_id,
+				),
+				HOUR_IN_SECONDS
+			);
 			return;
 		}
 

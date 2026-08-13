@@ -111,6 +111,23 @@
 		} catch ( e ) { /* old browser, ignore */ }
 	}
 
+	/*
+	 * Clear the "editor did not load" notice, but only on a real boot.
+	 *
+	 * Real means the seed arrived: state.post_id is the id the server put
+	 * in it, and the fallback state carries 0 — which is exactly what the
+	 * save handler refuses. So if we are on the fallback, the warning is
+	 * telling the truth and it stays up.
+	 */
+	function confirmBoot( self ) {
+		var seeded = self.state && parseInt( self.state.post_id, 10 ) > 0;
+		if ( ! seeded ) { return; }
+		[ 'kdna-editor-boot-warning', 'kdna-editor-boot-counts' ].forEach( function ( id ) {
+			var el = document.getElementById( id );
+			if ( el && el.parentNode ) { el.parentNode.removeChild( el ); }
+		} );
+	}
+
 	function bindFormFlush( self ) {
 		var form = document.getElementById( 'post' );
 		if ( form ) {
@@ -291,6 +308,7 @@
 					self.queueSerialise();
 				} );
 				bindFormFlush( this );
+				confirmBoot( this );
 				this.serialise();
 				loadIconCatalogue( function ( catalogue ) {
 					self.iconCatalogue = catalogue || { libraries: [], icons: [] };
@@ -786,6 +804,7 @@
 					self.queueSerialise();
 				} );
 				bindFormFlush( this );
+				confirmBoot( this );
 				this.serialise();
 				loadIconCatalogue( function ( catalogue ) {
 					self.iconCatalogue = catalogue || { libraries: [], icons: [] };
@@ -1118,6 +1137,35 @@
 
 	window.kdnaTablesGeneralEditor = kdnaTablesGeneralEditor;
 	window.kdnaTablesComparisonEditor = kdnaTablesComparisonEditor;
+
+	/* ==================================================================
+	 * Alpine, loaded by us rather than beside us
+	 *
+	 * This used to be a second wp_enqueue_script with this file as its
+	 * dependency, which is the documented way to pin the order — and it
+	 * held right up until something on the site reordered, deferred,
+	 * delayed or combined admin scripts. When Alpine wins that race it
+	 * walks the DOM before this file has registered anything, every
+	 * x-data expression throws "kdnaTablesGeneralEditor is not defined",
+	 * and the editor renders as an empty one-cell table: no rows, no
+	 * columns, no working buttons, and an Update button that would write
+	 * that blank over a real table.
+	 *
+	 * Injecting Alpine from here removes the race rather than pinning it.
+	 * Registration above has already happened by the time this line runs,
+	 * so alpine:init cannot be missed. If this file does not load at all
+	 * then neither does Alpine, which is the honest outcome: the boot
+	 * warning stays up and nothing half-initialises.
+	 */
+	function bootAlpine( url ) {
+		if ( window.Alpine || window.__kdnaAlpineBooting || ! url ) { return; }
+		window.__kdnaAlpineBooting = true;
+		var el = document.createElement( 'script' );
+		el.src = url;
+		( document.head || document.documentElement ).appendChild( el );
+	}
+
+	bootAlpine( ( window.KDNATablesAdmin || {} ).alpineUrl );
 
 	/* ==================================================================
 	 * Structural preview (separate meta box)
