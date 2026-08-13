@@ -573,7 +573,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 			\Elementor\Group_Control_Typography::get_type(),
 			array(
 				'name'     => 'caption_typography',
-				'selector' => '{{WRAPPER}} .kdna-table--general .kdna-table__caption',
+				'selector' => '{{WRAPPER}} .kdna-table__caption',
 			)
 		);
 
@@ -583,7 +583,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				'label'     => esc_html__( 'Caption Colour', 'kdna-tables' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
 				'selectors' => array(
-					'{{WRAPPER}} .kdna-table--general .kdna-table__caption' => 'color: {{VALUE}};',
+					'{{WRAPPER}} .kdna-table__caption' => 'color: {{VALUE}};',
 				),
 			)
 		);
@@ -609,7 +609,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 				),
 				'default'   => 'left',
 				'selectors' => array(
-					'{{WRAPPER}} .kdna-table--general .kdna-table__caption' => 'text-align: {{VALUE}};',
+					'{{WRAPPER}} .kdna-table__caption' => 'text-align: {{VALUE}};',
 				),
 			)
 		);
@@ -624,7 +624,7 @@ class KDNA_Tables_Widget extends \Elementor\Widget_Base {
 					'px' => array( 'min' => 0, 'max' => 100, 'step' => 1 ),
 				),
 				'selectors'  => array(
-					'{{WRAPPER}} .kdna-table--general .kdna-table__caption' => 'margin-bottom: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .kdna-table__caption' => 'margin-bottom: {{SIZE}}{{UNIT}};',
 				),
 			)
 		);
