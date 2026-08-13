@@ -50,6 +50,46 @@
 	--kdna-sticky-z-index: 2;
 }
 
+/*
+ * ── The caption-and-table unit ────────────────────────────────────────
+ *
+ * A plain block holding the caption heading and the framed table as
+ * siblings. The caption cannot live inside the wrapper: the wrapper
+ * clips to its own radius and was slicing the first letter off.
+ *
+ * Declared HERE rather than only in kdna-shortcode.css because the
+ * Elementor widget does not load that stylesheet — so the rule would
+ * have reached shortcodes and missed widgets entirely.
+ *
+ * Everything is stated explicitly rather than left to the initial value.
+ * This is a new, unadorned <div> appearing inside someone's post content,
+ * where a theme rule like ".entry-content div { border: ... }" will
+ * decorate it on sight. It draws nothing, and says so.
+ */
+.kdna-table__unit.kdna-table__unit {
+	display: block;
+	/*
+	 * Doubled class and !important, which is not the usual answer and is
+	 * the right one here.
+	 *
+	 * A theme rule as ordinary as ".entry-content div { border: 3px solid
+	 * }" is (0,1,1) and beats a single class outright — and this element
+	 * exists ONLY to hold the caption and the table together. It has no
+	 * design of its own to lose, so any paint landing on it is an
+	 * accident, and losing that argument puts a black box round the
+	 * table on somebody's live page.
+	 *
+	 * The frame is on the wrapper inside, where every control that draws
+	 * one already points.
+	 */
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: none !important;
+	box-shadow: none !important;
+}
+
 .kdna-table__wrapper {
 	box-sizing: border-box;
 }

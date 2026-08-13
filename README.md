@@ -723,6 +723,32 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 
 ## Changelog
 
+### 3.4.2
+
+**A black box appeared around the table with no setting changed.** The
+caption-and-table unit added in 3.4.0 is a new, unadorned `<div>` inside
+post content, and a theme rule as ordinary as `.entry-content div {
+border: 3px solid }` decorates it on sight. That selector is `(0,1,1)`
+and beat the single class keeping it plain.
+
+The unit is unconditionally inert now — doubled class and `!important` on
+margin, padding, border, radius, background and shadow. Not the usual
+answer, and the right one here: the element exists only to hold the
+caption and the table together, it has no design of its own to lose, and
+losing that argument puts a black box round a table on a live page. The
+frame stays on the wrapper inside, where every control that draws one
+already points.
+
+**Two things it turned up.** The unit rule lived only in
+`kdna-shortcode.css`, which the Elementor widget does not load — so it
+reached shortcodes and missed widgets entirely; it is in
+`kdna-tables.css` now, which both paths load. And the widget's four
+caption controls still targeted `{{WRAPPER}} .kdna-table--general
+.kdna-table__caption`, a descendant of the table the caption no longer
+sits in, so Caption Typography, Colour, Alignment and Spacing had
+silently stopped working on the widget. They point at the moved element
+now.
+
 ### 3.4.1
 
 **The Show Caption toggle did nothing.** The widget read
