@@ -723,6 +723,23 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 
 ## Changelog
 
+### 3.3.3
+
+- **The "editor did not load" notice now diagnoses itself.** It reports
+  whether `kdna-admin.js` is on the page, whether it executed, whether
+  Alpine is present and started, and whether the seed arrived. Those are
+  five different faults with one symptom, and reading them off a console
+  dump was costing a round trip each. The check is inline and
+  dependency-free, because it has to run in exactly the situation where
+  the plugin's own scripts do not.
+- **Alpine injection is deferred to `DOMContentLoaded`.** 3.3.2 had each
+  script inject Alpine as soon as it ran, which left a narrower version
+  of the same race: on the table edit screen two of our scripts are on
+  the page, and an injected script can execute in the gap between two
+  classic ones. By `DOMContentLoaded` every classic script has run, so
+  every component is registered before Alpine can look for one. Tested
+  by driving the worst order — styles script first, editor second.
+
 ### 3.3.2
 
 **The table editor was dead from 3.0.0 onward, and this is why.**

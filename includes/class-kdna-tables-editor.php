@@ -153,6 +153,37 @@ class KDNA_Tables_Editor {
 			esc_html__( 'This is almost always a script that failed to load or ran out of order. Reload with a hard refresh first; if it persists, check the browser console for an error on kdna-admin.js and disable JavaScript optimisation, deferral or minification for the admin.', 'kdna-tables' )
 		);
 
+		/*
+		 * ── Make the warning diagnose itself ──────────────────────────
+		 *
+		 * "The editor did not load" is true but not actionable: it does
+		 * not say whether the script is missing from the page, present
+		 * but not executed, or executed too late. Two rounds of guessing
+		 * at that from a console dump is two rounds too many.
+		 *
+		 * This is deliberately inline and dependency-free — it has to run
+		 * in exactly the situation where our own scripts do not — and it
+		 * only reads the DOM. It appends one sentence naming which of
+		 * those three it is.
+		 */
+		printf(
+			'<script>(function(){var n=document.getElementById(%1$s);if(!n){return;}'
+			. 'setTimeout(function(){if(!document.getElementById(%1$s)){return;}'
+			. 'var t=[].slice.call(document.querySelectorAll(%2$s));'
+			. 'var admin=t.filter(function(s){return s.src.indexOf(%3$s)!==-1;});'
+			. 'var alpine=t.filter(function(s){return s.src.indexOf(%4$s)!==-1;});'
+			. 'var m=document.createElement("p");m.style.fontFamily="monospace";'
+			. 'm.textContent="Diagnostic: kdna-admin.js "+(admin.length?"IS":"is NOT")'
+			. '+" on the page; it "+(window.kdnaTablesGeneralEditor?"DID":"did NOT")+" execute; "'
+			. '+"alpine.min.js "+(alpine.length?"IS":"is NOT")+" on the page; Alpine "'
+			. '+(window.Alpine?"DID":"did NOT")+" start; the seed "+(window.kdnaTablesInitialState?"DID":"did NOT")+" arrive.";'
+			. 'n.appendChild(m);},1500);})();</script>',
+			wp_json_encode( 'kdna-editor-boot-warning' ),
+			wp_json_encode( 'script[src]' ),
+			wp_json_encode( 'kdna-admin.js' ),
+			wp_json_encode( 'alpine.min.js' )
+		);
+
 		$counts = self::stored_counts( $post->ID );
 		if ( $counts ) {
 			printf(
