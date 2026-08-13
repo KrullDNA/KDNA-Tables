@@ -259,7 +259,16 @@ class KDNA_Tables_Editor {
 			true
 		);
 
-		wp_enqueue_script(
+		/*
+		 * Alpine is NOT enqueued here. kdna-admin.js injects it once it
+		 * has registered its components, so the ordering is structural
+		 * rather than a dependency any script optimiser can reorder. The
+		 * URL is handed over in the bootstrap object below.
+		 *
+		 * wp_register_script keeps the handle known — the styles page
+		 * looks for it — without putting a second racing tag on the page.
+		 */
+		wp_register_script(
 			self::SCRIPT_HANDLE_ALPINE,
 			KDNA_TABLES_URL . 'assets/js/alpine.min.js',
 			array( self::SCRIPT_HANDLE_ADMIN ),
@@ -284,7 +293,8 @@ class KDNA_Tables_Editor {
 			self::SCRIPT_HANDLE_ADMIN,
 			'window.KDNATablesAdmin = ' . wp_json_encode(
 				array(
-					'iconsUrl' => KDNA_TABLES_URL . 'assets/js/kdna-icons.json?ver=' . KDNA_TABLES_VERSION,
+					'iconsUrl'  => KDNA_TABLES_URL . 'assets/js/kdna-icons.json?ver=' . KDNA_TABLES_VERSION,
+					'alpineUrl' => KDNA_TABLES_URL . 'assets/js/alpine.min.js?ver=3.15.12',
 				)
 			) . ';',
 			'before'

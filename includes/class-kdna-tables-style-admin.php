@@ -215,31 +215,17 @@ class KDNA_Tables_Style_Admin {
 		);
 
 		/*
-		 * On the table edit screen the table editor has usually
-		 * registered this same Alpine handle already, with only its own
-		 * script as a dependency — so wp_enqueue_script would not
-		 * re-register it and ours could print after Alpine had booted,
-		 * too late for the alpine:init listener. Append ourselves to the
-		 * existing dependency list instead. (The component is also
-		 * exposed on window, which is what makes x-data resolve either
-		 * way, but the ordering should be right rather than merely
-		 * survivable.)
+		 * Alpine is not enqueued. This used to juggle a shared handle and
+		 * a dependency list so that Alpine would print after this script
+		 * — correct, and only as reliable as nothing else on the site
+		 * reordering, deferring or combining admin scripts. When Alpine
+		 * wins that race it walks the DOM before anything is registered
+		 * and every x-data expression throws.
+		 *
+		 * kdna-style-admin.js injects Alpine itself once it has
+		 * registered, which makes the order structural instead. The URL
+		 * travels in the bootstrap object below.
 		 */
-		if ( wp_script_is( self::ALPINE_HANDLE, 'registered' ) ) {
-			$alpine = wp_scripts()->query( self::ALPINE_HANDLE, 'registered' );
-			if ( $alpine && ! in_array( self::SCRIPT_HANDLE, (array) $alpine->deps, true ) ) {
-				$alpine->deps[] = self::SCRIPT_HANDLE;
-			}
-			wp_enqueue_script( self::ALPINE_HANDLE );
-		} else {
-			wp_enqueue_script(
-				self::ALPINE_HANDLE,
-				KDNA_TABLES_URL . 'assets/js/alpine.min.js',
-				array( self::SCRIPT_HANDLE ),
-				'3.15.12',
-				true
-			);
-		}
 
 		wp_add_inline_script(
 			self::SCRIPT_HANDLE,
@@ -298,6 +284,9 @@ class KDNA_Tables_Style_Admin {
 			'exportUrl' => $is_table ? '' : rest_url( self::REST_NAMESPACE . self::REST_ROUTE_EXPORT ),
 			'importUrl' => $is_table ? '' : rest_url( self::REST_NAMESPACE . self::REST_ROUTE_IMPORT ),
 			'nonce'     => wp_create_nonce( 'wp_rest' ),
+			// kdna-style-admin.js loads Alpine itself, after registering
+			// its component. See the note by the enqueue.
+			'alpineUrl' => KDNA_TABLES_URL . 'assets/js/alpine.min.js?ver=3.15.12',
 			/*
 			 * The preview pane is on the global settings page only. A
 			 * per-table panel previewing itself would be the better tool,

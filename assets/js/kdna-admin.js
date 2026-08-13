@@ -1139,6 +1139,35 @@
 	window.kdnaTablesComparisonEditor = kdnaTablesComparisonEditor;
 
 	/* ==================================================================
+	 * Alpine, loaded by us rather than beside us
+	 *
+	 * This used to be a second wp_enqueue_script with this file as its
+	 * dependency, which is the documented way to pin the order — and it
+	 * held right up until something on the site reordered, deferred,
+	 * delayed or combined admin scripts. When Alpine wins that race it
+	 * walks the DOM before this file has registered anything, every
+	 * x-data expression throws "kdnaTablesGeneralEditor is not defined",
+	 * and the editor renders as an empty one-cell table: no rows, no
+	 * columns, no working buttons, and an Update button that would write
+	 * that blank over a real table.
+	 *
+	 * Injecting Alpine from here removes the race rather than pinning it.
+	 * Registration above has already happened by the time this line runs,
+	 * so alpine:init cannot be missed. If this file does not load at all
+	 * then neither does Alpine, which is the honest outcome: the boot
+	 * warning stays up and nothing half-initialises.
+	 */
+	function bootAlpine( url ) {
+		if ( window.Alpine || window.__kdnaAlpineBooting || ! url ) { return; }
+		window.__kdnaAlpineBooting = true;
+		var el = document.createElement( 'script' );
+		el.src = url;
+		( document.head || document.documentElement ).appendChild( el );
+	}
+
+	bootAlpine( ( window.KDNATablesAdmin || {} ).alpineUrl );
+
+	/* ==================================================================
 	 * Structural preview (separate meta box)
 	 *
 	 * Subscribes to the 'kdna:state' custom event the editor dispatches on
