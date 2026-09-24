@@ -723,6 +723,55 @@ selector { --kdna-comparison-highlight-bg: #fff7ed; }
 
 ## Changelog
 
+### 3.5.0
+
+**Import a table from a JSON file.** New page at **KDNA Tables > Import**.
+Upload a file or paste the JSON, and a new table is created in the
+library. Nothing existing is read or overwritten.
+
+It validates rather than merely sanitising, and the distinction matters.
+`KDNA_Tables_CPT::sanitize_table_data()` is deliberately forgiving,
+because on a save from the editor the data has already been through the
+UI. Hand it an empty array and it returns a valid, empty table. On an
+import that is exactly wrong: a typo in `columns` would sanitise to a
+table with no columns and save without complaint. So the payload is
+checked first and reported in two kinds:
+
+- **Errors** stop the import. No type, no title, no data, a general table
+  with no columns, a comparison table with fewer than two items.
+- **Warnings** let it through and say what changed on the way in. A row
+  padded to the column count, a list truncated to the maximum, a value
+  that is not one we accept falling back to its default.
+
+Every warning names the path it came from, so `rows[3].cells` points at
+somewhere in the file rather than at the idea of a row.
+
+Three warnings are worth knowing about before writing a file by hand:
+
+- **`first_row_is_header` is the one that bites.** It does not mean "this
+  table has a header row". It promotes the first row of `rows` into the
+  header *and hides the column labels*. Written the obvious way, with
+  labels and a full set of rows, a row of content disappears and the
+  table still looks right. Leave it `false` when the headings are the
+  column labels.
+- An **attachment id** does not carry between sites. Id 412 is whatever
+  happens to be attachment 412 on the destination, which is usually
+  somebody else's photograph, so every id is flagged.
+- An **unrecognised key** is named rather than ignored, because it is
+  usually a misremembered one.
+
+An optional `styles` block carries per-table style overrides, checked
+against the style schema with anything unrecognised reported by name.
+
+**A skill to write the files.** `kdna-table-json.skill` in the repository
+root, installable in Claude. It holds the format, the field reference and
+a validator script that applies the same rules the plugin does. A parity
+test runs both validators over twenty-nine fixtures and requires the same
+verdict from each, because two validators written from one description
+drift the moment either is edited, and the failure is silent in the worst
+direction: the skill says clean, the plugin refuses, and the person in
+the middle has no idea which to believe.
+
 ### 3.4.2
 
 **A black box appeared around the table with no setting changed.** The
