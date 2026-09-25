@@ -23,6 +23,9 @@ require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-shortcode.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-style-schema.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-style-resolver.php';
 require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-style-admin.php';
+// JSON import. Loaded after the style admin, because it validates an
+// optional "styles" block through that class's sanitiser.
+require_once KDNA_TABLES_PATH . 'includes/class-kdna-tables-import.php';
 
 KDNA_Tables_CPT::init();
 KDNA_Tables_Shortcode::init();
@@ -43,6 +46,7 @@ if ( is_admin() ) {
 	KDNA_Tables_Admin::init();
 	KDNA_Tables_Editor::init();
 	KDNA_Tables_Migration::init();
+	KDNA_Tables_Import::init();
 }
 
 class KDNA_Tables_Plugin {
